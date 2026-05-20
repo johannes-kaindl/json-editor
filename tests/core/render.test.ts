@@ -83,11 +83,20 @@ describe("renderTree", () => {
     expect(calls).toEqual([]);
   });
 
-  it("collapses nodes deeper than autoCollapseDepth", () => {
+  it("collapses nodes strictly deeper than autoCollapseDepth", () => {
     const el = renderTree({ a: { b: { c: 1 } } }, { autoCollapseDepth: 1 });
     // Depth 0 (root) and depth 1 (a) are expanded; depth 2 (b) starts collapsed.
     const collapsedContainers = el.querySelectorAll(".json-content.collapsed");
-    expect(collapsedContainers.length).toBeGreaterThanOrEqual(1);
+    expect(collapsedContainers.length).toBe(1);
+  });
+
+  it("autoCollapseDepth: 0 collapses everything except the root", () => {
+    const el = renderTree({ a: { b: 1 } }, { autoCollapseDepth: 0 });
+    // Root (depth 0) is expanded; depth-1 container ('a') is collapsed.
+    const rootContent = el.querySelector(".json-tree-root > .json-container > .json-content");
+    const inner = el.querySelectorAll(".json-content.collapsed");
+    expect(rootContent?.classList.contains("collapsed")).toBe(false);
+    expect(inner.length).toBe(1);
   });
 
   it("renders classic markers when markerStyle: 'classic'", () => {

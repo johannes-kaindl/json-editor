@@ -86,7 +86,7 @@ function renderObject(
   const content = document.createElement("div");
   content.className = "json-content";
   const shouldCollapse =
-    opts.autoCollapseDepth !== undefined && depth >= opts.autoCollapseDepth;
+    opts.autoCollapseDepth !== undefined && depth > opts.autoCollapseDepth;
   if (shouldCollapse) content.classList.add("collapsed");
   if (shouldCollapse) toggle.textContent = "▶";
 
@@ -151,7 +151,7 @@ function renderArray(
   const content = document.createElement("div");
   content.className = "json-content";
   const shouldCollapse =
-    opts.autoCollapseDepth !== undefined && depth >= opts.autoCollapseDepth;
+    opts.autoCollapseDepth !== undefined && depth > opts.autoCollapseDepth;
   if (shouldCollapse) content.classList.add("collapsed");
   if (shouldCollapse) toggle.textContent = "▶";
 
