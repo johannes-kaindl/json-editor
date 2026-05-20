@@ -1,4 +1,5 @@
 import type { JsonValue, JsonPath, RenderOptions } from "./types";
+import { pathToString } from "./path";
 
 export function renderTree(value: JsonValue, opts: RenderOptions): HTMLElement {
   const root = document.createElement("div");
@@ -56,6 +57,11 @@ function makePrimitive(
   } else if (!opts.readonly && value === null) {
     span.title = "Edit in Source to change type";
   }
+  if (opts.onValueHover) {
+    span.addEventListener("mouseenter", () => {
+      opts.onValueHover!(span, path, value);
+    });
+  }
   return span;
 }
 
@@ -102,6 +108,10 @@ function renderObject(
   entries.forEach(([key, v], i) => {
     const row = document.createElement("div");
     row.className = "json-row";
+    row.setAttribute("data-path", pathToString([...path, key]));
+    if (opts.onPathClick) {
+      row.addEventListener("click", () => opts.onPathClick!([...path, key]), true);
+    }
     if (opts.markerStyle === "classic") {
       const marker = document.createElement("span");
       marker.className = "json-marker";
@@ -167,6 +177,10 @@ function renderArray(
   arr.forEach((v, i) => {
     const row = document.createElement("div");
     row.className = "json-row";
+    row.setAttribute("data-path", pathToString([...path, i]));
+    if (opts.onPathClick) {
+      row.addEventListener("click", () => opts.onPathClick!([...path, i]), true);
+    }
     if (opts.markerStyle === "classic") {
       const marker = document.createElement("span");
       marker.className = "json-marker";

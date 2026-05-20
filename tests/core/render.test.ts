@@ -124,4 +124,51 @@ describe("renderTree", () => {
     toggle.click();
     expect(content.classList.contains("collapsed")).toBe(false);
   });
+
+  it("annotates each .json-row with a data-path attribute", () => {
+    const el = renderTree({ users: [{ name: "jay" }] }, {});
+    const rows = el.querySelectorAll(".json-row");
+    const paths = Array.from(rows).map((r) => r.getAttribute("data-path"));
+    expect(paths).toContain("users");
+    expect(paths).toContain("users[0]");
+    expect(paths).toContain("users[0].name");
+  });
+
+  it("fires onPathClick when a .json-row is clicked", () => {
+    const calls: Array<(string | number)[]> = [];
+    const el = renderTree({ name: "jay" }, { onPathClick: (p) => calls.push(p) });
+    document.body.appendChild(el);
+    const row = el.querySelector('.json-row[data-path="name"]') as HTMLElement;
+    row.click();
+    expect(calls).toEqual([["name"]]);
+  });
+
+  it("fires onValueHover when a primitive span is mouseentered", () => {
+    const calls: Array<{ path: (string | number)[]; value: unknown }> = [];
+    const el = renderTree(
+      { name: "jay" },
+      { onValueHover: (_t, path, value) => calls.push({ path, value }) }
+    );
+    document.body.appendChild(el);
+    const valueEl = el.querySelector(".json-string") as HTMLElement;
+    valueEl.dispatchEvent(new MouseEvent("mouseenter"));
+    expect(calls).toEqual([{ path: ["name"], value: "jay" }]);
+  });
+
+  it("onPathClick still fires when the value span is clicked (does not block onValueClick)", () => {
+    const pathCalls: Array<(string | number)[]> = [];
+    const valueCalls: Array<(string | number)[]> = [];
+    const el = renderTree(
+      { name: "jay" },
+      {
+        onPathClick: (p) => pathCalls.push(p),
+        onValueClick: (p, _v) => valueCalls.push(p),
+      }
+    );
+    document.body.appendChild(el);
+    const valueEl = el.querySelector(".json-string") as HTMLElement;
+    valueEl.click();
+    expect(pathCalls).toEqual([["name"]]);
+    expect(valueCalls).toEqual([["name"]]);
+  });
 });
