@@ -1,22 +1,43 @@
-// Vitest mock for Obsidian. Filled in incrementally as adapter tests require members.
+// Vitest mock for Obsidian. Implements the subset of the API used by adapters
+// and their tests. Mirrors the public shapes from obsidian.d.ts; behavior is
+// minimal but observable.
+
+export interface App {}
+export interface WorkspaceLeaf { app: App }
+export interface PluginManifest { id: string; name: string; version: string }
+export interface MarkdownPostProcessorContext {
+  sourcePath: string;
+  getSectionInfo(el: HTMLElement): { lineStart: number; lineEnd: number; text: string } | null;
+}
 
 export class Plugin {
   app: App;
   manifest: PluginManifest;
+  views: Record<string, (leaf: WorkspaceLeaf) => unknown> = {};
+  postprocessors: Record<string, Function> = {};
+  settingTabs: PluginSettingTab[] = [];
+  storedData: unknown = null;
   constructor(app: App, manifest: PluginManifest) {
     this.app = app;
     this.manifest = manifest;
   }
-  registerView(_type: string, _factory: (leaf: WorkspaceLeaf) => unknown) {}
-  registerMarkdownCodeBlockProcessor(
-    _lang: string,
-    _handler: (src: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => void
-  ) {}
-  addSettingTab(_tab: PluginSettingTab) {}
-  loadData(): Promise<unknown> {
-    return Promise.resolve(null);
+  registerView(type: string, factory: (leaf: WorkspaceLeaf) => unknown) {
+    this.views[type] = factory;
   }
-  saveData(_data: unknown): Promise<void> {
+  registerMarkdownCodeBlockProcessor(
+    lang: string,
+    handler: (src: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => void
+  ) {
+    this.postprocessors[lang] = handler;
+  }
+  addSettingTab(tab: PluginSettingTab) {
+    this.settingTabs.push(tab);
+  }
+  loadData(): Promise<unknown> {
+    return Promise.resolve(this.storedData);
+  }
+  saveData(data: unknown): Promise<void> {
+    this.storedData = data;
     return Promise.resolve();
   }
 }
@@ -38,6 +59,7 @@ export class TextFileView {
   app: App;
   data: string = "";
   contentEl: HTMLElement;
+  saveCount = 0;
   constructor(public leaf: WorkspaceLeaf) {
     this.app = (leaf as unknown as { app: App }).app;
     this.contentEl = document.createElement("div");
@@ -51,55 +73,75 @@ export class TextFileView {
   clear(): void {
     this.data = "";
   }
-  requestSave(): void {}
+  requestSave(): void {
+    this.saveCount += 1;
+  }
   getViewType(): string {
     return "";
   }
 }
 
+export class Notice {
+  constructor(public message: string, public timeout?: number) {}
+}
+
 export class Setting {
   settingEl: HTMLElement;
+  nameValue = "";
+  descValue = "";
   constructor(public containerEl: HTMLElement) {
     this.settingEl = document.createElement("div");
     containerEl.appendChild(this.settingEl);
   }
-  setName(_name: string): this { return this; }
-  setDesc(_desc: string): this { return this; }
+  setName(name: string): this { this.nameValue = name; return this; }
+  setDesc(desc: string): this { this.descValue = desc; return this; }
   addText(cb: (text: TextComponent) => void): this {
-    cb(new TextComponent());
+    const c = new TextComponent();
+    this.settingEl.appendChild(c.inputEl);
+    cb(c);
     return this;
   }
   addDropdown(cb: (dd: DropdownComponent) => void): this {
-    cb(new DropdownComponent());
+    const c = new DropdownComponent();
+    this.settingEl.appendChild(c.selectEl);
+    cb(c);
     return this;
   }
   addToggle(cb: (t: ToggleComponent) => void): this {
-    cb(new ToggleComponent());
+    const c = new ToggleComponent();
+    this.settingEl.appendChild(c.toggleEl);
+    cb(c);
     return this;
   }
 }
 
 export class TextComponent {
   inputEl: HTMLInputElement = document.createElement("input");
+  changeHandlers: Array<(v: string) => void> = [];
   setValue(v: string): this { this.inputEl.value = v; return this; }
-  onChange(_cb: (v: string) => void): this { return this; }
+  onChange(cb: (v: string) => void): this { this.changeHandlers.push(cb); return this; }
 }
 export class DropdownComponent {
   selectEl: HTMLSelectElement = document.createElement("select");
-  addOption(_value: string, _display: string): this { return this; }
-  setValue(_v: string): this { return this; }
-  onChange(_cb: (v: string) => void): this { return this; }
+  changeHandlers: Array<(v: string) => void> = [];
+  addOption(value: string, display: string): this {
+    const opt = document.createElement("option");
+    opt.value = value;
+    opt.textContent = display;
+    this.selectEl.appendChild(opt);
+    return this;
+  }
+  setValue(v: string): this { this.selectEl.value = v; return this; }
+  onChange(cb: (v: string) => void): this {
+    this.changeHandlers.push(cb);
+    this.selectEl.addEventListener("change", () => cb(this.selectEl.value));
+    return this;
+  }
 }
 export class ToggleComponent {
   toggleEl: HTMLElement = document.createElement("div");
-  setValue(_v: boolean): this { return this; }
-  onChange(_cb: (v: boolean) => void): this { return this; }
-}
-
-export interface WorkspaceLeaf { app: App; }
-export interface App {}
-export interface PluginManifest { id: string; name: string; version: string; }
-export interface MarkdownPostProcessorContext {
-  sourcePath: string;
-  getSectionInfo(el: HTMLElement): { lineStart: number; lineEnd: number; text: string } | null;
+  value = false;
+  changeHandlers: Array<(v: boolean) => void> = [];
+  setValue(v: boolean): this { this.value = v; return this; }
+  onChange(cb: (v: boolean) => void): this { this.changeHandlers.push(cb); return this; }
 }
