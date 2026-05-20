@@ -112,8 +112,8 @@ export class JsonFileView extends TextFileView {
   }
 
   private refreshMode(): void {
-    this.bodyEl.innerHTML = "";
     this.sourceView?.destroy();
+    this.bodyEl.innerHTML = "";
     this.treeView = null;
     this.sourceView = null;
 
@@ -136,8 +136,8 @@ export class JsonFileView extends TextFileView {
   }
 
   private renderEmptyState(): void {
-    this.bodyEl.innerHTML = "";
     this.sourceView?.destroy();
+    this.bodyEl.innerHTML = "";
     this.treeView = null;
     this.sourceView = null;
     const wrap = document.createElement("div");
