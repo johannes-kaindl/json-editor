@@ -5,6 +5,6 @@
   "minAppVersion": "1.4.0",
   "description": "View and edit JSON files in Obsidian with a Tree/Source toggle. Renders json code blocks in Markdown notes.",
   "author": "Johannes Kaindl",
-  "authorUrl": "https://github.com/v6t2b9",
+  "authorUrl": "https://github.com/johannes-kaindl",
   "isDesktopOnly": false
 }
