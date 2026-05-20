@@ -35,6 +35,7 @@ const ctx = await esbuild.context({
 
 if (prod) {
   await ctx.rebuild();
+  await ctx.dispose();
   process.exit(0);
 } else {
   await ctx.watch();
