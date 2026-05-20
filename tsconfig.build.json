@@ -10,11 +10,8 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "types": ["node"],
-    "baseUrl": ".",
-    "paths": {
-      "obsidian": ["./src/__mocks__/obsidian.ts"]
-    }
+    "baseUrl": "."
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "src/__mocks__"]
 }
