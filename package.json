@@ -9,9 +9,15 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "keywords": ["obsidian", "json", "editor", "plugin"],
+  "keywords": [
+    "obsidian",
+    "json",
+    "editor",
+    "plugin"
+  ],
   "license": "GPL-3.0",
   "devDependencies": {
+    "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-json": "^6.0.1",
     "@codemirror/state": "^6.4.1",
     "@codemirror/view": "^6.26.3",
