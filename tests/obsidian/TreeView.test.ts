@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { TreeView } from "../../src/obsidian/TreeView";
 
 describe("TreeView", () => {
@@ -96,5 +96,79 @@ describe("TreeView", () => {
     const value = container.querySelector(".json-string") as HTMLElement;
     value.click();
     expect(container.querySelector("input")).toBeNull();
+  });
+
+  it("calls opts.onPathClick when a row is clicked", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const calls: Array<(string | number)[]> = [];
+    const view = new TreeView(container, { onPathClick: (p) => calls.push(p) });
+    view.setValue({ name: "jay" });
+    const row = container.querySelector('.json-row[data-path="name"]') as HTMLElement;
+    row.click();
+    expect(calls).toEqual([["name"]]);
+  });
+
+  it("attaches a .json-copy-btn to every rendered row", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const view = new TreeView(container, {});
+    view.setValue({ a: 1, b: { c: 2 } });
+    const rows = container.querySelectorAll(".json-row");
+    rows.forEach((r) => {
+      expect(r.querySelector(".json-copy-btn")).not.toBeNull();
+    });
+  });
+
+  it("copy button on a nested row copies the nested value (not the root)", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const view = new TreeView(container, {});
+    view.setValue({ users: [{ name: "jay" }] });
+    const innerRow = container.querySelector(
+      '.json-row[data-path="users[0].name"]'
+    ) as HTMLElement;
+    const btn = innerRow.querySelector(".json-copy-btn") as HTMLButtonElement;
+    btn.click();
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
+    expect(writeText).toHaveBeenCalledWith('"jay"');
+  });
+
+  it("scrollToPath finds a row by data-path and applies the flash class briefly", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const view = new TreeView(container, {});
+    view.setValue({ users: [{ name: "jay" }] });
+    view.scrollToPath(["users", 0, "name"]);
+    const row = container.querySelector('.json-row[data-path="users[0].name"]') as HTMLElement;
+    expect(row.classList.contains("json-row-flash")).toBe(true);
+  });
+
+  it("scrollToPath is a no-op when no matching row exists", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const view = new TreeView(container, {});
+    view.setValue({ a: 1 });
+    // Should not throw
+    expect(() => view.scrollToPath(["nonexistent", "deeply", "nested"])).not.toThrow();
+  });
+
+  it("does not call opts.onValueHover while an inline edit input is focused", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const calls: number[] = [];
+    const view = new TreeView(container, { onValueHover: () => calls.push(1) });
+    view.setValue({ name: "jay" });
+    // Open an edit
+    const valueEl = container.querySelector(".json-string") as HTMLElement;
+    valueEl.click();
+    const input = container.querySelector("input[type='text']") as HTMLInputElement;
+    input.focus();
+    // Now hover a primitive — should be suppressed
+    const anyValue = container.querySelector(".json-string");
+    anyValue?.dispatchEvent(new MouseEvent("mouseenter"));
+    expect(calls).toEqual([]);
   });
 });

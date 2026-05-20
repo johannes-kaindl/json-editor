@@ -1,16 +1,24 @@
 import type { JsonValue, JsonPath, MarkerStyle } from "../core/types";
 import { renderTree } from "../core/render";
 import { editValue } from "../core/edit";
+import { pathToString } from "../core/path";
+import { createCopyButton } from "./CopyButton";
 
 export interface TreeViewOptions {
   readonly?: boolean;
   markerStyle?: MarkerStyle;
   autoCollapseDepth?: number;
   onChange?: (newValue: JsonValue) => void;
+  onPathClick?: (path: JsonPath) => void;
+  onValueHover?: (target: HTMLElement, path: JsonPath, value: JsonValue) => void;
 }
+
+const FLASH_MS = 600;
 
 export class TreeView {
   private current: JsonValue = null;
+  private editing = false;
+
   constructor(private container: HTMLElement, private opts: TreeViewOptions) {}
 
   setValue(value: JsonValue): void {
@@ -22,6 +30,15 @@ export class TreeView {
     return this.current;
   }
 
+  scrollToPath(path: JsonPath): void {
+    const selector = `.json-row[data-path="${cssEscapeAttr(pathToString(path))}"]`;
+    const row = this.container.querySelector<HTMLElement>(selector);
+    if (!row) return;
+    row.scrollIntoView({ block: "center", behavior: "smooth" });
+    row.classList.add("json-row-flash");
+    setTimeout(() => row.classList.remove("json-row-flash"), FLASH_MS);
+  }
+
   private render(): void {
     this.container.innerHTML = "";
     const el = renderTree(this.current, {
@@ -29,8 +46,26 @@ export class TreeView {
       markerStyle: this.opts.markerStyle ?? "modern",
       autoCollapseDepth: this.opts.autoCollapseDepth,
       onValueClick: (path, value) => this.openEditor(path, value),
+      onPathClick: (path) => this.opts.onPathClick?.(path),
+      onValueHover: (target, path, value) => {
+        if (this.editing) return;
+        this.opts.onValueHover?.(target, path, value);
+      },
     });
+    this.attachCopyButtons(el);
     this.container.appendChild(el);
+  }
+
+  private attachCopyButtons(treeRoot: HTMLElement): void {
+    const rows = treeRoot.querySelectorAll<HTMLElement>(".json-row");
+    rows.forEach((row) => {
+      const pathStr = row.getAttribute("data-path");
+      if (pathStr === null) return;
+      const value = locateValueByPathStr(this.current, pathStr);
+      const path = parsePathStr(pathStr);
+      const btn = createCopyButton(value, path);
+      row.appendChild(btn);
+    });
   }
 
   private openEditor(path: JsonPath, value: JsonValue): void {
@@ -39,7 +74,9 @@ export class TreeView {
     const valueEl = this.findElementForPath(path);
     if (!valueEl) return;
 
+    this.editing = true;
     const finish = (newVal: JsonValue | undefined) => {
+      this.editing = false;
       if (newVal !== undefined) {
         const updated = editValue(this.current, path, newVal);
         this.current = updated;
@@ -81,14 +118,11 @@ export class TreeView {
 }
 
 function locateChildForSegment(parent: HTMLElement, segment: string | number): HTMLElement | null {
-  // Find the nearest .json-content within parent and walk its direct children.
-  // We avoid :scope selectors because happy-dom does not support :scope with
-  // descendant combinators (":scope .foo") or child combinators (":scope > .foo").
-  const content = parent.querySelector(".json-content");
+  const content = parent.querySelector<HTMLElement>(".json-content");
   if (!content) return null;
   const rows = Array.from(content.children).filter(
-    (el) => el.classList.contains("json-row")
-  ) as HTMLElement[];
+    (el): el is HTMLElement => el instanceof HTMLElement && el.classList.contains("json-row")
+  );
   if (typeof segment === "string") {
     for (const row of rows) {
       const key = row.querySelector(".json-key");
@@ -97,6 +131,61 @@ function locateChildForSegment(parent: HTMLElement, segment: string | number): H
     return null;
   }
   return rows[segment] ?? null;
+}
+
+function locateValueByPathStr(root: JsonValue, pathStr: string): JsonValue {
+  const path = parsePathStr(pathStr);
+  let current: JsonValue = root;
+  for (const seg of path) {
+    if (current === null) return null;
+    if (Array.isArray(current) && typeof seg === "number") {
+      current = current[seg];
+    } else if (typeof current === "object" && typeof seg === "string") {
+      current = (current as { [k: string]: JsonValue })[seg];
+    } else {
+      return null;
+    }
+  }
+  return current;
+}
+
+function parsePathStr(pathStr: string): JsonPath {
+  if (pathStr === "root") return [];
+  const segments: JsonPath = [];
+  let i = 0;
+  let buf = "";
+  const flushString = () => {
+    if (buf.length > 0) {
+      segments.push(buf);
+      buf = "";
+    }
+  };
+  while (i < pathStr.length) {
+    const c = pathStr[i];
+    if (c === ".") {
+      flushString();
+      i++;
+    } else if (c === "[") {
+      flushString();
+      const close = pathStr.indexOf("]", i);
+      const inner = pathStr.slice(i + 1, close);
+      if (inner.startsWith('"')) {
+        segments.push(inner.slice(1, -1).replace(/\\"/g, '"'));
+      } else {
+        segments.push(parseInt(inner, 10));
+      }
+      i = close + 1;
+    } else {
+      buf += c;
+      i++;
+    }
+  }
+  flushString();
+  return segments;
+}
+
+function cssEscapeAttr(v: string): string {
+  return v.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
 function replaceWithInput(
