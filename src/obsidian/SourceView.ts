@@ -53,8 +53,9 @@ export class SourceView {
     this.view = null;
   }
 
-  /** Test-only helper: simulates a user-initiated insert at position. */
-  dispatchInsertForTest(from: number, text: string): void {
+  /** Test-only helper (leading underscore signals non-public).
+   *  Simulates a user-initiated insert at the given position. */
+  _dispatchInsertForTest(from: number, text: string): void {
     if (!this.view) return;
     this.view.dispatch({ changes: { from, insert: text } });
   }

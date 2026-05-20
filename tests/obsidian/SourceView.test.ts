@@ -37,7 +37,7 @@ describe("SourceView", () => {
     const changes: string[] = [];
     const view = new SourceView(container, { onChange: (text) => changes.push(text) });
     view.setValue("{}");
-    view.dispatchInsertForTest(1, "\"a\":1");
+    view._dispatchInsertForTest(1, "\"a\":1");
     expect(changes.length).toBeGreaterThanOrEqual(1);
     expect(view.getValue()).toBe("{\"a\":1}");
   });

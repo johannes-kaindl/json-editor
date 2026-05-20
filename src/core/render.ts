@@ -53,6 +53,8 @@ function makePrimitive(
       e.stopPropagation();
       opts.onValueClick?.(path, value);
     });
+  } else if (!opts.readonly && value === null) {
+    span.title = "Edit in Source to change type";
   }
   return span;
 }
