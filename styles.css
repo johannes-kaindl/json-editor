@@ -1,6 +1,5 @@
 /* obsidian-json-editor — styles
-   All colors reference Obsidian CSS variables so the plugin follows the active theme.
-   Falls back to sensible JSON type colors when a variable is absent. */
+   All colors reference Obsidian CSS variables so the plugin follows the active theme. */
 
 /* ─── Mode toggle ─────────────────────────────────────────────────── */
 .json-mode-toggle {
@@ -28,6 +27,39 @@
   border-color: var(--interactive-accent);
 }
 .json-mode-pill:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ─── Breadcrumb ──────────────────────────────────────────────────── */
+.json-breadcrumb {
+  margin: 0 12px 8px;
+  padding: 4px 10px;
+  font-family: var(--font-interface);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  background: var(--background-secondary);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 22px;
+}
+.bc-seg {
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.bc-seg:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+.bc-seg-terminal {
+  color: var(--text-normal);
+  font-weight: 600;
+}
+.bc-sep {
+  opacity: 0.5;
+  cursor: default;
+}
 
 /* ─── Error banner ────────────────────────────────────────────────── */
 .json-error-banner {
@@ -65,14 +97,14 @@
 /* ─── Editor body ─────────────────────────────────────────────────── */
 .json-editor-body {
   padding: 12px;
-  font-family: var(--font-monospace);
   font-size: var(--font-ui-small);
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 /* ─── Tree styling ────────────────────────────────────────────────── */
 .json-tree-root {
   color: var(--text-normal);
+  font-family: var(--font-monospace);
 }
 .json-container {
   display: block;
@@ -87,32 +119,51 @@
   font-size: 10px;
 }
 .json-collapse-toggle:hover { color: var(--text-normal); }
+
 .json-content {
   display: block;
   padding-left: 18px;
   border-left: 1px solid var(--background-modifier-border);
   margin-left: 5px;
+  max-height: 5000px;
+  opacity: 1;
+  overflow: hidden;
+  transition: max-height 150ms ease-out, opacity 100ms ease-out;
 }
-.json-content.collapsed { display: none; }
+.json-content.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .json-content { transition: none; }
+}
 
 .json-row {
-  display: block;
-  padding: 1px 0;
+  display: flex;
+  align-items: center;
+  padding: 3px 6px;
+  border-radius: 3px;
+  transition: background 80ms ease-out;
+  position: relative;
+}
+.json-row:hover {
+  background: var(--background-modifier-hover);
 }
 
 .json-key {
   color: var(--text-accent, var(--color-cyan, #4ec9b0));
+  font-family: var(--font-interface);
   font-weight: 600;
-  margin-right: 4px;
+  margin-right: 6px;
 }
 .json-bracket { color: var(--text-muted); }
-.json-index   { color: var(--text-faint); font-size: 0.9em; margin-right: 4px; }
-.json-marker  { color: var(--text-faint); margin-right: 4px; opacity: 0.6; }
+.json-index   { color: var(--text-faint); font-size: 0.9em; margin-right: 4px; font-family: var(--font-monospace); }
+.json-marker  { color: var(--text-faint); margin-right: 4px; opacity: 0.5; font-family: var(--font-monospace); }
 
 .json-string  { color: var(--color-green, #6a9955); word-break: break-word; }
 .json-number  { color: var(--color-blue, #569cd6); }
 .json-boolean { color: var(--color-purple, #c586c0); }
-.json-null    { color: var(--text-faint); }
+.json-null    { color: var(--text-faint); font-style: italic; }
 
 .json-editable {
   cursor: pointer;
@@ -130,6 +181,68 @@
   border-radius: 3px;
   background: var(--background-primary);
   color: var(--text-normal);
+}
+
+/* ─── Copy button ─────────────────────────────────────────────────── */
+.json-copy-btn {
+  margin-left: auto;
+  padding: 0 5px;
+  font-size: 11px;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 100ms ease-out, color 100ms ease-out;
+}
+.json-row:hover .json-copy-btn {
+  opacity: 0.6;
+}
+.json-copy-btn:hover {
+  opacity: 1 !important;
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+.json-copy-btn.copied {
+  color: var(--text-success, var(--color-green, #6a9955));
+  opacity: 1 !important;
+}
+
+/* ─── Row flash (segment jump) ────────────────────────────────────── */
+.json-row-flash {
+  background: var(--interactive-accent) !important;
+  color: var(--text-on-accent) !important;
+  transition: background 150ms ease-out;
+}
+
+/* ─── Tooltip ─────────────────────────────────────────────────────── */
+.json-tooltip {
+  position: absolute;
+  z-index: var(--layer-tooltip, 100);
+  padding: 6px 10px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px var(--background-modifier-box-shadow, rgba(0, 0, 0, 0.2));
+  font-size: var(--font-ui-smaller);
+  max-width: 320px;
+  pointer-events: none;
+}
+.json-tooltip[hidden] { display: none; }
+.json-tooltip .tt-meta {
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+.json-tooltip .tt-type {
+  color: var(--text-accent);
+  font-weight: 600;
+}
+.json-tooltip .tt-preview {
+  font-family: var(--font-monospace);
+  color: var(--text-normal);
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
 /* ─── Codeblock fallback ──────────────────────────────────────────── */
