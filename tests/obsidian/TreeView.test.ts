@@ -160,15 +160,49 @@ describe("TreeView", () => {
     document.body.appendChild(container);
     const calls: number[] = [];
     const view = new TreeView(container, { onValueHover: () => calls.push(1) });
-    view.setValue({ name: "jay" });
-    // Open an edit
-    const valueEl = container.querySelector(".json-string") as HTMLElement;
-    valueEl.click();
+    // Use two keys so one string remains in the DOM while the other is being edited.
+    view.setValue({ name: "jay", tag: "admin" });
+    const nameEl = container.querySelector(
+      '.json-row[data-path="name"] .json-string'
+    ) as HTMLElement;
+    nameEl.click();
     const input = container.querySelector("input[type='text']") as HTMLInputElement;
     input.focus();
-    // Now hover a primitive — should be suppressed
-    const anyValue = container.querySelector(".json-string");
-    anyValue?.dispatchEvent(new MouseEvent("mouseenter"));
+    // 'tag' value is still rendered; hover it — must be suppressed by editing flag.
+    const tagValue = container.querySelector(
+      '.json-row[data-path="tag"] .json-string'
+    ) as HTMLElement;
+    expect(tagValue).not.toBeNull();
+    tagValue.dispatchEvent(new MouseEvent("mouseenter"));
     expect(calls).toEqual([]);
+  });
+
+  it("parsePathStr round-trips for keys containing a bracket character", async () => {
+    // Regression for C1: pathToString → data-path → parsePathStr (via copy
+    // button) must yield the same path even when a key contains ']'.
+    // CSS attribute selectors with `]` in the value are awkward; iterate manually.
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const view = new TreeView(container, {});
+    view.setValue({ "weird]key": "secret" });
+    const rows = Array.from(container.querySelectorAll<HTMLElement>(".json-row"));
+    const row = rows.find((r) => r.getAttribute("data-path") === '["weird]key"]');
+    expect(row).toBeDefined();
+    const btn = row!.querySelector(".json-copy-btn") as HTMLButtonElement;
+    btn.click();
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
+    expect(writeText).toHaveBeenCalledWith('"secret"');
+  });
+
+  it("calls onBeforeRender before each render", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const calls: number[] = [];
+    const view = new TreeView(container, { onBeforeRender: () => calls.push(1) });
+    view.setValue({ a: 1 });
+    view.setValue({ a: 2 });
+    expect(calls).toEqual([1, 1]);
   });
 });

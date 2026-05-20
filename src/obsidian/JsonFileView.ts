@@ -139,6 +139,7 @@ export class JsonFileView extends TextFileView {
         autoCollapseDepth: this.settings.autoCollapseDepth,
         onChange: (newValue) => this.handleTreeChange(newValue),
         onPathClick: (path) => this.breadcrumb.setPath(path),
+        onBeforeRender: () => this.tooltip.hide(),
         onValueHover: (target, path, value) => {
           this.tooltip.show(target, tooltipContentForValue(value, path));
           target.addEventListener("mouseleave", () => this.tooltip.hide(), { once: true });

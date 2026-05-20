@@ -11,6 +11,7 @@ export interface TreeViewOptions {
   onChange?: (newValue: JsonValue) => void;
   onPathClick?: (path: JsonPath) => void;
   onValueHover?: (target: HTMLElement, path: JsonPath, value: JsonValue) => void;
+  onBeforeRender?: () => void;
 }
 
 const FLASH_MS = 600;
@@ -40,6 +41,7 @@ export class TreeView {
   }
 
   private render(): void {
+    this.opts.onBeforeRender?.();
     this.container.innerHTML = "";
     const el = renderTree(this.current, {
       readonly: this.opts.readonly,
@@ -167,14 +169,31 @@ function parsePathStr(pathStr: string): JsonPath {
       i++;
     } else if (c === "[") {
       flushString();
-      const close = pathStr.indexOf("]", i);
-      const inner = pathStr.slice(i + 1, close);
-      if (inner.startsWith('"')) {
-        segments.push(inner.slice(1, -1).replace(/\\"/g, '"'));
+      // Quoted-key form: ["..."]. Scan for the closing `"]` and respect
+      // escaped quotes (\"). A bare `]` inside the key value would otherwise
+      // be misread as the structural close and corrupt the segment.
+      if (pathStr[i + 1] === '"') {
+        let j = i + 2;
+        let raw = "";
+        while (j < pathStr.length) {
+          if (pathStr[j] === "\\" && pathStr[j + 1] === '"') {
+            raw += '"';
+            j += 2;
+          } else if (pathStr[j] === '"' && pathStr[j + 1] === "]") {
+            break;
+          } else {
+            raw += pathStr[j];
+            j++;
+          }
+        }
+        segments.push(raw);
+        i = j + 2; // skip `"]`
       } else {
+        const close = pathStr.indexOf("]", i);
+        const inner = pathStr.slice(i + 1, close);
         segments.push(parseInt(inner, 10));
+        i = close + 1;
       }
-      i = close + 1;
     } else {
       buf += c;
       i++;
