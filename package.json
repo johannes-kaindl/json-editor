@@ -1,6 +1,6 @@
 {
   "name": "obsidian-json-editor",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "View and edit JSON files in Obsidian with a Tree↔Source toggle.",
   "main": "main.js",
   "scripts": {

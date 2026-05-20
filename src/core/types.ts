@@ -20,6 +20,8 @@ export interface RenderOptions {
   autoCollapseDepth?: number;
   onValueClick?: (path: JsonPath, currentValue: JsonValue) => void;
   onCollapse?: (path: JsonPath, collapsed: boolean) => void;
+  onPathClick?: (path: JsonPath) => void;
+  onValueHover?: (target: HTMLElement, path: JsonPath, value: JsonValue) => void;
 }
 
 export interface SerializeOptions {
