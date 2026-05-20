@@ -26,7 +26,11 @@ function extractPosition(text: string, message: string): { line: number; col: nu
   if (lineColMatch) {
     return { line: parseInt(lineColMatch[1], 10), col: parseInt(lineColMatch[2], 10) };
   }
-  // Fallback: extract the unexpected token and find its last occurrence in text.
+  // Fallback for Node >=24 V8 messages that omit position info ("Unexpected
+  // token 'X', ... is not valid JSON"). lastIndexOf is heuristic: it can
+  // misidentify the position when the token character also appears earlier
+  // in legal content (e.g. inside a string literal). Good enough for the
+  // error-banner UX — known limitation, parser-rewrite not in scope.
   const tokenMatch = /Unexpected token '([^']+)'/i.exec(message);
   if (tokenMatch) {
     const offset = text.lastIndexOf(tokenMatch[1]);
