@@ -24,6 +24,7 @@ export class Plugin {
   registerView(type: string, factory: (leaf: WorkspaceLeaf) => unknown) {
     this.views[type] = factory;
   }
+  registerExtensions(_extensions: string[], _viewType: string) {}
   registerMarkdownCodeBlockProcessor(
     lang: string,
     handler: (src: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => void
