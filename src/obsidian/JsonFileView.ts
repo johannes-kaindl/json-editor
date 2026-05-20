@@ -5,6 +5,8 @@ import type { JsonValue } from "../core/types";
 import { TreeView } from "./TreeView";
 import { SourceView } from "./SourceView";
 import type { JsonEditorSettings } from "./SettingsTab";
+import { Breadcrumb } from "./Breadcrumb";
+import { Tooltip, tooltipContentForValue } from "./Tooltip";
 
 export const JSON_VIEW_TYPE = "json-editor-view";
 
@@ -22,6 +24,8 @@ export class JsonFileView extends TextFileView {
   private sourcePillEl!: HTMLButtonElement;
   private bodyEl!: HTMLDivElement;
   private bannerEl: HTMLDivElement | null = null;
+  private breadcrumb!: Breadcrumb;
+  private tooltip!: Tooltip;
 
   constructor(leaf: WorkspaceLeaf, private settings: JsonEditorSettings) {
     super(leaf);
@@ -69,6 +73,7 @@ export class JsonFileView extends TextFileView {
     this.invalid = false;
     this.clearBanner();
     this.bodyEl.innerHTML = "";
+    this.breadcrumb.setPath([]);
   }
 
   private buildChrome(): void {
@@ -89,6 +94,14 @@ export class JsonFileView extends TextFileView {
     this.bodyEl.className = "json-editor-body";
 
     this.contentEl.appendChild(this.toggleEl);
+
+    this.breadcrumb = new Breadcrumb({
+      onSegmentClick: (subPath) => this.treeView?.scrollToPath(subPath),
+    });
+    this.contentEl.appendChild(this.breadcrumb.getElement());
+
+    this.tooltip = new Tooltip();
+
     this.contentEl.appendChild(this.bodyEl);
   }
 
@@ -125,6 +138,11 @@ export class JsonFileView extends TextFileView {
         markerStyle: this.settings.markerStyle,
         autoCollapseDepth: this.settings.autoCollapseDepth,
         onChange: (newValue) => this.handleTreeChange(newValue),
+        onPathClick: (path) => this.breadcrumb.setPath(path),
+        onValueHover: (target, path, value) => {
+          this.tooltip.show(target, tooltipContentForValue(value, path));
+          target.addEventListener("mouseleave", () => this.tooltip.hide(), { once: true });
+        },
       });
       this.treeView.setValue(this.currentValue);
     } else {
@@ -191,5 +209,9 @@ export class JsonFileView extends TextFileView {
   private clearBanner(): void {
     this.bannerEl?.remove();
     this.bannerEl = null;
+  }
+
+  onunload(): void {
+    this.tooltip.destroy();
   }
 }

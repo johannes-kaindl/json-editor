@@ -121,4 +121,62 @@ describe("JsonFileView", () => {
     expect(v.contentEl.querySelector(".json-tree-root")).not.toBeNull();
     expect(v.contentEl.querySelector(".json-empty-state")).toBeNull();
   });
+
+  it("renders a .json-breadcrumb between the toggle and the body", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"a":1}', false);
+    const children = Array.from(v.contentEl.children);
+    const toggleIdx = children.findIndex((c) => c.classList.contains("json-mode-toggle"));
+    const breadcrumbIdx = children.findIndex((c) => c.classList.contains("json-breadcrumb"));
+    const bodyIdx = children.findIndex((c) => c.classList.contains("json-editor-body"));
+    expect(toggleIdx).toBeGreaterThanOrEqual(0);
+    expect(breadcrumbIdx).toBeGreaterThan(toggleIdx);
+    expect(bodyIdx).toBeGreaterThan(breadcrumbIdx);
+  });
+
+  it("breadcrumb starts at 'root' on first render", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"a":1}', false);
+    const segs = v.contentEl.querySelectorAll(".json-breadcrumb .bc-seg");
+    expect(segs.length).toBe(1);
+    expect(segs[0].textContent).toBe("root");
+  });
+
+  it("clicking a row updates the breadcrumb path", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"name":"jay"}', false);
+    const row = v.contentEl.querySelector('.json-row[data-path="name"]') as HTMLElement;
+    row.click();
+    const segs = v.contentEl.querySelectorAll(".json-breadcrumb .bc-seg");
+    expect(segs.length).toBe(2);
+    expect(segs[1].textContent).toBe("name");
+  });
+
+  it("clicking a breadcrumb segment invokes scrollToPath on the tree", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"users":[{"name":"jay"}]}', false);
+    // Click the row to populate the breadcrumb
+    const row = v.contentEl.querySelector('.json-row[data-path="users[0].name"]') as HTMLElement;
+    row.click();
+    // Now click the 'users' segment in the breadcrumb (second segment after root)
+    const segs = v.contentEl.querySelectorAll<HTMLElement>(".json-breadcrumb .bc-seg");
+    segs[1].click();
+    const usersRow = v.contentEl.querySelector('.json-row[data-path="users"]') as HTMLElement;
+    expect(usersRow.classList.contains("json-row-flash")).toBe(true);
+  });
+
+  it("removes the breadcrumb DOM in clear()", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"a":1}', false);
+    v.clear();
+    // Breadcrumb element still exists (it's part of chrome, not body), but should have reset to root
+    const segs = v.contentEl.querySelectorAll(".json-breadcrumb .bc-seg");
+    expect(segs.length).toBe(1);
+    expect(segs[0].textContent).toBe("root");
+  });
 });
