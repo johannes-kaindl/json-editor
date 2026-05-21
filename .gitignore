@@ -11,6 +11,9 @@ main.js
 # Archived v0.1.5 (local reference only, not versioned)
 _archiv/
 
+# Local agent/session orientation — not part of public repo
+AGENTS.md
+
 # Python
 __pycache__/
 *.pyc
