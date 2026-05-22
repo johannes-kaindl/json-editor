@@ -171,4 +171,12 @@ describe("renderTree", () => {
     expect(pathCalls).toEqual([["name"]]);
     expect(valueCalls).toEqual([["name"]]);
   });
+
+  it("annotates containers with a data-depth attribute", () => {
+    const el = renderTree({ a: { b: 1 } }, {});
+    const root = el.querySelector(".json-container") as HTMLElement;
+    expect(root.dataset.depth).toBe("0");
+    const nested = el.querySelectorAll(".json-container")[1] as HTMLElement;
+    expect(nested.dataset.depth).toBe("1");
+  });
 });

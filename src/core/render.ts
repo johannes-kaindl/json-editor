@@ -82,6 +82,7 @@ function renderObject(
   }
   const container = document.createElement("div");
   container.className = "json-container";
+  container.dataset.depth = String(depth);
 
   // toggle is a direct child of container so that toggle.parentElement === container,
   // which also contains json-content as a direct child — this is what the toggle test expects.
@@ -152,6 +153,7 @@ function renderArray(
   }
   const container = document.createElement("div");
   container.className = "json-container";
+  container.dataset.depth = String(depth);
 
   // toggle is a direct child of container — same reasoning as renderObject.
   const toggle = document.createElement("span");
