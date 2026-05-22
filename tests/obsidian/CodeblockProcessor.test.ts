@@ -46,4 +46,15 @@ describe("renderJsonCodeblock", () => {
     expect(el.querySelector(".json-tree-root")).not.toBeNull();
     expect(el.querySelector(".json-bracket")?.textContent).toBe("{}");
   });
+
+  it("wraps valid JSON in a .json-codeblock card with a header label", () => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    renderJsonCodeblock('{"a": 1}', el, fakeCtx(), DEFAULT_SETTINGS);
+    const card = el.querySelector(".json-codeblock");
+    expect(card).not.toBeNull();
+    expect(card?.querySelector(".json-codeblock-head")).not.toBeNull();
+    expect(card?.querySelector(".json-codeblock-copy")).not.toBeNull();
+    expect(card?.querySelector(".json-tree-root")).not.toBeNull();
+  });
 });

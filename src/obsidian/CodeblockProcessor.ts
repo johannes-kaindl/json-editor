@@ -14,12 +14,48 @@ export function renderJsonCodeblock(
     renderFallback(source, el, parsed.error);
     return;
   }
+  const card = document.createElement("div");
+  card.className = "json-codeblock";
+
+  const head = document.createElement("div");
+  head.className = "json-codeblock-head";
+  const label = document.createElement("span");
+  label.className = "json-codeblock-label";
+  label.textContent = "JSON";
+  head.appendChild(label);
+  head.appendChild(makeCopyButton(source));
+  card.appendChild(head);
+
   const tree = renderTree(parsed.value, {
     readonly: true,
     markerStyle: settings.markerStyle,
     autoCollapseDepth: settings.autoCollapseDepth,
   });
-  el.appendChild(tree);
+  card.appendChild(tree);
+  el.appendChild(card);
+}
+
+function makeCopyButton(source: string): HTMLButtonElement {
+  const btn = document.createElement("button");
+  btn.className = "json-codeblock-copy";
+  btn.type = "button";
+  btn.textContent = "Copy";
+  btn.addEventListener("click", () => {
+    navigator.clipboard?.writeText(source).then(
+      () => {
+        btn.classList.add("copied");
+        btn.textContent = "Copied";
+        setTimeout(() => {
+          btn.classList.remove("copied");
+          btn.textContent = "Copy";
+        }, 800);
+      },
+      () => {
+        /* clipboard unavailable — no UI */
+      }
+    );
+  });
+  return btn;
 }
 
 function renderFallback(source: string, el: HTMLElement, errorMessage: string): void {
