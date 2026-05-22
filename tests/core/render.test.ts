@@ -194,4 +194,35 @@ describe("renderTree", () => {
     toggle.click();
     expect(toggle.classList.contains("is-open")).toBe(false);
   });
+
+  it("renders a collapse chip with the child count for objects", () => {
+    const el = renderTree({ a: { x: 1, y: 2 } }, {});
+    const nested = el.querySelectorAll(".json-container")[1] as HTMLElement;
+    const chip = nested.querySelector(".json-collapse-chip") as HTMLElement;
+    expect(chip).not.toBeNull();
+    expect(chip.textContent).toBe("{ 2 keys }");
+  });
+
+  it("renders a singular collapse chip for arrays with one item", () => {
+    const el = renderTree({ a: [99] }, {});
+    const nested = el.querySelectorAll(".json-container")[1] as HTMLElement;
+    const chip = nested.querySelector(".json-collapse-chip") as HTMLElement;
+    expect(chip.textContent).toBe("[ 1 item ]");
+  });
+
+  it("adds is-collapsed to the container when collapsed", () => {
+    const el = renderTree({ a: { b: 1 } }, {});
+    document.body.appendChild(el);
+    const nested = el.querySelectorAll(".json-container")[1] as HTMLElement;
+    const toggle = nested.querySelector(".json-collapse-toggle") as HTMLElement;
+    expect(nested.classList.contains("is-collapsed")).toBe(false);
+    toggle.click();
+    expect(nested.classList.contains("is-collapsed")).toBe(true);
+  });
+
+  it("starts collapsed containers with is-collapsed set", () => {
+    const el = renderTree({ a: { b: { c: 1 } } }, { autoCollapseDepth: 1 });
+    const collapsed = el.querySelector(".json-container.is-collapsed");
+    expect(collapsed).not.toBeNull();
+  });
 });

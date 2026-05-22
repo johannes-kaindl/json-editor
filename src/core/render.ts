@@ -90,18 +90,32 @@ function renderObject(
   toggle.className = "json-collapse-toggle";
   toggle.appendChild(makeChevron());
   container.appendChild(toggle);
-  container.appendChild(document.createTextNode("{"));
+
+  const openBracket = document.createElement("span");
+  openBracket.className = "json-bracket";
+  openBracket.textContent = "{";
+  container.appendChild(openBracket);
+
+  const chip = document.createElement("span");
+  chip.className = "json-collapse-chip";
+  chip.textContent = collapseChipLabel(entries.length, "object");
+  container.appendChild(chip);
 
   const content = document.createElement("div");
   content.className = "json-content";
   const shouldCollapse =
     opts.autoCollapseDepth !== undefined && depth > opts.autoCollapseDepth;
-  if (shouldCollapse) content.classList.add("collapsed");
-  if (!shouldCollapse) toggle.classList.add("is-open");
+  if (shouldCollapse) {
+    content.classList.add("collapsed");
+    container.classList.add("is-collapsed");
+  } else {
+    toggle.classList.add("is-open");
+  }
 
   toggle.addEventListener("click", (e) => {
     e.stopPropagation();
     const collapsed = content.classList.toggle("collapsed");
+    container.classList.toggle("is-collapsed", collapsed);
     toggle.classList.toggle("is-open", !collapsed);
     opts.onCollapse?.(path, collapsed);
   });
@@ -160,18 +174,32 @@ function renderArray(
   toggle.className = "json-collapse-toggle";
   toggle.appendChild(makeChevron());
   container.appendChild(toggle);
-  container.appendChild(document.createTextNode("["));
+
+  const openBracket = document.createElement("span");
+  openBracket.className = "json-bracket";
+  openBracket.textContent = "[";
+  container.appendChild(openBracket);
+
+  const chip = document.createElement("span");
+  chip.className = "json-collapse-chip";
+  chip.textContent = collapseChipLabel(arr.length, "array");
+  container.appendChild(chip);
 
   const content = document.createElement("div");
   content.className = "json-content";
   const shouldCollapse =
     opts.autoCollapseDepth !== undefined && depth > opts.autoCollapseDepth;
-  if (shouldCollapse) content.classList.add("collapsed");
-  if (!shouldCollapse) toggle.classList.add("is-open");
+  if (shouldCollapse) {
+    content.classList.add("collapsed");
+    container.classList.add("is-collapsed");
+  } else {
+    toggle.classList.add("is-open");
+  }
 
   toggle.addEventListener("click", (e) => {
     e.stopPropagation();
     const collapsed = content.classList.toggle("collapsed");
+    container.classList.toggle("is-collapsed", collapsed);
     toggle.classList.toggle("is-open", !collapsed);
     opts.onCollapse?.(path, collapsed);
   });
@@ -205,6 +233,12 @@ function renderArray(
   closeBracket.textContent = "]";
   container.appendChild(closeBracket);
   parent.appendChild(container);
+}
+
+function collapseChipLabel(count: number, kind: "object" | "array"): string {
+  const noun = kind === "object" ? "key" : "item";
+  const text = `${count} ${noun}${count === 1 ? "" : "s"}`;
+  return kind === "object" ? `{ ${text} }` : `[ ${text} ]`;
 }
 
 function makeChevron(): SVGElement {
