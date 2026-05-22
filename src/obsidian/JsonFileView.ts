@@ -19,6 +19,7 @@ export class JsonFileView extends TextFileView {
   private currentValue: JsonValue | null = null;
   private invalid = false;
 
+  private toolbarEl!: HTMLDivElement;
   private toggleEl!: HTMLDivElement;
   private treePillEl!: HTMLButtonElement;
   private sourcePillEl!: HTMLButtonElement;
@@ -93,12 +94,15 @@ export class JsonFileView extends TextFileView {
     this.bodyEl = document.createElement("div");
     this.bodyEl.className = "json-editor-body";
 
-    this.contentEl.appendChild(this.toggleEl);
-
     this.breadcrumb = new Breadcrumb({
       onSegmentClick: (subPath) => this.treeView?.scrollToPath(subPath),
     });
-    this.contentEl.appendChild(this.breadcrumb.getElement());
+
+    this.toolbarEl = document.createElement("div");
+    this.toolbarEl.className = "json-toolbar";
+    this.toolbarEl.appendChild(this.breadcrumb.getElement());
+    this.toolbarEl.appendChild(this.toggleEl);
+    this.contentEl.appendChild(this.toolbarEl);
 
     this.tooltip = new Tooltip();
 
