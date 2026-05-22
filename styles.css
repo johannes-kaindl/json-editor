@@ -1,259 +1,481 @@
 /* obsidian-json-editor — styles
-   All colors reference Obsidian CSS variables so the plugin follows the active theme. */
+   Direction B visual redesign. Theme-aware: every colour derives from an
+   Obsidian CSS variable; hardcoded values appear only as var() fallbacks. */
 
-/* ─── Mode toggle ─────────────────────────────────────────────────── */
-.json-mode-toggle {
+/* ─── Design tokens ───────────────────────────────────────────────────
+   Scoped to the plugin's top-level surfaces; inherited by descendants.
+   The tooltip and code-block embeds live outside the file view, so each
+   plugin root declares the tokens itself. */
+.json-toolbar,
+.json-editor-body,
+.json-error-banner,
+.json-codeblock,
+.json-tooltip {
+  --jv-bg: var(--background-primary);
+  --jv-bg-panel: var(--background-secondary);
+  --jv-bg-inset: var(--background-secondary-alt, var(--background-secondary));
+  --jv-border: var(--background-modifier-border);
+  --jv-border-hover: var(--background-modifier-border-hover, var(--background-modifier-border));
+  --jv-hover: var(--background-modifier-hover);
+  --jv-fg: var(--text-normal);
+  --jv-fg-muted: var(--text-muted);
+  --jv-fg-faint: var(--text-faint);
+  --jv-accent: var(--interactive-accent);
+  --jv-accent-text: var(--text-on-accent);
+
+  --jv-syntax-key: var(--color-cyan, #4ec9b0);
+  --jv-syntax-string: var(--color-green, #6a9955);
+  --jv-syntax-number: var(--color-blue, #569cd6);
+  --jv-syntax-boolean: var(--color-purple, #c586c0);
+  --jv-syntax-null: var(--text-faint);
+  --jv-syntax-punct: var(--text-muted);
+
+  --jv-space-1: 2px;
+  --jv-space-2: 4px;
+  --jv-space-3: 6px;
+  --jv-space-4: 8px;
+  --jv-space-5: 12px;
+  --jv-space-6: 16px;
+
+  --jv-radius-sm: 4px;
+  --jv-radius-md: 6px;
+  --jv-radius-lg: 8px;
+
+  --jv-nest-tint: color-mix(in srgb, var(--background-modifier-border) 22%, transparent);
+
+  --jv-dur-fast: 120ms;
+  --jv-dur-base: 150ms;
+  --jv-ease: ease-out;
+}
+
+/* ─── Toolbar ─────────────────────────────────────────────────────────
+   Unified bar: breadcrumb on the left, mode toggle on the right. */
+.json-toolbar {
   display: flex;
-  gap: 0;
-  justify-content: flex-end;
-  margin: 8px 12px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--jv-space-5);
+  padding: var(--jv-space-4) var(--jv-space-5);
+  background: var(--jv-bg-panel);
+  border-bottom: 1px solid var(--jv-border);
 }
-
-.json-mode-pill {
-  padding: 4px 14px;
-  border: 1px solid var(--background-modifier-border);
-  background: var(--background-secondary);
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: var(--font-ui-small);
-  font-family: var(--font-interface);
-}
-.json-mode-pill:first-child { border-radius: 6px 0 0 6px; }
-.json-mode-pill:last-child { border-radius: 0 6px 6px 0; border-left: none; }
-.json-mode-pill:hover:not(:disabled) { background: var(--background-modifier-hover); }
-.json-mode-pill.active {
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
-  border-color: var(--interactive-accent);
-}
-.json-mode-pill:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ─── Breadcrumb ──────────────────────────────────────────────────── */
 .json-breadcrumb {
-  margin: 0 12px 8px;
-  padding: 4px 10px;
-  font-family: var(--font-interface);
-  font-size: var(--font-ui-smaller);
-  color: var(--text-muted);
-  background: var(--background-secondary);
-  border-radius: 4px;
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px;
-  min-height: 22px;
+  gap: var(--jv-space-2);
+  font-family: var(--font-interface);
+  font-size: var(--font-ui-smaller);
+  color: var(--jv-fg-muted);
 }
 .bc-seg {
+  padding: var(--jv-space-1) var(--jv-space-3);
+  border-radius: var(--jv-radius-sm);
+  color: var(--jv-fg-muted);
   cursor: pointer;
-  padding: 1px 4px;
-  border-radius: 3px;
+  transition: background var(--jv-dur-fast) var(--jv-ease),
+              color var(--jv-dur-fast) var(--jv-ease);
 }
 .bc-seg:hover {
-  background: var(--background-modifier-hover);
-  color: var(--text-normal);
+  background: var(--jv-hover);
+  color: var(--jv-fg);
 }
-.bc-seg-terminal {
-  color: var(--text-normal);
+.bc-seg-terminal,
+.bc-seg-terminal:hover {
+  background: var(--jv-accent);
+  color: var(--jv-accent-text);
   font-weight: 600;
 }
 .bc-sep {
-  opacity: 0.5;
+  color: var(--jv-fg-faint);
   cursor: default;
+  user-select: none;
 }
 
-/* ─── Error banner ────────────────────────────────────────────────── */
-.json-error-banner {
-  margin: 4px 12px 8px;
-  padding: 8px 12px;
-  border-left: 3px solid var(--text-error, #d9534f);
-  background: var(--background-modifier-error, rgba(217, 83, 79, 0.1));
-  color: var(--text-error, #d9534f);
-  font-family: var(--font-monospace);
-  font-size: var(--font-ui-smaller);
-  border-radius: 4px;
+/* ─── Mode toggle ─────────────────────────────────────────────────────
+   Segmented control. */
+.json-mode-toggle {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: var(--jv-space-1);
+  padding: var(--jv-space-1);
+  background: var(--jv-bg-inset);
+  border: 1px solid var(--jv-border);
+  border-radius: var(--jv-radius-md);
 }
-
-/* ─── Empty-state ─────────────────────────────────────────────────── */
-.json-empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 48px 24px;
-  color: var(--text-muted);
-}
-.json-empty-state-init {
-  padding: 6px 16px;
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
+.json-mode-pill {
+  padding: var(--jv-space-2) var(--jv-space-5);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--jv-radius-sm);
+  background: transparent;
+  color: var(--jv-fg-muted);
   cursor: pointer;
+  font-size: var(--font-ui-small);
   font-family: var(--font-interface);
+  transition: background var(--jv-dur-fast) var(--jv-ease),
+              color var(--jv-dur-fast) var(--jv-ease);
 }
-.json-empty-state-init:hover { background: var(--interactive-accent-hover); }
+.json-mode-pill:hover:not(:disabled):not(.active) {
+  color: var(--jv-fg);
+}
+.json-mode-pill.active {
+  background: var(--jv-accent);
+  color: var(--jv-accent-text);
+}
+.json-mode-pill:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 
 /* ─── Editor body ─────────────────────────────────────────────────── */
 .json-editor-body {
-  padding: 12px;
-  font-size: var(--font-ui-small);
-  line-height: 1.7;
+  padding: var(--jv-space-5);
+  background: var(--jv-bg);
 }
 
-/* ─── Tree styling ────────────────────────────────────────────────── */
+/* ─── Tree ────────────────────────────────────────────────────────── */
 .json-tree-root {
-  color: var(--text-normal);
   font-family: var(--font-monospace);
+  font-size: var(--font-ui-small);
+  line-height: 1.6;
+  color: var(--jv-fg);
 }
 .json-container {
   display: block;
 }
-.json-collapse-toggle {
-  cursor: pointer;
-  user-select: none;
-  display: inline-block;
-  width: 12px;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 10px;
+
+/* Nested blocks: a subtle tint that deepens as overlays stack.
+   Capped at depth 3 — deeper containers sit on the depth-3 tint already. */
+.json-container[data-depth="1"]:not(.is-collapsed),
+.json-container[data-depth="2"]:not(.is-collapsed),
+.json-container[data-depth="3"]:not(.is-collapsed) {
+  background: var(--jv-nest-tint);
+  border-radius: var(--jv-radius-md);
+  padding: var(--jv-space-2) var(--jv-space-3);
+  margin: var(--jv-space-2) 0;
 }
-.json-collapse-toggle:hover { color: var(--text-normal); }
 
 .json-content {
   display: block;
-  padding-left: 18px;
-  border-left: 1px solid var(--background-modifier-border);
-  margin-left: 5px;
+  padding-left: var(--jv-space-5);
+  border-left: 2px solid var(--jv-border);
+  margin-left: var(--jv-space-3);
   max-height: 5000px;
   opacity: 1;
   overflow: hidden;
-  transition: max-height 150ms ease-out, opacity 100ms ease-out;
+  transition: max-height var(--jv-dur-base) var(--jv-ease),
+              opacity var(--jv-dur-fast) var(--jv-ease);
 }
 .json-content.collapsed {
   max-height: 0;
   opacity: 0;
 }
-@media (prefers-reduced-motion: reduce) {
-  .json-content { transition: none; }
+
+/* ─── Collapse toggle & chip ──────────────────────────────────────── */
+.json-collapse-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--jv-fg-faint);
+}
+.json-collapse-toggle:hover {
+  color: var(--jv-fg);
+}
+.json-collapse-toggle svg {
+  transition: transform var(--jv-dur-base) var(--jv-ease);
+}
+.json-collapse-toggle.is-open svg {
+  transform: rotate(90deg);
 }
 
+.json-collapse-chip {
+  display: none;
+}
+.json-container.is-collapsed > .json-collapse-chip {
+  display: inline-block;
+  margin-left: var(--jv-space-2);
+  padding: var(--jv-space-1) var(--jv-space-3);
+  border-radius: var(--jv-radius-lg);
+  background: var(--jv-bg-inset);
+  color: var(--jv-fg-muted);
+  font-size: 0.85em;
+}
+/* When collapsed, the chip stands in for the brackets + children. */
+.json-container.is-collapsed > .json-bracket {
+  display: none;
+}
+
+/* ─── Row ─────────────────────────────────────────────────────────── */
 .json-row {
   display: flex;
-  align-items: center;
-  padding: 3px 6px;
-  border-radius: 3px;
-  transition: background 80ms ease-out;
+  align-items: flex-start;
+  padding: var(--jv-space-1) var(--jv-space-3);
+  border-radius: var(--jv-radius-sm);
   position: relative;
+  transition: background var(--jv-dur-fast) var(--jv-ease);
 }
 .json-row:hover {
-  background: var(--background-modifier-hover);
+  background: color-mix(in srgb, var(--jv-accent) 8%, transparent);
+  box-shadow: inset 2px 0 0 0 var(--jv-accent);
+}
+.json-row-flash {
+  background: var(--jv-accent) !important;
+  color: var(--jv-accent-text) !important;
+  box-shadow: none !important;
 }
 
 .json-key {
-  color: var(--text-accent, var(--color-cyan, #4ec9b0));
+  color: var(--jv-syntax-key);
   font-family: var(--font-interface);
   font-weight: 600;
-  margin-right: 6px;
+  margin-right: var(--jv-space-3);
 }
-.json-bracket { color: var(--text-muted); }
-.json-index   { color: var(--text-faint); font-size: 0.9em; margin-right: 4px; font-family: var(--font-monospace); }
-.json-marker  { color: var(--text-faint); margin-right: 4px; opacity: 0.5; font-family: var(--font-monospace); }
+.json-bracket {
+  color: var(--jv-syntax-punct);
+}
+.json-index {
+  color: var(--jv-fg-faint);
+  font-size: 0.9em;
+  margin-right: var(--jv-space-2);
+  font-family: var(--font-monospace);
+}
+.json-marker {
+  color: var(--jv-fg-faint);
+  margin-right: var(--jv-space-2);
+  opacity: 0.6;
+  font-family: var(--font-monospace);
+}
 
-.json-string  { color: var(--color-green, #6a9955); word-break: break-word; }
-.json-number  { color: var(--color-blue, #569cd6); }
-.json-boolean { color: var(--color-purple, #c586c0); }
-.json-null    { color: var(--text-faint); font-style: italic; }
+/* ─── Values ──────────────────────────────────────────────────────── */
+.json-string {
+  color: var(--jv-syntax-string);
+  word-break: break-word;
+}
+.json-number {
+  color: var(--jv-syntax-number);
+}
+.json-boolean {
+  color: var(--jv-syntax-boolean);
+}
+.json-null {
+  color: var(--jv-syntax-null);
+  font-style: italic;
+}
 
 .json-editable {
   cursor: pointer;
   border-bottom: 1px dotted transparent;
 }
 .json-editable:hover {
-  border-bottom-color: var(--text-muted);
+  border-bottom-color: var(--jv-fg-muted);
 }
 
 .json-inline-edit {
   font-family: var(--font-monospace);
   font-size: inherit;
-  padding: 1px 4px;
-  border: 1px solid var(--interactive-accent);
-  border-radius: 3px;
-  background: var(--background-primary);
-  color: var(--text-normal);
+  padding: var(--jv-space-1) var(--jv-space-3);
+  border: 1.5px solid var(--jv-accent);
+  border-radius: var(--jv-radius-sm);
+  background: var(--jv-bg);
+  color: var(--jv-fg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--jv-accent) 15%, transparent);
 }
 
 /* ─── Copy button ─────────────────────────────────────────────────── */
 .json-copy-btn {
   margin-left: auto;
-  padding: 0 5px;
-  font-size: 11px;
+  padding: 0 var(--jv-space-3);
+  font-size: 0.85em;
   background: transparent;
-  color: var(--text-muted);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 3px;
+  color: var(--jv-fg-muted);
+  border: 1px solid var(--jv-border);
+  border-radius: var(--jv-radius-sm);
   cursor: pointer;
   opacity: 0;
-  transition: opacity 100ms ease-out, color 100ms ease-out;
+  transition: opacity var(--jv-dur-fast) var(--jv-ease),
+              color var(--jv-dur-fast) var(--jv-ease),
+              background var(--jv-dur-fast) var(--jv-ease);
 }
 .json-row:hover .json-copy-btn {
-  opacity: 0.6;
+  opacity: 0.7;
 }
 .json-copy-btn:hover {
   opacity: 1 !important;
-  color: var(--text-normal);
-  background: var(--background-modifier-hover);
+  color: var(--jv-fg);
+  background: var(--jv-hover);
 }
 .json-copy-btn.copied {
-  color: var(--text-success, var(--color-green, #6a9955));
+  color: var(--text-success, var(--jv-syntax-string));
   opacity: 1 !important;
 }
 
-/* ─── Row flash (segment jump) ────────────────────────────────────── */
-.json-row-flash {
-  background: var(--interactive-accent) !important;
-  color: var(--text-on-accent) !important;
-  transition: background 150ms ease-out;
+/* ─── Error banner ────────────────────────────────────────────────── */
+.json-error-banner {
+  margin: var(--jv-space-4) var(--jv-space-5);
+  padding: var(--jv-space-4) var(--jv-space-5);
+  background: color-mix(in srgb, var(--text-error) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-error) 35%, transparent);
+  border-left: 3px solid var(--text-error);
+  border-radius: var(--jv-radius-md);
+  color: var(--text-error);
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+}
+.json-error-banner::before {
+  content: "⚠";
+  margin-right: var(--jv-space-3);
+}
+
+/* ─── Empty state ─────────────────────────────────────────────────── */
+.json-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--jv-space-5);
+  padding: 64px var(--jv-space-6);
+  color: var(--jv-fg-muted);
+}
+.json-empty-state::before {
+  content: "{ }";
+  font-family: var(--font-monospace);
+  font-size: 34px;
+  color: var(--jv-fg-faint);
+  border: 2px dashed var(--jv-border);
+  border-radius: var(--jv-radius-lg);
+  padding: var(--jv-space-4) var(--jv-space-6);
+}
+.json-empty-state-title {
+  color: var(--jv-fg);
+  font-weight: 600;
+  font-size: 1.1em;
+}
+.json-empty-state-hint {
+  color: var(--jv-fg-muted);
+  font-size: var(--font-ui-smaller);
+}
+.json-empty-state-init {
+  padding: var(--jv-space-3) var(--jv-space-6);
+  background: var(--jv-accent);
+  color: var(--jv-accent-text);
+  border: none;
+  border-radius: var(--jv-radius-md);
+  cursor: pointer;
+  font-family: var(--font-interface);
+}
+.json-empty-state-init:hover {
+  background: var(--interactive-accent-hover, var(--jv-accent));
 }
 
 /* ─── Tooltip ─────────────────────────────────────────────────────── */
 .json-tooltip {
   position: absolute;
   z-index: var(--layer-tooltip, 100);
-  padding: 6px 10px;
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
-  box-shadow: 0 2px 8px var(--background-modifier-box-shadow, rgba(0, 0, 0, 0.2));
+  padding: var(--jv-space-3) var(--jv-space-4);
+  background: var(--jv-bg-panel);
+  border: 1px solid var(--jv-border);
+  border-radius: var(--jv-radius-md);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
   font-size: var(--font-ui-smaller);
   max-width: 320px;
   pointer-events: none;
 }
-.json-tooltip[hidden] { display: none; }
+.json-tooltip[hidden] {
+  display: none;
+}
 .json-tooltip .tt-meta {
-  color: var(--text-muted);
-  margin-bottom: 3px;
+  margin-bottom: var(--jv-space-3);
+  color: var(--jv-fg-muted);
 }
 .json-tooltip .tt-type {
-  color: var(--text-accent);
+  display: inline-block;
+  padding: 0 var(--jv-space-3);
+  border-radius: var(--jv-radius-sm);
+  background: var(--jv-accent);
+  color: var(--jv-accent-text);
+  font-size: 0.85em;
   font-weight: 600;
+  text-transform: uppercase;
+}
+.json-tooltip .tt-path {
+  color: var(--jv-fg-muted);
 }
 .json-tooltip .tt-preview {
   font-family: var(--font-monospace);
-  color: var(--text-normal);
+  color: var(--jv-fg);
   word-break: break-word;
   white-space: pre-wrap;
 }
 
-/* ─── Codeblock fallback ──────────────────────────────────────────── */
-.json-codeblock-fallback {
-  position: relative;
+/* ─── Code-block embed ────────────────────────────────────────────── */
+.json-codeblock {
+  margin: var(--jv-space-4) 0;
+  border: 1px solid var(--jv-border);
+  border-radius: var(--jv-radius-md);
+  background: var(--jv-bg-inset);
+  overflow: hidden;
 }
-.json-codeblock-error-indicator {
-  position: absolute;
-  right: 8px;
-  top: 4px;
-  color: var(--text-error, #d9534f);
-  cursor: help;
-  font-size: 14px;
+.json-codeblock-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--jv-space-3) var(--jv-space-5);
+  background: var(--jv-bg-panel);
+  border-bottom: 1px solid var(--jv-border);
+}
+.json-codeblock-label {
+  font-size: 0.8em;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--jv-accent);
+}
+.json-codeblock.is-error .json-codeblock-label {
+  color: var(--text-error);
+}
+.json-codeblock-copy {
+  padding: 0 var(--jv-space-3);
+  background: transparent;
+  border: 1px solid var(--jv-border);
+  border-radius: var(--jv-radius-sm);
+  color: var(--jv-fg-muted);
+  font-size: 0.8em;
+  cursor: pointer;
+  transition: color var(--jv-dur-fast) var(--jv-ease),
+              background var(--jv-dur-fast) var(--jv-ease);
+}
+.json-codeblock-copy:hover {
+  color: var(--jv-fg);
+  background: var(--jv-hover);
+}
+.json-codeblock-copy.copied {
+  color: var(--text-success, var(--jv-syntax-string));
+}
+.json-codeblock-error {
+  padding: var(--jv-space-4) var(--jv-space-5);
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-error);
+}
+.json-codeblock .json-tree-root {
+  padding: var(--jv-space-4) var(--jv-space-5);
+}
+
+/* ─── Reduced motion ──────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .json-content,
+  .json-collapse-toggle svg,
+  .json-row,
+  .json-copy-btn,
+  .bc-seg,
+  .json-mode-pill,
+  .json-codeblock-copy {
+    transition: none;
+  }
 }
