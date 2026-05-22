@@ -179,4 +179,19 @@ describe("renderTree", () => {
     const nested = el.querySelectorAll(".json-container")[1] as HTMLElement;
     expect(nested.dataset.depth).toBe("1");
   });
+
+  it("renders the collapse toggle as an SVG chevron with is-open when expanded", () => {
+    const el = renderTree({ a: { b: 1 } }, {});
+    const toggle = el.querySelector(".json-collapse-toggle") as HTMLElement;
+    expect(toggle.querySelector("svg")).not.toBeNull();
+    expect(toggle.classList.contains("is-open")).toBe(true);
+  });
+
+  it("removes is-open from the toggle when collapsed", () => {
+    const el = renderTree({ a: { b: 1 } }, {});
+    document.body.appendChild(el);
+    const toggle = el.querySelector(".json-collapse-toggle") as HTMLElement;
+    toggle.click();
+    expect(toggle.classList.contains("is-open")).toBe(false);
+  });
 });

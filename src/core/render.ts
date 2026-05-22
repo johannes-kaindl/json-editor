@@ -88,7 +88,7 @@ function renderObject(
   // which also contains json-content as a direct child — this is what the toggle test expects.
   const toggle = document.createElement("span");
   toggle.className = "json-collapse-toggle";
-  toggle.textContent = "▼";
+  toggle.appendChild(makeChevron());
   container.appendChild(toggle);
   container.appendChild(document.createTextNode("{"));
 
@@ -97,12 +97,12 @@ function renderObject(
   const shouldCollapse =
     opts.autoCollapseDepth !== undefined && depth > opts.autoCollapseDepth;
   if (shouldCollapse) content.classList.add("collapsed");
-  if (shouldCollapse) toggle.textContent = "▶";
+  if (!shouldCollapse) toggle.classList.add("is-open");
 
   toggle.addEventListener("click", (e) => {
     e.stopPropagation();
     const collapsed = content.classList.toggle("collapsed");
-    toggle.textContent = collapsed ? "▶" : "▼";
+    toggle.classList.toggle("is-open", !collapsed);
     opts.onCollapse?.(path, collapsed);
   });
 
@@ -158,7 +158,7 @@ function renderArray(
   // toggle is a direct child of container — same reasoning as renderObject.
   const toggle = document.createElement("span");
   toggle.className = "json-collapse-toggle";
-  toggle.textContent = "▼";
+  toggle.appendChild(makeChevron());
   container.appendChild(toggle);
   container.appendChild(document.createTextNode("["));
 
@@ -167,12 +167,12 @@ function renderArray(
   const shouldCollapse =
     opts.autoCollapseDepth !== undefined && depth > opts.autoCollapseDepth;
   if (shouldCollapse) content.classList.add("collapsed");
-  if (shouldCollapse) toggle.textContent = "▶";
+  if (!shouldCollapse) toggle.classList.add("is-open");
 
   toggle.addEventListener("click", (e) => {
     e.stopPropagation();
     const collapsed = content.classList.toggle("collapsed");
-    toggle.textContent = collapsed ? "▶" : "▼";
+    toggle.classList.toggle("is-open", !collapsed);
     opts.onCollapse?.(path, collapsed);
   });
 
@@ -205,6 +205,23 @@ function renderArray(
   closeBracket.textContent = "]";
   container.appendChild(closeBracket);
   parent.appendChild(container);
+}
+
+function makeChevron(): SVGElement {
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "0 0 10 10");
+  svg.setAttribute("width", "9");
+  svg.setAttribute("height", "9");
+  const path = document.createElementNS(NS, "path");
+  path.setAttribute("d", "M3 1 L7 5 L3 9");
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", "currentColor");
+  path.setAttribute("stroke-width", "2");
+  path.setAttribute("stroke-linecap", "round");
+  path.setAttribute("stroke-linejoin", "round");
+  svg.appendChild(path);
+  return svg;
 }
 
 function markerFor(index: number, length: number): string {
