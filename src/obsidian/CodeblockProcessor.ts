@@ -26,10 +26,12 @@ export function renderJsonCodeblock(
   head.appendChild(makeCopyButton(source));
   card.appendChild(head);
 
+  const lineCount = source.split("\n").length;
+  const autoCollapseDepth = lineCount > 20 ? -1 : settings.autoCollapseDepth;
   const tree = renderTree(parsed.value, {
     readonly: true,
     markerStyle: settings.markerStyle,
-    autoCollapseDepth: settings.autoCollapseDepth,
+    autoCollapseDepth,
   });
   card.appendChild(tree);
   el.appendChild(card);
