@@ -111,6 +111,14 @@ describe("JsonFileView", () => {
     expect(v.contentEl.querySelector(".json-error-banner")).toBeNull();
   });
 
+  it("empty state has a title and a hint line", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData("", false);
+    expect(v.contentEl.querySelector(".json-empty-state-title")).not.toBeNull();
+    expect(v.contentEl.querySelector(".json-empty-state-hint")).not.toBeNull();
+  });
+
   it("initializes data as '{}' when the empty-state button is clicked", () => {
     const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
     document.body.appendChild(v.contentEl);
