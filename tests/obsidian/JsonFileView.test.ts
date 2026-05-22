@@ -111,6 +111,14 @@ describe("JsonFileView", () => {
     expect(v.contentEl.querySelector(".json-error-banner")).toBeNull();
   });
 
+  it("empty state has a title and a hint line", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData("", false);
+    expect(v.contentEl.querySelector(".json-empty-state-title")).not.toBeNull();
+    expect(v.contentEl.querySelector(".json-empty-state-hint")).not.toBeNull();
+  });
+
   it("initializes data as '{}' when the empty-state button is clicked", () => {
     const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
     document.body.appendChild(v.contentEl);
@@ -122,17 +130,19 @@ describe("JsonFileView", () => {
     expect(v.contentEl.querySelector(".json-empty-state")).toBeNull();
   });
 
-  it("renders a .json-breadcrumb between the toggle and the body", () => {
+  it("renders a .json-toolbar holding the breadcrumb and the mode toggle", () => {
     const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
     document.body.appendChild(v.contentEl);
     v.setViewData('{"a":1}', false);
+    const toolbar = v.contentEl.querySelector(".json-toolbar");
+    expect(toolbar).not.toBeNull();
+    expect(toolbar?.querySelector(".json-breadcrumb")).not.toBeNull();
+    expect(toolbar?.querySelector(".json-mode-toggle")).not.toBeNull();
     const children = Array.from(v.contentEl.children);
-    const toggleIdx = children.findIndex((c) => c.classList.contains("json-mode-toggle"));
-    const breadcrumbIdx = children.findIndex((c) => c.classList.contains("json-breadcrumb"));
+    const toolbarIdx = children.findIndex((c) => c.classList.contains("json-toolbar"));
     const bodyIdx = children.findIndex((c) => c.classList.contains("json-editor-body"));
-    expect(toggleIdx).toBeGreaterThanOrEqual(0);
-    expect(breadcrumbIdx).toBeGreaterThan(toggleIdx);
-    expect(bodyIdx).toBeGreaterThan(breadcrumbIdx);
+    expect(toolbarIdx).toBeGreaterThanOrEqual(0);
+    expect(bodyIdx).toBeGreaterThan(toolbarIdx);
   });
 
   it("breadcrumb starts at 'root' on first render", () => {

@@ -171,4 +171,58 @@ describe("renderTree", () => {
     expect(pathCalls).toEqual([["name"]]);
     expect(valueCalls).toEqual([["name"]]);
   });
+
+  it("annotates containers with a data-depth attribute", () => {
+    const el = renderTree({ a: { b: 1 } }, {});
+    const root = el.querySelector(".json-container") as HTMLElement;
+    expect(root.dataset.depth).toBe("0");
+    const nested = el.querySelectorAll(".json-container")[1] as HTMLElement;
+    expect(nested.dataset.depth).toBe("1");
+  });
+
+  it("renders the collapse toggle as an SVG chevron with is-open when expanded", () => {
+    const el = renderTree({ a: { b: 1 } }, {});
+    const toggle = el.querySelector(".json-collapse-toggle") as HTMLElement;
+    expect(toggle.querySelector("svg")).not.toBeNull();
+    expect(toggle.classList.contains("is-open")).toBe(true);
+  });
+
+  it("removes is-open from the toggle when collapsed", () => {
+    const el = renderTree({ a: { b: 1 } }, {});
+    document.body.appendChild(el);
+    const toggle = el.querySelector(".json-collapse-toggle") as HTMLElement;
+    toggle.click();
+    expect(toggle.classList.contains("is-open")).toBe(false);
+  });
+
+  it("renders a collapse chip with the child count for objects", () => {
+    const el = renderTree({ a: { x: 1, y: 2 } }, {});
+    const nested = el.querySelectorAll(".json-container")[1] as HTMLElement;
+    const chip = nested.querySelector(".json-collapse-chip") as HTMLElement;
+    expect(chip).not.toBeNull();
+    expect(chip.textContent).toBe("{ 2 keys }");
+  });
+
+  it("renders a singular collapse chip for arrays with one item", () => {
+    const el = renderTree({ a: [99] }, {});
+    const nested = el.querySelectorAll(".json-container")[1] as HTMLElement;
+    const chip = nested.querySelector(".json-collapse-chip") as HTMLElement;
+    expect(chip.textContent).toBe("[ 1 item ]");
+  });
+
+  it("adds is-collapsed to the container when collapsed", () => {
+    const el = renderTree({ a: { b: 1 } }, {});
+    document.body.appendChild(el);
+    const nested = el.querySelectorAll(".json-container")[1] as HTMLElement;
+    const toggle = nested.querySelector(".json-collapse-toggle") as HTMLElement;
+    expect(nested.classList.contains("is-collapsed")).toBe(false);
+    toggle.click();
+    expect(nested.classList.contains("is-collapsed")).toBe(true);
+  });
+
+  it("starts collapsed containers with is-collapsed set", () => {
+    const el = renderTree({ a: { b: { c: 1 } } }, { autoCollapseDepth: 1 });
+    const collapsed = el.querySelector(".json-container.is-collapsed");
+    expect(collapsed).not.toBeNull();
+  });
 });
