@@ -29,14 +29,15 @@ describe("renderJsonCodeblock", () => {
     expect(el.querySelector("input")).toBeNull();
   });
 
-  it("falls back to a default code-block render with an indicator on parse error", () => {
+  it("renders an error card on parse error", () => {
     const el = document.createElement("div");
     document.body.appendChild(el);
     renderJsonCodeblock("{not valid}", el, fakeCtx(), DEFAULT_SETTINGS);
     expect(el.querySelector(".json-tree-root")).toBeNull();
-    expect(el.querySelector(".json-codeblock-fallback")).not.toBeNull();
-    expect(el.querySelector(".json-codeblock-error-indicator")).not.toBeNull();
-    expect(el.textContent).toContain("{not valid}");
+    const card = el.querySelector(".json-codeblock.is-error");
+    expect(card).not.toBeNull();
+    expect(card?.querySelector(".json-codeblock-head")).not.toBeNull();
+    expect(card?.querySelector(".json-codeblock-error")).not.toBeNull();
   });
 
   it("renders empty object {} as an empty tree", () => {
