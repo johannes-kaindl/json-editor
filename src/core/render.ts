@@ -11,6 +11,8 @@ interface ContainerItem {
 export function renderTree(value: JsonValue, opts: RenderOptions): HTMLElement {
   const root = document.createElement("div");
   root.className = "json-tree-root";
+  root.setAttribute("role", "tree");
+  root.setAttribute("aria-label", "JSON content");
   renderValue(root, value, [], 0, opts);
   return root;
 }
@@ -96,6 +98,7 @@ function renderContainer(
   const container = document.createElement("div");
   container.className = "json-container";
   container.dataset.depth = String(depth);
+  container.setAttribute("role", "treeitem");
 
   // toggle is a direct child of container so toggle.parentElement === container,
   // which also contains json-content as a direct child — this is what the toggle
@@ -117,13 +120,16 @@ function renderContainer(
 
   const content = document.createElement("div");
   content.className = "json-content";
+  content.setAttribute("role", "group");
   const shouldCollapse =
     opts.autoCollapseDepth !== undefined && depth > opts.autoCollapseDepth;
   if (shouldCollapse) {
     content.classList.add("collapsed");
     container.classList.add("is-collapsed");
+    container.setAttribute("aria-expanded", "false");
   } else {
     toggle.classList.add("is-open");
+    container.setAttribute("aria-expanded", "true");
   }
 
   toggle.addEventListener("click", (e) => {
@@ -131,12 +137,14 @@ function renderContainer(
     const collapsed = content.classList.toggle("collapsed");
     container.classList.toggle("is-collapsed", collapsed);
     toggle.classList.toggle("is-open", !collapsed);
+    container.setAttribute("aria-expanded", String(!collapsed));
     opts.onCollapse?.(path, collapsed);
   });
 
   items.forEach((item, i) => {
     const row = document.createElement("div");
     row.className = "json-row";
+    row.setAttribute("role", "treeitem");
     const itemPath = [...path, item.segment];
     row.setAttribute("data-path", pathToString(itemPath));
     if (opts.onPathClick) {
