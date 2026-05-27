@@ -1,6 +1,13 @@
 import type { JsonValue, JsonPath, RenderOptions } from "./types";
 import { pathToString } from "./path";
 
+type ContainerKind = "object" | "array";
+
+interface ContainerItem {
+  segment: string | number;
+  value: JsonValue;
+}
+
 export function renderTree(value: JsonValue, opts: RenderOptions): HTMLElement {
   const root = document.createElement("div");
   root.className = "json-tree-root";
@@ -32,10 +39,13 @@ function renderValue(
     return;
   }
   if (Array.isArray(value)) {
-    renderArray(parent, value, path, depth, opts);
+    const items: ContainerItem[] = value.map((v, i) => ({ segment: i, value: v }));
+    renderContainer(parent, items, path, depth, opts, "array");
     return;
   }
-  renderObject(parent, value as { [k: string]: JsonValue }, path, depth, opts);
+  const obj = value as { [k: string]: JsonValue };
+  const items: ContainerItem[] = Object.entries(obj).map(([k, v]) => ({ segment: k, value: v }));
+  renderContainer(parent, items, path, depth, opts, "object");
 }
 
 function makePrimitive(
@@ -65,27 +75,31 @@ function makePrimitive(
   return span;
 }
 
-function renderObject(
+function renderContainer(
   parent: HTMLElement,
-  obj: { [k: string]: JsonValue },
+  items: ContainerItem[],
   path: JsonPath,
   depth: number,
-  opts: RenderOptions
+  opts: RenderOptions,
+  kind: ContainerKind
 ): void {
-  const entries = Object.entries(obj);
-  if (entries.length === 0) {
+  const { open, close } = bracketsFor(kind);
+
+  if (items.length === 0) {
     const span = document.createElement("span");
     span.className = "json-bracket";
-    span.textContent = "{}";
+    span.textContent = `${open}${close}`;
     parent.appendChild(span);
     return;
   }
+
   const container = document.createElement("div");
   container.className = "json-container";
   container.dataset.depth = String(depth);
 
-  // toggle is a direct child of container so that toggle.parentElement === container,
-  // which also contains json-content as a direct child — this is what the toggle test expects.
+  // toggle is a direct child of container so toggle.parentElement === container,
+  // which also contains json-content as a direct child — this is what the toggle
+  // test (and the keyboard-nav toggleContainer helper) expects.
   const toggle = document.createElement("span");
   toggle.className = "json-collapse-toggle";
   toggle.appendChild(makeChevron());
@@ -93,12 +107,12 @@ function renderObject(
 
   const openBracket = document.createElement("span");
   openBracket.className = "json-bracket";
-  openBracket.textContent = "{";
+  openBracket.textContent = open;
   container.appendChild(openBracket);
 
   const chip = document.createElement("span");
   chip.className = "json-collapse-chip";
-  chip.textContent = collapseChipLabel(entries.length, "object");
+  chip.textContent = collapseChipLabel(items.length, kind);
   container.appendChild(chip);
 
   const content = document.createElement("div");
@@ -120,122 +134,53 @@ function renderObject(
     opts.onCollapse?.(path, collapsed);
   });
 
-  entries.forEach(([key, v], i) => {
+  items.forEach((item, i) => {
     const row = document.createElement("div");
     row.className = "json-row";
-    row.setAttribute("data-path", pathToString([...path, key]));
+    const itemPath = [...path, item.segment];
+    row.setAttribute("data-path", pathToString(itemPath));
     if (opts.onPathClick) {
-      row.addEventListener("click", () => opts.onPathClick!([...path, key]), true);
+      row.addEventListener("click", () => opts.onPathClick!(itemPath), true);
     }
     if (opts.markerStyle === "classic") {
       const marker = document.createElement("span");
       marker.className = "json-marker";
-      marker.textContent = markerFor(i, entries.length);
+      marker.textContent = markerFor(i, items.length);
       row.appendChild(marker);
     }
+    row.appendChild(keyOrIndexElement(item.segment, kind));
+    row.appendChild(document.createTextNode(": "));
+    renderValue(row, item.value, itemPath, depth + 1, opts);
+    if (i < items.length - 1) row.appendChild(document.createTextNode(","));
+    content.appendChild(row);
+  });
+
+  container.appendChild(content);
+  const closeBracket = document.createElement("span");
+  closeBracket.className = "json-bracket";
+  closeBracket.textContent = close;
+  container.appendChild(closeBracket);
+  parent.appendChild(container);
+}
+
+function bracketsFor(kind: ContainerKind): { open: string; close: string } {
+  return kind === "object" ? { open: "{", close: "}" } : { open: "[", close: "]" };
+}
+
+function keyOrIndexElement(segment: string | number, kind: ContainerKind): HTMLElement {
+  if (kind === "object") {
     const keyEl = document.createElement("span");
     keyEl.className = "json-key";
-    keyEl.textContent = `"${key}"`;
-    row.appendChild(keyEl);
-    row.appendChild(document.createTextNode(": "));
-    renderValue(row, v, [...path, key], depth + 1, opts);
-    if (i < entries.length - 1) row.appendChild(document.createTextNode(","));
-    content.appendChild(row);
-  });
-
-  container.appendChild(content);
-  const closeBracket = document.createElement("span");
-  closeBracket.className = "json-bracket";
-  closeBracket.textContent = "}";
-  container.appendChild(closeBracket);
-  parent.appendChild(container);
+    keyEl.textContent = `"${segment}"`;
+    return keyEl;
+  }
+  const idx = document.createElement("span");
+  idx.className = "json-index";
+  idx.textContent = String(segment);
+  return idx;
 }
 
-function renderArray(
-  parent: HTMLElement,
-  arr: JsonValue[],
-  path: JsonPath,
-  depth: number,
-  opts: RenderOptions
-): void {
-  if (arr.length === 0) {
-    const span = document.createElement("span");
-    span.className = "json-bracket";
-    span.textContent = "[]";
-    parent.appendChild(span);
-    return;
-  }
-  const container = document.createElement("div");
-  container.className = "json-container";
-  container.dataset.depth = String(depth);
-
-  // toggle is a direct child of container — same reasoning as renderObject.
-  const toggle = document.createElement("span");
-  toggle.className = "json-collapse-toggle";
-  toggle.appendChild(makeChevron());
-  container.appendChild(toggle);
-
-  const openBracket = document.createElement("span");
-  openBracket.className = "json-bracket";
-  openBracket.textContent = "[";
-  container.appendChild(openBracket);
-
-  const chip = document.createElement("span");
-  chip.className = "json-collapse-chip";
-  chip.textContent = collapseChipLabel(arr.length, "array");
-  container.appendChild(chip);
-
-  const content = document.createElement("div");
-  content.className = "json-content";
-  const shouldCollapse =
-    opts.autoCollapseDepth !== undefined && depth > opts.autoCollapseDepth;
-  if (shouldCollapse) {
-    content.classList.add("collapsed");
-    container.classList.add("is-collapsed");
-  } else {
-    toggle.classList.add("is-open");
-  }
-
-  toggle.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const collapsed = content.classList.toggle("collapsed");
-    container.classList.toggle("is-collapsed", collapsed);
-    toggle.classList.toggle("is-open", !collapsed);
-    opts.onCollapse?.(path, collapsed);
-  });
-
-  arr.forEach((v, i) => {
-    const row = document.createElement("div");
-    row.className = "json-row";
-    row.setAttribute("data-path", pathToString([...path, i]));
-    if (opts.onPathClick) {
-      row.addEventListener("click", () => opts.onPathClick!([...path, i]), true);
-    }
-    if (opts.markerStyle === "classic") {
-      const marker = document.createElement("span");
-      marker.className = "json-marker";
-      marker.textContent = markerFor(i, arr.length);
-      row.appendChild(marker);
-    }
-    const idx = document.createElement("span");
-    idx.className = "json-index";
-    idx.textContent = String(i);
-    row.appendChild(idx);
-    row.appendChild(document.createTextNode(": "));
-    renderValue(row, v, [...path, i], depth + 1, opts);
-    if (i < arr.length - 1) row.appendChild(document.createTextNode(","));
-    content.appendChild(row);
-  });
-
-  container.appendChild(content);
-  const closeBracket = document.createElement("span");
-  closeBracket.className = "json-bracket";
-  closeBracket.textContent = "]";
-  container.appendChild(closeBracket);
-  parent.appendChild(container);
-}
-
-function collapseChipLabel(count: number, kind: "object" | "array"): string {
+function collapseChipLabel(count: number, kind: ContainerKind): string {
   const noun = kind === "object" ? "key" : "item";
   const text = `${count} ${noun}${count === 1 ? "" : "s"}`;
   return kind === "object" ? `{ ${text} }` : `[ ${text} ]`;
