@@ -1,7 +1,9 @@
-import { TextFileView, type WorkspaceLeaf } from "obsidian";
+import { Notice, TextFileView, type WorkspaceLeaf } from "obsidian";
 import { parse } from "../core/parse";
 import { serialize } from "../core/serialize";
-import type { JsonValue } from "../core/types";
+import type { JsonValue, JsonPath } from "../core/types";
+import { addObjectKey, addArrayItem, deleteAt, renameKey } from "../core/edit";
+import { History } from "../core/history";
 import { TreeView } from "./TreeView";
 import { SourceView } from "./SourceView";
 import type { JsonEditorSettings } from "./SettingsTab";
@@ -30,6 +32,7 @@ export class JsonFileView extends TextFileView {
   private searchBar!: SearchBar;
   private currentQuery = "";
   private tooltip!: Tooltip;
+  private history = new History();
 
   constructor(leaf: WorkspaceLeaf, private settings: JsonEditorSettings) {
     super(leaf);
@@ -132,6 +135,10 @@ export class JsonFileView extends TextFileView {
         return;
       }
     }
+    // Switching modes clears the tree-mode undo stack (source has its own).
+    if (this.mode !== target) {
+      this.history.clear();
+    }
     this.mode = target;
     this.refreshMode();
   }
@@ -156,6 +163,11 @@ export class JsonFileView extends TextFileView {
           this.tooltip.show(target, tooltipContentForValue(value, path));
           target.addEventListener("mouseleave", () => this.tooltip.hide(), { once: true });
         },
+        onAddKey: (parentPath, key) => this.handleAddKey(parentPath, key),
+        onAddItem: (parentPath) => this.handleAddItem(parentPath),
+        onDelete: (path) => this.handleDelete(path),
+        onRenameKey: (path, newKey) => this.handleRename(path, newKey),
+        onError: (err) => new Notice(err.message),
       });
       this.treeView.setValue(this.currentValue);
     } else {
@@ -220,9 +232,101 @@ export class JsonFileView extends TextFileView {
   }
 
   private handleTreeChange(newValue: JsonValue): void {
+    this.applyMutation(newValue, "Edit value");
+  }
+
+  private handleAddKey(parentPath: JsonPath, key: string): void {
+    try {
+      const next = addObjectKey(this.currentValue, parentPath, key, null);
+      this.applyMutation(next, `Add key "${key}"`);
+    } catch (e) {
+      new Notice((e as Error).message);
+    }
+  }
+
+  private handleAddItem(parentPath: JsonPath): void {
+    try {
+      const next = addArrayItem(this.currentValue, parentPath, null);
+      this.applyMutation(next, "Add item");
+    } catch (e) {
+      new Notice((e as Error).message);
+    }
+  }
+
+  private handleDelete(path: JsonPath): void {
+    try {
+      const next = deleteAt(this.currentValue, path);
+      this.applyMutation(next, "Delete row");
+    } catch (e) {
+      new Notice((e as Error).message);
+    }
+  }
+
+  private handleRename(path: JsonPath, newKey: string): void {
+    try {
+      const next = renameKey(this.currentValue, path, newKey);
+      this.applyMutation(next, `Rename to "${newKey}"`);
+    } catch (e) {
+      new Notice((e as Error).message);
+    }
+  }
+
+  private applyMutation(newValue: JsonValue, description: string): void {
+    if (this.currentValue !== null) {
+      this.history.push({ value: this.currentValue, description });
+    }
     this.currentValue = newValue;
     this.data = serialize(newValue, { indent: this.settings.indent });
     this.requestSave();
+    if (this.treeView) {
+      this.treeView.setValue(newValue);
+      if (this.currentQuery !== "") {
+        const result = this.treeView.applyFilter(this.currentQuery);
+        this.searchBar.setMatchInfo({ matchCount: result.matchCount });
+      }
+    }
+  }
+
+  undo(): void {
+    if (this.mode !== "tree" || this.currentValue === null) return;
+    const prev = this.history.undo({
+      value: this.currentValue,
+      description: "current",
+    });
+    if (!prev) return;
+    this.currentValue = prev.value;
+    this.data = serialize(prev.value, { indent: this.settings.indent });
+    this.requestSave();
+    this.treeView?.setValue(prev.value);
+    if (this.currentQuery !== "" && this.treeView) {
+      const result = this.treeView.applyFilter(this.currentQuery);
+      this.searchBar.setMatchInfo({ matchCount: result.matchCount });
+    }
+  }
+
+  redo(): void {
+    if (this.mode !== "tree" || this.currentValue === null) return;
+    const next = this.history.redo({
+      value: this.currentValue,
+      description: "current",
+    });
+    if (!next) return;
+    this.currentValue = next.value;
+    this.data = serialize(next.value, { indent: this.settings.indent });
+    this.requestSave();
+    this.treeView?.setValue(next.value);
+    if (this.currentQuery !== "" && this.treeView) {
+      const result = this.treeView.applyFilter(this.currentQuery);
+      this.searchBar.setMatchInfo({ matchCount: result.matchCount });
+    }
+  }
+
+  canUndo(): boolean {
+    return this.mode === "tree" && this.history.canUndo();
+  }
+
+  canRedo(): boolean {
+    return this.mode === "tree" && this.history.canRedo();
   }
 
   private handleSourceChange(text: string): void {

@@ -34,6 +34,30 @@ export default class JsonEditorPlugin extends Plugin {
         return true;
       },
     });
+
+    this.addCommand({
+      id: "undo-tree-edit",
+      name: "Undo (tree mode)",
+      hotkeys: [{ modifiers: ["Mod"], key: "z" }],
+      checkCallback: (checking: boolean) => {
+        const view = this.app.workspace.getActiveViewOfType(JsonFileView);
+        if (!view || !view.canUndo()) return false;
+        if (!checking) view.undo();
+        return true;
+      },
+    });
+
+    this.addCommand({
+      id: "redo-tree-edit",
+      name: "Redo (tree mode)",
+      hotkeys: [{ modifiers: ["Mod", "Shift"], key: "z" }],
+      checkCallback: (checking: boolean) => {
+        const view = this.app.workspace.getActiveViewOfType(JsonFileView);
+        if (!view || !view.canRedo()) return false;
+        if (!checking) view.redo();
+        return true;
+      },
+    });
   }
 
   async saveSettings(): Promise<void> {
