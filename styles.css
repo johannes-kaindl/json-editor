@@ -531,6 +531,89 @@
   padding: var(--jv-space-4) var(--jv-space-5);
 }
 
+/* ─── Row actions (rename + delete) ───────────────────────────────── */
+/* Hover-revealable, matches the .json-copy-btn pattern. */
+.json-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--jv-space-1);
+  margin-left: var(--jv-space-2);
+  opacity: 0;
+  transition: opacity var(--jv-dur-fast) var(--jv-ease);
+}
+.json-row:hover > .json-row-actions,
+.json-row:focus-within > .json-row-actions,
+.json-row:focus > .json-row-actions {
+  opacity: 1;
+}
+.json-row-action {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--jv-radius-sm);
+  color: var(--jv-fg-muted);
+  cursor: pointer;
+  padding: 0 var(--jv-space-2);
+  font-size: 0.85em;
+  line-height: 1.4;
+  transition: color var(--jv-dur-fast) var(--jv-ease),
+              background var(--jv-dur-fast) var(--jv-ease),
+              border-color var(--jv-dur-fast) var(--jv-ease);
+}
+.json-row-action:hover {
+  color: var(--jv-fg);
+  background: var(--jv-hover);
+  border-color: var(--jv-border);
+}
+.json-row-delete:hover {
+  color: var(--text-error, #d32f2f);
+}
+
+/* ─── Add affordance (per container) ──────────────────────────────── */
+.json-add-affordance {
+  margin-top: var(--jv-space-2);
+}
+.json-add-trigger {
+  background: none;
+  border: 1px dashed var(--jv-border);
+  border-radius: var(--jv-radius-sm);
+  color: var(--jv-fg-muted);
+  cursor: pointer;
+  padding: var(--jv-space-1) var(--jv-space-3);
+  font-family: var(--font-interface);
+  font-size: 0.85em;
+  transition: color var(--jv-dur-fast) var(--jv-ease),
+              border-color var(--jv-dur-fast) var(--jv-ease),
+              background var(--jv-dur-fast) var(--jv-ease);
+}
+.json-add-trigger:hover {
+  color: var(--jv-fg);
+  border-color: var(--jv-accent);
+  background: var(--jv-hover);
+  border-style: solid;
+}
+.json-add-input {
+  background: var(--jv-bg-inset);
+  border: 1px solid var(--jv-accent);
+  border-radius: var(--jv-radius-sm);
+  color: var(--jv-fg);
+  padding: var(--jv-space-1) var(--jv-space-3);
+  font-family: var(--font-monospace);
+  font-size: inherit;
+  outline: none;
+}
+
+/* Empty containers — make the brackets sit tightly without a content area
+   pushing them apart visually. The chip "{ 0 keys }" stays muted. */
+.json-tree-root .json-container.is-empty .json-collapse-chip {
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* Inline key-rename input (extends .json-inline-edit) */
+.json-key-rename {
+  color: var(--jv-syntax-key);
+}
+
 /* ─── Search filter (strict-hide + match highlight) ───────────────── */
 /* When the filter is active, hide every row that is neither a match
    nor on the ancestor chain of a match. */

@@ -4,6 +4,8 @@ import { editValue } from "../core/edit";
 import { pathToString } from "../core/path";
 import { findMatches } from "../core/search";
 import { createCopyButton } from "./CopyButton";
+import { createRowActions } from "./RowActions";
+import { createAddAffordance } from "./AddAffordance";
 
 export interface TreeViewOptions {
   readonly?: boolean;
@@ -13,6 +15,17 @@ export interface TreeViewOptions {
   onPathClick?: (path: JsonPath) => void;
   onValueHover?: (target: HTMLElement, path: JsonPath, value: JsonValue) => void;
   onBeforeRender?: () => void;
+  /**
+   * Called when the user requests a structural mutation. The callback is
+   * responsible for invoking the core edit op, pushing onto history, and
+   * (eventually) calling treeView.setValue() with the result. Errors thrown
+   * from the core op will be surfaced via the optional onError callback.
+   */
+  onAddKey?: (parentPath: JsonPath, key: string) => void;
+  onAddItem?: (parentPath: JsonPath) => void;
+  onDelete?: (path: JsonPath) => void;
+  onRenameKey?: (path: JsonPath, newKey: string) => void;
+  onError?: (err: Error) => void;
 }
 
 const FLASH_MS = 600;
@@ -108,8 +121,105 @@ export class TreeView {
       },
     });
     this.attachCopyButtons(el);
+    if (!this.opts.readonly) {
+      this.attachStructuralActions(el);
+    }
     this.container.appendChild(el);
     this.setupKeyboardNav(el, previousPathStr);
+  }
+
+  private attachStructuralActions(treeRoot: HTMLElement): void {
+    // Attach RowActions to every row.
+    const rows = treeRoot.querySelectorAll<HTMLElement>('.json-row[role="treeitem"]');
+    rows.forEach((row) => {
+      const pathStr = row.getAttribute("data-path");
+      if (pathStr === null) return;
+      const path = this.parsePathStrSafe(pathStr);
+      const lastSeg = path[path.length - 1];
+      const canRename = typeof lastSeg === "string";
+      const actions = createRowActions({
+        canRename,
+        onRename: () => this.startRename(row, path, String(lastSeg)),
+        onDelete: () => this.opts.onDelete?.(path),
+      });
+      row.appendChild(actions);
+    });
+
+    // Attach AddAffordance to every container's content.
+    const containers = treeRoot.querySelectorAll<HTMLElement>(".json-container");
+    containers.forEach((container) => {
+      const content = this.directChildWithClass(container, "json-content");
+      if (!content) return;
+      const kind = this.detectContainerKind(container);
+      const containerPath = this.detectContainerPath(container, treeRoot);
+      const aff = createAddAffordance({
+        kind,
+        onAdd: (key) => {
+          if (kind === "object") {
+            if (key !== undefined) this.opts.onAddKey?.(containerPath, key);
+          } else {
+            this.opts.onAddItem?.(containerPath);
+          }
+        },
+      });
+      content.appendChild(aff);
+    });
+  }
+
+  private detectContainerKind(container: HTMLElement): "object" | "array" {
+    const bracket = this.directChildWithClass(container, "json-bracket");
+    return bracket?.textContent === "{" ? "object" : "array";
+  }
+
+  private detectContainerPath(container: HTMLElement, treeRoot: HTMLElement): JsonPath {
+    const parent = container.parentElement;
+    if (!parent || parent === treeRoot) return [];
+    if (parent.classList.contains("json-row")) {
+      const ps = parent.getAttribute("data-path");
+      return ps ? this.parsePathStrSafe(ps) : [];
+    }
+    return [];
+  }
+
+  private parsePathStrSafe(pathStr: string): JsonPath {
+    return parsePathStr(pathStr);
+  }
+
+  private startRename(row: HTMLElement, path: JsonPath, currentKey: string): void {
+    const keyEl = row.querySelector<HTMLElement>(".json-key");
+    if (!keyEl) return;
+    this.editing = true;
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "json-inline-edit json-key-rename";
+    input.value = currentKey;
+    keyEl.replaceWith(input);
+    input.focus();
+    input.select();
+
+    let resolved = false;
+    const finish = (newKey: string | undefined) => {
+      if (resolved) return;
+      resolved = true;
+      this.editing = false;
+      if (newKey !== undefined && newKey !== "" && newKey !== currentKey) {
+        this.opts.onRenameKey?.(path, newKey);
+      } else {
+        // No mutation; restore via re-render
+        this.render();
+      }
+    };
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        finish(input.value.trim());
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        finish(undefined);
+      }
+    });
+    input.addEventListener("blur", () => finish(input.value.trim()));
   }
 
   private setupKeyboardNav(treeRoot: HTMLElement, previousPathStr: string | null): void {
@@ -290,6 +400,16 @@ export class TreeView {
           e.preventDefault();
           editable.click();
         }
+        return;
+      }
+      case "Backspace":
+      case "Delete": {
+        if (this.opts.readonly) return;
+        const pathStr = active.getAttribute("data-path");
+        if (!pathStr) return;
+        e.preventDefault();
+        const path = this.parsePathStrSafe(pathStr);
+        this.opts.onDelete?.(path);
         return;
       }
     }

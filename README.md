@@ -1,16 +1,16 @@
 # Obsidian JSON Editor
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPL_v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Codeberg Release](https://img.shields.io/badge/codeberg-v0.3.0-green)](https://codeberg.org/jkaindl/json-editor/releases)
+[![Codeberg Release](https://img.shields.io/badge/codeberg-v1.0.0-green)](https://codeberg.org/jkaindl/json-editor/releases)
 [![Status: Active](https://img.shields.io/badge/status-active-brightgreen)](https://codeberg.org/jkaindl/json-editor)
 [![Obsidian](https://img.shields.io/badge/obsidian-1.4%2B-purple)](https://obsidian.md)
-[![Tests](https://img.shields.io/badge/tests-205%20passing-brightgreen)](https://codeberg.org/jkaindl/json-editor/src/branch/main/tests)
+[![Tests](https://img.shields.io/badge/tests-262%20passing-brightgreen)](https://codeberg.org/jkaindl/json-editor/src/branch/main/tests)
 
 View and edit `.json` files in Obsidian with a Tree↔Source toggle. Renders `` ```json `` code blocks inside Markdown notes as collapsible, theme-aware trees.
 
 **Target platform:** Obsidian 1.4+ on desktop and mobile. No external services, no remote resources, no telemetry.
 
-> **Status: 0.3.0 released.** Keyboard navigation (arrows + Home/End + Enter/F2), WAI-ARIA tree roles, and coverage tooling. See [`CHANGELOG.md`](CHANGELOG.md) for the full per-release log.
+> **Status: 1.0.0 released.** Tree mode is now a full editor: add / delete / rename keys, add / delete items, plus tree-mode undo/redo (`Cmd/Ctrl+Z`). See [`CHANGELOG.md`](CHANGELOG.md) for the full per-release log.
 
 ---
 
@@ -31,6 +31,8 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 
 - **`.json` file view** with a Tree↔Source mode toggle in a unified top toolbar.
 - **Inline editing** of strings, numbers, and booleans in tree mode — click a value, press Enter to commit, Escape to cancel.
+- **Structural editing** — add keys to objects (`+ Add key` affordance at the bottom of each container), append items to arrays, rename object keys (✎ hover button), delete any row (✕ hover button or `Backspace` / `Delete` on focused row).
+- **Undo / redo** — `Cmd/Ctrl+Z` reverts the last structural or value edit; `Cmd/Ctrl+Shift+Z` redoes. Tree-mode only; source mode keeps its native CodeMirror history.
 - **Search & filter** — `Cmd/Ctrl+F` opens a live search that strict-filters the tree to matching keys and primitive values (case-insensitive substring). Ancestors stay visible, everything else is hidden. ESC clears or blurs.
 - **Keyboard navigation** — Tab focuses the tree; `↓` / `↑` walk visible rows; `→` / `←` expand-collapse or jump children / parent; `Home` / `End` jump to first / last visible row; `Enter` / `F2` open inline-edit on a primitive. WAI-ARIA tree roles (`role="tree"`, `role="treeitem"`, `aria-expanded`) for screen-reader support.
 - **Breadcrumb** showing the current path; clicking a segment scrolls back up the tree.
@@ -185,8 +187,10 @@ Bug reports and pull requests are welcome on Codeberg. For larger changes, pleas
 Actively maintained by a single maintainer ([@jkaindl](https://codeberg.org/jkaindl) / [@johannes-kaindl](https://github.com/johannes-kaindl)). Built for personal use, released because it might be useful to others.
 
 **Roadmap (rough, in priority order):**
-1. **1.0.0 — Structural editing** — add / delete / rename keys, drag-and-drop reorder, type-switching, cross-mode unified undo/redo, optional JSON Schema validation.
-2. **Community Plugin Directory submission** — PR against `obsidianmd/obsidian-releases` once 1.0.0 is out.
+1. **1.1.0 — Polish** — drag-and-drop reorder, type-switching (string ↔ number ↔ boolean ↔ null ↔ object ↔ array).
+2. **1.2.0 — Cross-mode undo/redo** — unify the tree-mode and source-mode (CodeMirror) undo stacks.
+3. **1.3.0 — JSON Schema validation** — optional, via `ajv`.
+4. **Community Plugin Directory submission** — PR against `obsidianmd/obsidian-releases`.
 
 ---
 
