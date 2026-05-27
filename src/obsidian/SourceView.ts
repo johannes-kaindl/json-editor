@@ -1,7 +1,7 @@
 import { EditorState, Transaction } from "@codemirror/state";
 import { EditorView, keymap, lineNumbers } from "@codemirror/view";
 import { json } from "@codemirror/lang-json";
-import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { defaultKeymap } from "@codemirror/commands";
 
 export interface SourceViewOptions {
   onChange?: (newText: string) => void;
@@ -20,8 +20,10 @@ export class SourceView {
       doc: initial,
       extensions: [
         lineNumbers(),
-        history(),
-        keymap.of([...defaultKeymap, ...historyKeymap]),
+        // History is intentionally NOT installed here — JsonFileView holds the
+        // unified cross-mode history (1.2.0). The plugin's "undo-edit" command
+        // dispatches to that single source of truth.
+        keymap.of(defaultKeymap),
         json(),
         EditorView.updateListener.of((update) => {
           if (this.suppressChange) return;
