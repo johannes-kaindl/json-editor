@@ -98,4 +98,30 @@ describe("findMatches", () => {
     const r = findMatches({ port: "portable" }, "port");
     expect(r.counts).toEqual({ keys: 1, values: 1 });
   });
+
+  it("matches keys with non-identifier characters (quoted-bracket form)", () => {
+    const r = findMatches({ "weird key": 1 }, "weird");
+    expect(r.matches).toEqual(new Set(['["weird key"]']));
+  });
+
+  it("string substring match works on multi-word values", () => {
+    const r = findMatches({ greeting: "Hello, World!" }, "world");
+    expect(r.matches).toEqual(new Set(["greeting"]));
+  });
+
+  it("does not double-count when key and value both match", () => {
+    const r = findMatches({ port: "port" }, "port");
+    expect(r.matches).toEqual(new Set(["port"]));
+    expect(r.counts).toEqual({ keys: 1, values: 1 });
+  });
+
+  it("handles empty object", () => {
+    const r = findMatches({}, "anything");
+    expect(r.matches.size).toBe(0);
+  });
+
+  it("handles empty array", () => {
+    const r = findMatches([], "anything");
+    expect(r.matches.size).toBe(0);
+  });
 });
