@@ -225,4 +225,13 @@ describe("renderTree", () => {
     const collapsed = el.querySelector(".json-container.is-collapsed");
     expect(collapsed).not.toBeNull();
   });
+
+  it("object and array containers share identical scaffolding structure", () => {
+    const objEl = renderTree({ a: 1 }, {}).querySelector(".json-container") as HTMLElement;
+    const arrEl = renderTree([1], {}).querySelector(".json-container") as HTMLElement;
+    // Both must have toggle, open-bracket, chip, content, close-bracket as direct children
+    const childClassesOf = (el: HTMLElement) =>
+      Array.from(el.children).map((c) => c.className);
+    expect(childClassesOf(objEl)).toEqual(childClassesOf(arrEl));
+  });
 });

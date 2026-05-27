@@ -20,6 +20,7 @@ const FLASH_MS = 600;
 export class TreeView {
   private current: JsonValue = null;
   private editing = false;
+  private activeRow: HTMLElement | null = null;
 
   constructor(private container: HTMLElement, private opts: TreeViewOptions) {}
 
@@ -92,7 +93,9 @@ export class TreeView {
 
   private render(): void {
     this.opts.onBeforeRender?.();
+    const previousPathStr = this.activeRow?.getAttribute("data-path") ?? null;
     this.container.innerHTML = "";
+    this.activeRow = null;
     const el = renderTree(this.current, {
       readonly: this.opts.readonly,
       markerStyle: this.opts.markerStyle ?? "modern",
@@ -106,6 +109,190 @@ export class TreeView {
     });
     this.attachCopyButtons(el);
     this.container.appendChild(el);
+    this.setupKeyboardNav(el, previousPathStr);
+  }
+
+  private setupKeyboardNav(treeRoot: HTMLElement, previousPathStr: string | null): void {
+    const rows = Array.from(treeRoot.querySelectorAll<HTMLElement>('.json-row[role="treeitem"]'));
+    rows.forEach((r) => r.setAttribute("tabindex", "-1"));
+
+    // Restore focus to the same data-path if possible; otherwise first row.
+    let restored: HTMLElement | null = null;
+    if (previousPathStr) {
+      restored = rows.find((r) => r.getAttribute("data-path") === previousPathStr) ?? null;
+    }
+    const initial = restored ?? rows[0] ?? null;
+    if (initial) {
+      initial.setAttribute("tabindex", "0");
+      this.activeRow = initial;
+    }
+
+    treeRoot.addEventListener("keydown", (e) => this.handleKeydown(e as KeyboardEvent));
+  }
+
+  private setActiveRow(row: HTMLElement): void {
+    if (this.activeRow === row) {
+      row.focus();
+      return;
+    }
+    this.activeRow?.setAttribute("tabindex", "-1");
+    row.setAttribute("tabindex", "0");
+    this.activeRow = row;
+    row.focus();
+  }
+
+  private isRowVisible(row: HTMLElement): boolean {
+    let el: HTMLElement | null = row.parentElement;
+    while (el && !el.classList.contains("json-tree-root")) {
+      if (el.classList.contains("json-content") && el.classList.contains("collapsed")) {
+        return false;
+      }
+      el = el.parentElement;
+    }
+    const treeRoot = el;
+    if (treeRoot?.classList.contains("json-filter-active")) {
+      return row.classList.contains("json-match") || row.classList.contains("json-on-path");
+    }
+    return true;
+  }
+
+  private visibleRows(): HTMLElement[] {
+    const treeRoot = this.container.querySelector(".json-tree-root");
+    if (!treeRoot) return [];
+    return Array.from(
+      treeRoot.querySelectorAll<HTMLElement>('.json-row[role="treeitem"]')
+    ).filter((r) => this.isRowVisible(r));
+  }
+
+  private directChildWithClass(parent: HTMLElement, cls: string): HTMLElement | null {
+    for (const child of Array.from(parent.children)) {
+      if (child instanceof HTMLElement && child.classList.contains(cls)) {
+        return child;
+      }
+    }
+    return null;
+  }
+
+  private containerInRow(row: HTMLElement): HTMLElement | null {
+    return this.directChildWithClass(row, "json-container");
+  }
+
+  private parentRowOf(row: HTMLElement): HTMLElement | null {
+    let el: HTMLElement | null = row.parentElement;
+    while (el && !el.classList.contains("json-tree-root")) {
+      if (el.classList.contains("json-row") && el.getAttribute("role") === "treeitem") {
+        return el;
+      }
+      el = el.parentElement;
+    }
+    return null;
+  }
+
+  private firstChildRowOf(row: HTMLElement): HTMLElement | null {
+    const container = this.containerInRow(row);
+    if (!container) return null;
+    const content = this.directChildWithClass(container, "json-content");
+    if (!content) return null;
+    return this.directChildWithClass(content, "json-row");
+  }
+
+  private toggleContainer(container: HTMLElement, expand?: boolean): void {
+    const isCollapsed = container.classList.contains("is-collapsed");
+    const targetCollapsed = expand !== undefined ? !expand : !isCollapsed;
+    if (targetCollapsed === isCollapsed) return;
+
+    const content = this.directChildWithClass(container, "json-content");
+    const toggle = this.directChildWithClass(container, "json-collapse-toggle");
+    if (targetCollapsed) {
+      content?.classList.add("collapsed");
+      container.classList.add("is-collapsed");
+      toggle?.classList.remove("is-open");
+      container.setAttribute("aria-expanded", "false");
+    } else {
+      content?.classList.remove("collapsed");
+      container.classList.remove("is-collapsed");
+      toggle?.classList.add("is-open");
+      container.setAttribute("aria-expanded", "true");
+    }
+  }
+
+  private handleKeydown(e: KeyboardEvent): void {
+    if (this.editing) return;
+    const active = this.activeRow;
+    if (!active) return;
+    const rows = this.visibleRows();
+    if (rows.length === 0) return;
+    const idx = rows.indexOf(active);
+    if (idx === -1) {
+      // Filter changed and active row is no longer visible — jump to first visible.
+      e.preventDefault();
+      this.setActiveRow(rows[0]);
+      return;
+    }
+
+    switch (e.key) {
+      case "ArrowDown": {
+        const next = rows[idx + 1];
+        if (next) {
+          e.preventDefault();
+          this.setActiveRow(next);
+        }
+        return;
+      }
+      case "ArrowUp": {
+        const prev = rows[idx - 1];
+        if (prev) {
+          e.preventDefault();
+          this.setActiveRow(prev);
+        }
+        return;
+      }
+      case "ArrowRight": {
+        const container = this.containerInRow(active);
+        if (!container) return;
+        e.preventDefault();
+        if (container.classList.contains("is-collapsed")) {
+          this.toggleContainer(container, true);
+        } else {
+          const firstChild = this.firstChildRowOf(active);
+          if (firstChild) this.setActiveRow(firstChild);
+        }
+        return;
+      }
+      case "ArrowLeft": {
+        const container = this.containerInRow(active);
+        if (container && !container.classList.contains("is-collapsed")) {
+          e.preventDefault();
+          this.toggleContainer(container, false);
+          return;
+        }
+        const parent = this.parentRowOf(active);
+        if (parent) {
+          e.preventDefault();
+          this.setActiveRow(parent);
+        }
+        return;
+      }
+      case "Home": {
+        e.preventDefault();
+        this.setActiveRow(rows[0]);
+        return;
+      }
+      case "End": {
+        e.preventDefault();
+        this.setActiveRow(rows[rows.length - 1]);
+        return;
+      }
+      case "Enter":
+      case "F2": {
+        const editable = this.directChildWithClass(active, "json-editable");
+        if (editable) {
+          e.preventDefault();
+          editable.click();
+        }
+        return;
+      }
+    }
   }
 
   private attachCopyButtons(treeRoot: HTMLElement): void {
