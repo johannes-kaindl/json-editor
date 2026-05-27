@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security issue
+    url: https://codeberg.org/jkaindl/json-editor/src/branch/main/SECURITY.md
+    about: Please report security issues privately by email, not as a public issue.
+  - name: Question or discussion
+    url: https://codeberg.org/jkaindl/json-editor/issues?type=all&q=&labels=question
+    about: Browse existing questions or open a new issue with the "question" label.

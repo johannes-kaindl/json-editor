@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Codeberg issues (primary)
+    url: https://codeberg.org/jkaindl/json-editor/issues
+    about: This project is primarily developed on Codeberg. Please file there for the fastest response.
+  - name: Security issue
+    url: https://github.com/johannes-kaindl/json-editor/blob/main/SECURITY.md
+    about: Please report security issues privately by email, not as a public issue.

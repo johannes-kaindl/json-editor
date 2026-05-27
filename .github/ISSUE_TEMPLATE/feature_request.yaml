@@ -1,0 +1,33 @@
+name: Feature request
+description: Suggest a new feature or improvement
+title: "[feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > Issues are primarily tracked on Codeberg: <https://codeberg.org/jkaindl/json-editor/issues>. You can file here too, but Codeberg gets the faster response.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do that the plugin doesn't currently support?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope check
+      description: |
+        This plugin is intentionally focused on viewing and editing JSON inside Obsidian. Adjacent formats (YAML, TOML, etc.) and schema-aware forms are out of scope. Does your proposal fit?
