@@ -1,7 +1,7 @@
 # Obsidian JSON Editor
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPL_v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Codeberg Release](https://img.shields.io/badge/codeberg-v0.1.1-green)](https://codeberg.org/jkaindl/json-editor/releases)
+[![Codeberg Release](https://img.shields.io/badge/codeberg-v0.1.2-green)](https://codeberg.org/jkaindl/json-editor/releases)
 [![Status: Active](https://img.shields.io/badge/status-active-brightgreen)](https://codeberg.org/jkaindl/json-editor)
 [![Obsidian](https://img.shields.io/badge/obsidian-1.4%2B-purple)](https://obsidian.md)
 [![Tests](https://img.shields.io/badge/tests-133%20passing-brightgreen)](https://codeberg.org/jkaindl/json-editor/src/branch/main/tests)
@@ -10,7 +10,7 @@ View and edit `.json` files in Obsidian with a Tree↔Source toggle. Renders `` 
 
 **Target platform:** Obsidian 1.4+ on desktop and mobile. No external services, no remote resources, no telemetry.
 
-> **Status: 0.1.1 released, 0.1.2 pending.** The Direction-B visual redesign (token-based theme-aware stylesheet, nested tinted blocks, collapse chips, SVG icons, unified toolbar) is merged on `main` and awaiting release. See [`CHANGELOG.md`](CHANGELOG.md) for the full per-release log.
+> **Status: 0.1.2 released.** The Direction-B visual redesign (token-based theme-aware stylesheet, nested tinted blocks, collapse chips, SVG icons, unified toolbar) is live. See [`CHANGELOG.md`](CHANGELOG.md) for the full per-release log.
 
 ---
 
@@ -183,9 +183,9 @@ Bug reports and pull requests are welcome on Codeberg. For larger changes, pleas
 Actively maintained by a single maintainer ([@jkaindl](https://codeberg.org/jkaindl) / [@johannes-kaindl](https://github.com/johannes-kaindl)). Built for personal use, released because it might be useful to others.
 
 **Roadmap (rough, in priority order):**
-1. **0.1.2 release** — Direction-B visual redesign (merged, awaiting visual sign-off + Community Plugin Directory submission).
+1. **Community Plugin Directory submission** — PR against `obsidianmd/obsidian-releases`.
 2. **0.2.0 — Search & Filter** — live search across keys/values, filter to matches, expand ancestors of matches.
-3. **0.3.0 — Code Quality & Infra** — coverage tooling, PR-time CI, ARIA + keyboard navigation, render-duplication refactor.
+3. **0.3.0 — Code Quality & Infra** — coverage tooling, ARIA + keyboard navigation, render-duplication refactor.
 4. **1.0.0 — Structural editing** — add / delete / rename keys, drag-and-drop reorder, type-switching, cross-mode unified undo/redo, optional JSON Schema validation.
 
 ---
