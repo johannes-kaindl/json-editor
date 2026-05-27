@@ -40,12 +40,16 @@ describe("renderJsonCodeblock", () => {
     expect(card?.querySelector(".json-codeblock-error")).not.toBeNull();
   });
 
-  it("renders empty object {} as an empty tree", () => {
+  it("renders empty object {} as an empty container with is-empty marker", () => {
     const el = document.createElement("div");
     document.body.appendChild(el);
     renderJsonCodeblock("{}", el, fakeCtx(), DEFAULT_SETTINGS);
     expect(el.querySelector(".json-tree-root")).not.toBeNull();
-    expect(el.querySelector(".json-bracket")?.textContent).toBe("{}");
+    const container = el.querySelector(".json-container") as HTMLElement;
+    expect(container).not.toBeNull();
+    expect(container.classList.contains("is-empty")).toBe(true);
+    const brackets = container.querySelectorAll(".json-bracket");
+    expect(Array.from(brackets).map((b) => b.textContent).join("")).toBe("{}");
   });
 
   it("wraps valid JSON in a .json-codeblock card with a header label", () => {

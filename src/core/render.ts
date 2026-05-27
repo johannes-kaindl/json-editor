@@ -87,16 +87,9 @@ function renderContainer(
 ): void {
   const { open, close } = bracketsFor(kind);
 
-  if (items.length === 0) {
-    const span = document.createElement("span");
-    span.className = "json-bracket";
-    span.textContent = `${open}${close}`;
-    parent.appendChild(span);
-    return;
-  }
-
   const container = document.createElement("div");
   container.className = "json-container";
+  if (items.length === 0) container.classList.add("is-empty");
   container.dataset.depth = String(depth);
   container.setAttribute("role", "treeitem");
 
