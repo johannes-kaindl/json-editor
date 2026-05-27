@@ -206,3 +206,92 @@ describe("TreeView", () => {
     expect(calls).toEqual([1, 1]);
   });
 });
+
+describe("TreeView.applyFilter", () => {
+  let container: HTMLElement;
+  let tv: TreeView;
+
+  beforeEach(() => {
+    document.body.innerHTML = "";
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    tv = new TreeView(container, {});
+    tv.setValue({
+      config: { server: { port: 8080, host: "localhost" } },
+      database: { connection: { port: 5432 } },
+    });
+  });
+
+  it("empty query returns matchCount 0 and adds no filter classes", () => {
+    const r = tv.applyFilter("");
+    expect(r.matchCount).toBe(0);
+    expect(container.querySelectorAll(".json-match").length).toBe(0);
+    expect(
+      container.querySelector(".json-tree-root")?.classList.contains("json-filter-active")
+    ).toBe(false);
+  });
+
+  it("non-empty query marks matching rows with json-match", () => {
+    const r = tv.applyFilter("port");
+    expect(r.matchCount).toBe(2);
+    const matched = container.querySelectorAll(".json-match");
+    const paths = Array.from(matched).map((el) => el.getAttribute("data-path"));
+    expect(paths).toContain("config.server.port");
+    expect(paths).toContain("database.connection.port");
+  });
+
+  it("marks ancestor rows with json-on-path", () => {
+    tv.applyFilter("port");
+    const onPath = Array.from(container.querySelectorAll(".json-on-path")).map((el) =>
+      el.getAttribute("data-path")
+    );
+    expect(onPath).toContain("config");
+    expect(onPath).toContain("config.server");
+    expect(onPath).toContain("database");
+    expect(onPath).toContain("database.connection");
+  });
+
+  it("adds json-filter-active to the tree root", () => {
+    tv.applyFilter("port");
+    const root = container.querySelector(".json-tree-root")!;
+    expect(root.classList.contains("json-filter-active")).toBe(true);
+  });
+
+  it("applyFilter('') after a non-empty query removes all filter classes", () => {
+    tv.applyFilter("port");
+    tv.applyFilter("");
+    expect(container.querySelectorAll(".json-match").length).toBe(0);
+    expect(container.querySelectorAll(".json-on-path").length).toBe(0);
+    expect(
+      container.querySelector(".json-tree-root")?.classList.contains("json-filter-active")
+    ).toBe(false);
+  });
+
+  it("returns matchCount 0 for non-empty query with no matches but still activates filter", () => {
+    const r = tv.applyFilter("nonexistent_xyz_123");
+    expect(r.matchCount).toBe(0);
+    expect(
+      container.querySelector(".json-tree-root")?.classList.contains("json-filter-active")
+    ).toBe(true);
+  });
+
+  it("auto-expands auto-collapsed containers that contain a match", () => {
+    document.body.innerHTML = "";
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    tv = new TreeView(container, { autoCollapseDepth: 0 });
+    tv.setValue({ outer: { inner: { needle: 1 } } });
+
+    // Sanity-check: at least one container is collapsed before the filter applies
+    const collapsedBefore = container.querySelectorAll(".json-container.is-collapsed");
+    expect(collapsedBefore.length).toBeGreaterThan(0);
+
+    tv.applyFilter("needle");
+
+    // After filter: all on-path containers should be open
+    const stillCollapsed = container.querySelectorAll(
+      ".json-on-path .json-container.is-collapsed, .json-match .json-container.is-collapsed"
+    );
+    expect(stillCollapsed.length).toBe(0);
+  });
+});

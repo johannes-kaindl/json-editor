@@ -2,6 +2,7 @@ import type { JsonValue, JsonPath, MarkerStyle } from "../core/types";
 import { renderTree } from "../core/render";
 import { editValue } from "../core/edit";
 import { pathToString } from "../core/path";
+import { findMatches } from "../core/search";
 import { createCopyButton } from "./CopyButton";
 
 export interface TreeViewOptions {
@@ -38,6 +39,55 @@ export class TreeView {
     row.scrollIntoView({ block: "center", behavior: "smooth" });
     row.classList.add("json-row-flash");
     setTimeout(() => row.classList.remove("json-row-flash"), FLASH_MS);
+  }
+
+  applyFilter(query: string): { matchCount: number } {
+    const treeRoot = this.container.querySelector<HTMLElement>(".json-tree-root");
+    if (!treeRoot) return { matchCount: 0 };
+
+    treeRoot.classList.remove("json-filter-active");
+    treeRoot.querySelectorAll(".json-match, .json-on-path").forEach((el) => {
+      el.classList.remove("json-match", "json-on-path");
+    });
+
+    if (query.trim() === "") return { matchCount: 0 };
+
+    const result = findMatches(this.current, query, { matchKeys: true, matchValues: true });
+
+    for (const pathStr of result.matches) {
+      if (pathStr === "root") continue;
+      const row = treeRoot.querySelector<HTMLElement>(
+        `[data-path="${cssEscapeAttr(pathStr)}"]`
+      );
+      row?.classList.add("json-match");
+    }
+
+    for (const pathStr of result.onPath) {
+      if (pathStr === "root") continue;
+      const row = treeRoot.querySelector<HTMLElement>(
+        `[data-path="${cssEscapeAttr(pathStr)}"]`
+      );
+      row?.classList.add("json-on-path");
+    }
+
+    treeRoot.classList.add("json-filter-active");
+    this.openContainersWithMatches(treeRoot);
+
+    return { matchCount: result.matches.size };
+  }
+
+  private openContainersWithMatches(treeRoot: HTMLElement): void {
+    treeRoot
+      .querySelectorAll<HTMLElement>(
+        ".json-on-path .json-container.is-collapsed, .json-match .json-container.is-collapsed"
+      )
+      .forEach((container) => {
+        const content = container.querySelector<HTMLElement>(":scope > .json-content");
+        const toggle = container.querySelector<HTMLElement>(":scope > .json-collapse-toggle");
+        content?.classList.remove("collapsed");
+        container.classList.remove("is-collapsed");
+        toggle?.classList.add("is-open");
+      });
   }
 
   private render(): void {
