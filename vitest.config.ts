@@ -6,6 +6,12 @@ export default defineConfig({
     environment: "happy-dom",
     globals: false,
     include: ["tests/**/*.test.ts"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html"],
+      include: ["src/**/*.ts"],
+      exclude: ["src/__mocks__/**", "src/main.ts"],
+    },
   },
   resolve: {
     alias: {
