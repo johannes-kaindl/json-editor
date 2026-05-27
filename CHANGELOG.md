@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-05-27
+
+**Reorder and retype.** 1.0.0 made tree mode CRUD-capable. 1.1.0 closes the polish gap: drag any row to a new position in its container, and switch any value to a different JSON type from a single button.
+
+### Added
+- **Drag-and-drop reorder** — hover any row to reveal a `⋮⋮` drag-handle. Drag the row up or down within the same container; a colored line indicates the drop position. Works for both array items and object keys. Cross-container moves are intentionally out of scope.
+- **Type-switching** — every row gets a `T` action button (alongside ✎ + ✕). Click → small inline menu lists all six JSON types (`String`, `Number`, `Boolean`, `Null`, `Object`, `Array`). The current type is shown disabled; picking another type replaces the value with a sensible default (`""`, `0`, `false`, `null`, `{}`, `[]`). Type changes are destructive but undoable — use `Cmd/Ctrl+Z` to revert.
+- **Pure-core ops** — `moveArrayItem`, `moveObjectKey`, `changeType`, and `computeInsertionIndex` in `src/core/edit.ts`, plus the `JsonType` export. All fully unit-tested in isolation.
+
+### Changed
+- Test count: 262 → 369 (+107: 79 core edit, 8 TypeMenu, 4 RowActions extension, 11 TreeView dragdrop, 5 JsonFileView reorder integration).
+
+### Notes
+- Drag-drop is **same-parent only** by design — moving a row from one container into another is deferred (it raises path-validation and type-mismatch questions that warrant a separate spec).
+- Type changes do not preserve content across the change. Converting `{a: 1, b: 2}` to `array` produces `[]`, not `[1, 2]`. This is intentional and consistent: the type-menu is a destructive shortcut, not a data-migration tool.
+
 ## [1.0.0] — 2026-05-27
 
 **1.0.0 marks the point where the tree view becomes a real editor.** You can now do every basic structural edit (add / delete / rename keys, add / delete items) directly in tree mode, with full undo/redo support — no round-trip through source mode required for routine work.
@@ -111,7 +127,8 @@ The original 1.0.0 roadmap conflated all five into one release. Scope-decomposed
 - **Settings tab** — default open mode, indent style (2 / 4 / tab), tree marker style (modern / classic), auto-collapse depth.
 - **GitHub Actions release workflow** — tag push triggers build, test, and GitHub release with `main.js`, `manifest.json`, and `styles.css` as assets.
 
-[Unreleased]: https://codeberg.org/jkaindl/json-editor/compare/1.0.0...HEAD
+[Unreleased]: https://codeberg.org/jkaindl/json-editor/compare/1.1.0...HEAD
+[1.1.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.1.0
 [1.0.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.0.0
 [0.3.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.3.0
 [0.2.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.2.0

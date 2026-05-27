@@ -635,6 +635,74 @@
   box-shadow: 0 0 0 1px var(--jv-match-bg);
 }
 
+/* ─── Drag handle (per row) ──────────────────────────────────────── */
+.json-drag-handle {
+  display: inline-block;
+  width: 1em;
+  margin-right: var(--jv-space-1);
+  color: var(--jv-fg-muted);
+  cursor: grab;
+  user-select: none;
+  font-size: 0.85em;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity var(--jv-dur-fast) var(--jv-ease);
+}
+.json-row:hover > .json-drag-handle,
+.json-row:focus-within > .json-drag-handle,
+.json-row:focus > .json-drag-handle {
+  opacity: 0.6;
+}
+.json-row:hover > .json-drag-handle:hover {
+  opacity: 1;
+}
+.json-row.json-dragging {
+  opacity: 0.4;
+}
+.json-row.json-drop-target-before {
+  box-shadow: inset 0 2px 0 0 var(--jv-accent);
+}
+.json-row.json-drop-target-after {
+  box-shadow: inset 0 -2px 0 0 var(--jv-accent);
+}
+
+/* ─── Type-switch menu (popover) ──────────────────────────────────── */
+.json-type-menu {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--jv-space-1);
+  margin-top: var(--jv-space-2);
+  margin-left: var(--jv-space-5);
+  padding: var(--jv-space-2);
+  background: var(--jv-bg-inset);
+  border: 1px solid var(--jv-border);
+  border-radius: var(--jv-radius-sm);
+  box-shadow: var(--jv-shadow-sm, 0 2px 8px rgba(0,0,0,0.12));
+  z-index: 10;
+}
+.json-type-option {
+  background: var(--jv-bg);
+  border: 1px solid var(--jv-border);
+  border-radius: var(--jv-radius-sm);
+  color: var(--jv-fg);
+  cursor: pointer;
+  padding: var(--jv-space-1) var(--jv-space-3);
+  font-family: var(--font-interface);
+  font-size: 0.85em;
+  transition: background var(--jv-dur-fast) var(--jv-ease),
+              border-color var(--jv-dur-fast) var(--jv-ease);
+}
+.json-type-option:hover:not(:disabled) {
+  background: var(--jv-hover);
+  border-color: var(--jv-accent);
+}
+.json-type-option:disabled,
+.json-type-option.is-current {
+  opacity: 0.5;
+  cursor: default;
+  background: var(--jv-bg-inset);
+}
+
 /* ─── Reduced motion ──────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .json-content,
@@ -643,7 +711,9 @@
   .json-copy-btn,
   .bc-seg,
   .json-mode-pill,
-  .json-codeblock-copy {
+  .json-codeblock-copy,
+  .json-drag-handle,
+  .json-type-option {
     transition: none;
   }
 }

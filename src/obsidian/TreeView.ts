@@ -1,11 +1,12 @@
 import type { JsonValue, JsonPath, MarkerStyle } from "../core/types";
 import { renderTree } from "../core/render";
-import { editValue } from "../core/edit";
+import { editValue, computeInsertionIndex, type JsonType } from "../core/edit";
 import { pathToString } from "../core/path";
 import { findMatches } from "../core/search";
 import { createCopyButton } from "./CopyButton";
 import { createRowActions } from "./RowActions";
 import { createAddAffordance } from "./AddAffordance";
+import { openTypeMenu } from "./TypeMenu";
 
 export interface TreeViewOptions {
   readonly?: boolean;
@@ -25,6 +26,9 @@ export interface TreeViewOptions {
   onAddItem?: (parentPath: JsonPath) => void;
   onDelete?: (path: JsonPath) => void;
   onRenameKey?: (path: JsonPath, newKey: string) => void;
+  onMoveItem?: (parentPath: JsonPath, fromIdx: number, toIdx: number) => void;
+  onMoveKey?: (parentPath: JsonPath, key: string, toPos: number) => void;
+  onChangeType?: (path: JsonPath, newType: JsonType) => void;
   onError?: (err: Error) => void;
 }
 
@@ -34,6 +38,7 @@ export class TreeView {
   private current: JsonValue = null;
   private editing = false;
   private activeRow: HTMLElement | null = null;
+  private dragSourcePath: JsonPath | null = null;
 
   constructor(private container: HTMLElement, private opts: TreeViewOptions) {}
 
@@ -129,7 +134,7 @@ export class TreeView {
   }
 
   private attachStructuralActions(treeRoot: HTMLElement): void {
-    // Attach RowActions to every row.
+    // Attach drag-handle + RowActions to every row.
     const rows = treeRoot.querySelectorAll<HTMLElement>('.json-row[role="treeitem"]');
     rows.forEach((row) => {
       const pathStr = row.getAttribute("data-path");
@@ -137,10 +142,23 @@ export class TreeView {
       const path = this.parsePathStrSafe(pathStr);
       const lastSeg = path[path.length - 1];
       const canRename = typeof lastSeg === "string";
+
+      const handle = document.createElement("span");
+      handle.className = "json-drag-handle";
+      handle.setAttribute("aria-hidden", "true");
+      handle.textContent = "⋮⋮";
+      row.insertBefore(handle, row.firstChild);
+      row.setAttribute("draggable", "true");
+      this.wireDragEvents(row, path);
+
+      const value = locateValueByPathStr(this.current, pathStr);
       const actions = createRowActions({
         canRename,
         onRename: () => this.startRename(row, path, String(lastSeg)),
         onDelete: () => this.opts.onDelete?.(path),
+        onChangeType: this.opts.onChangeType
+          ? () => this.openTypeMenuFor(row, path, value)
+          : undefined,
       });
       row.appendChild(actions);
     });
@@ -164,6 +182,133 @@ export class TreeView {
       });
       content.appendChild(aff);
     });
+  }
+
+  private openTypeMenuFor(row: HTMLElement, path: JsonPath, value: JsonValue): void {
+    if (!this.opts.onChangeType) return;
+    const current = typeOfJsonValue(value);
+    openTypeMenu(row, {
+      currentType: current,
+      onPick: (newType) => this.opts.onChangeType!(path, newType),
+    });
+  }
+
+  private wireDragEvents(row: HTMLElement, path: JsonPath): void {
+    row.addEventListener("dragstart", (e) => {
+      // Stop the event from bubbling to ancestor row listeners, otherwise they
+      // would overwrite `dragSourcePath` with their own path during bubble-phase.
+      e.stopPropagation();
+      this.dragSourcePath = path;
+      row.classList.add("json-dragging");
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = "move";
+        try {
+          e.dataTransfer.setData("application/x-json-path", pathToString(path));
+        } catch {
+          // happy-dom may not implement setData for arbitrary types; ignore.
+        }
+      }
+    });
+
+    row.addEventListener("dragend", (e) => {
+      e.stopPropagation();
+      row.classList.remove("json-dragging");
+      this.clearDropTargets();
+      this.dragSourcePath = null;
+    });
+
+    row.addEventListener("dragover", (e) => {
+      if (!this.dragSourcePath) return;
+      if (!this.isSameParent(this.dragSourcePath, path)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+      this.clearDropTargets();
+      const pos = this.dropPosition(row, e.clientY);
+      row.classList.add(
+        pos === "before" ? "json-drop-target-before" : "json-drop-target-after"
+      );
+    });
+
+    row.addEventListener("dragleave", () => {
+      row.classList.remove("json-drop-target-before", "json-drop-target-after");
+    });
+
+    row.addEventListener("drop", (e) => {
+      const src = this.dragSourcePath;
+      if (!src) return;
+      if (!this.isSameParent(src, path)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      this.clearDropTargets();
+
+      const srcLast = src[src.length - 1];
+      const dstLast = path[path.length - 1];
+      const parentPath = path.slice(0, -1);
+
+      if (typeof srcLast === "number" && typeof dstLast === "number") {
+        const pos = this.dropPosition(row, e.clientY);
+        const toIdx = computeInsertionIndex(srcLast, dstLast, pos);
+        if (toIdx !== srcLast) {
+          this.opts.onMoveItem?.(parentPath, srcLast, toIdx);
+        }
+      } else if (typeof srcLast === "string" && typeof dstLast === "string") {
+        const parentObj = this.getValueAt(parentPath);
+        if (parentObj === null || typeof parentObj !== "object" || Array.isArray(parentObj)) {
+          return;
+        }
+        const keys = Object.keys(parentObj as Record<string, JsonValue>);
+        const fromPos = keys.indexOf(srcLast);
+        const toPosTarget = keys.indexOf(dstLast);
+        if (fromPos === -1 || toPosTarget === -1) return;
+        const pos = this.dropPosition(row, e.clientY);
+        const toPos = computeInsertionIndex(fromPos, toPosTarget, pos);
+        if (toPos !== fromPos) {
+          this.opts.onMoveKey?.(parentPath, srcLast, toPos);
+        }
+      }
+
+      this.dragSourcePath = null;
+    });
+  }
+
+  private isSameParent(a: JsonPath, b: JsonPath): boolean {
+    if (a.length !== b.length) return false;
+    if (a.length === 0) return false;
+    for (let i = 0; i < a.length - 1; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    // Last segment must be same kind (both numeric or both string).
+    const aLast = a[a.length - 1];
+    const bLast = b[b.length - 1];
+    return typeof aLast === typeof bLast;
+  }
+
+  private dropPosition(row: HTMLElement, clientY: number): "before" | "after" {
+    const rect = row.getBoundingClientRect();
+    return clientY < rect.top + rect.height / 2 ? "before" : "after";
+  }
+
+  private clearDropTargets(): void {
+    this.container
+      .querySelectorAll(".json-drop-target-before, .json-drop-target-after")
+      .forEach((el) =>
+        el.classList.remove("json-drop-target-before", "json-drop-target-after")
+      );
+  }
+
+  private getValueAt(path: JsonPath): JsonValue {
+    let cur: JsonValue = this.current;
+    for (const seg of path) {
+      if (Array.isArray(cur) && typeof seg === "number") {
+        cur = cur[seg];
+      } else if (cur !== null && typeof cur === "object" && typeof seg === "string") {
+        cur = (cur as { [k: string]: JsonValue })[seg];
+      } else {
+        return null;
+      }
+    }
+    return cur;
   }
 
   private detectContainerKind(container: HTMLElement): "object" | "array" {
@@ -490,6 +635,21 @@ function locateChildForSegment(parent: HTMLElement, segment: string | number): H
     return null;
   }
   return rows[segment] ?? null;
+}
+
+function typeOfJsonValue(value: JsonValue): JsonType {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "array";
+  switch (typeof value) {
+    case "string":
+      return "string";
+    case "number":
+      return "number";
+    case "boolean":
+      return "boolean";
+    default:
+      return "object";
+  }
 }
 
 function locateValueByPathStr(root: JsonValue, pathStr: string): JsonValue {

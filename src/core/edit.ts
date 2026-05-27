@@ -113,6 +113,115 @@ export function deleteAt(value: JsonValue, path: JsonPath): JsonValue {
   throw new Error(`Cannot delete from ${typeof parent}`);
 }
 
+export type JsonType = "string" | "number" | "boolean" | "null" | "object" | "array";
+
+function defaultForType(type: JsonType): JsonValue {
+  switch (type) {
+    case "string":
+      return "";
+    case "number":
+      return 0;
+    case "boolean":
+      return false;
+    case "null":
+      return null;
+    case "object":
+      return {};
+    case "array":
+      return [];
+  }
+}
+
+function typeOf(value: JsonValue): JsonType {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "array";
+  switch (typeof value) {
+    case "string":
+      return "string";
+    case "number":
+      return "number";
+    case "boolean":
+      return "boolean";
+    case "object":
+      return "object";
+    default:
+      throw new Error(`Unsupported value type: ${typeof value}`);
+  }
+}
+
+export function changeType(value: JsonValue, path: JsonPath, newType: JsonType): JsonValue {
+  const current = getAt(value, path);
+  if (typeOf(current) === newType) return value;
+  const replacement = defaultForType(newType);
+  if (path.length === 0) return replacement;
+  return editValue(value, path, replacement);
+}
+
+export function moveArrayItem(
+  value: JsonValue,
+  parentPath: JsonPath,
+  fromIdx: number,
+  toIdx: number
+): JsonValue {
+  const parent = getAt(value, parentPath);
+  if (!Array.isArray(parent)) {
+    throw new Error("Parent is not an array");
+  }
+  if (fromIdx < 0 || fromIdx >= parent.length) {
+    throw new Error("Index out of bounds");
+  }
+  const clampedTo = Math.max(0, Math.min(toIdx, parent.length - 1));
+  if (clampedTo === fromIdx) return value;
+  const updated = parent.slice();
+  const [item] = updated.splice(fromIdx, 1);
+  updated.splice(clampedTo, 0, item);
+  if (parentPath.length === 0) return updated;
+  return editValue(value, parentPath, updated);
+}
+
+export function moveObjectKey(
+  value: JsonValue,
+  parentPath: JsonPath,
+  key: string,
+  toPos: number
+): JsonValue {
+  const parent = getAt(value, parentPath);
+  if (parent === null || typeof parent !== "object" || Array.isArray(parent)) {
+    throw new Error("Parent is not an object");
+  }
+  const obj = parent as { [k: string]: JsonValue };
+  const keys = Object.keys(obj);
+  const currentPos = keys.indexOf(key);
+  if (currentPos === -1) throw new Error("Key not found");
+  const clamped = Math.max(0, Math.min(toPos, keys.length - 1));
+  if (clamped === currentPos) return value;
+  const reordered = keys.slice();
+  reordered.splice(currentPos, 1);
+  reordered.splice(clamped, 0, key);
+  const updated: { [k: string]: JsonValue } = {};
+  for (const k of reordered) updated[k] = obj[k];
+  if (parentPath.length === 0) return updated;
+  return editValue(value, parentPath, updated);
+}
+
+/**
+ * Compute the array splice-insert index after the dragged item has been
+ * removed from its original position. The drop position is either "before"
+ * or "after" the target row (top-half / bottom-half heuristic). Returning
+ * `fromIdx` itself signals a no-op (dropped onto self).
+ */
+export function computeInsertionIndex(
+  fromIdx: number,
+  toIdx: number,
+  dropPosition: "before" | "after"
+): number {
+  if (fromIdx === toIdx) return fromIdx;
+  // Step 1: target index after removal of the dragged item.
+  const adjustedTarget = toIdx > fromIdx ? toIdx - 1 : toIdx;
+  // Step 2: insert before or after that target.
+  return dropPosition === "after" ? adjustedTarget + 1 : adjustedTarget;
+}
+
 export function renameKey(value: JsonValue, path: JsonPath, newKey: string): JsonValue {
   if (path.length === 0) throw new Error("Cannot rename root");
   if (newKey === "") throw new Error("Key cannot be empty");

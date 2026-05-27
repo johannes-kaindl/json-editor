@@ -49,4 +49,42 @@ describe("createRowActions", () => {
     expect(el.querySelector(".json-row-rename")?.getAttribute("aria-label")).toBe("Rename key");
     expect(el.querySelector(".json-row-delete")?.getAttribute("aria-label")).toBe("Delete row");
   });
+
+  it("includes a type-switch button when onChangeType provided", () => {
+    const el = createRowActions({
+      canRename: true,
+      onRename: () => {},
+      onDelete: () => {},
+      onChangeType: () => {},
+    });
+    expect(el.querySelector(".json-row-type")).not.toBeNull();
+  });
+
+  it("omits the type-switch button when onChangeType missing", () => {
+    const el = createRowActions({ canRename: true, onRename: () => {}, onDelete: () => {} });
+    expect(el.querySelector(".json-row-type")).toBeNull();
+  });
+
+  it("clicking type-switch fires onChangeType and stops propagation", () => {
+    let called = 0;
+    const el = createRowActions({
+      canRename: false,
+      onRename: () => {},
+      onDelete: () => {},
+      onChangeType: () => called++,
+    });
+    document.body.appendChild(el);
+    el.querySelector<HTMLButtonElement>(".json-row-type")!.click();
+    expect(called).toBe(1);
+  });
+
+  it("type-switch button has aria-label", () => {
+    const el = createRowActions({
+      canRename: false,
+      onRename: () => {},
+      onDelete: () => {},
+      onChangeType: () => {},
+    });
+    expect(el.querySelector(".json-row-type")?.getAttribute("aria-label")).toBe("Change type");
+  });
 });
