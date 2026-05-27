@@ -43,17 +43,19 @@
 
   --jv-nest-tint: color-mix(in srgb, var(--background-modifier-border) 22%, transparent);
 
+  --jv-match-bg: var(--text-highlight-bg, rgba(255, 214, 10, 0.3));
+  --jv-match-fg: var(--text-normal);
+
   --jv-dur-fast: 120ms;
   --jv-dur-base: 150ms;
   --jv-ease: ease-out;
 }
 
 /* ─── Toolbar ─────────────────────────────────────────────────────────
-   Unified bar: breadcrumb on the left, mode toggle on the right. */
+   Unified bar: breadcrumb, search, mode toggle. */
 .json-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--jv-space-5);
   padding: var(--jv-space-4) var(--jv-space-5);
   background: var(--jv-bg-panel);
@@ -62,7 +64,7 @@
 
 /* ─── Breadcrumb ──────────────────────────────────────────────────── */
 .json-breadcrumb {
-  flex: 1;
+  flex-shrink: 1;
   min-width: 0;
   display: flex;
   align-items: center;
@@ -94,6 +96,68 @@
   color: var(--jv-fg-faint);
   cursor: default;
   user-select: none;
+}
+
+/* ─── Search bar ──────────────────────────────────────────────────── */
+.json-search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--jv-space-2);
+  background: var(--jv-bg-inset);
+  border: 1px solid var(--jv-border);
+  border-radius: var(--jv-radius-sm);
+  padding: var(--jv-space-1) var(--jv-space-3);
+  flex: 1;
+  min-width: 0;
+  max-width: 32em;
+  transition: border-color var(--jv-dur-fast) var(--jv-ease);
+}
+.json-search-bar:focus-within {
+  border-color: var(--jv-accent);
+}
+.json-search-icon {
+  flex-shrink: 0;
+  color: var(--jv-fg-muted);
+}
+.json-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--jv-fg);
+  font-family: var(--font-interface);
+  font-size: inherit;
+  padding: 0;
+}
+.json-search-input::placeholder {
+  color: var(--jv-fg-faint);
+}
+.json-search-count {
+  color: var(--jv-fg-muted);
+  font-size: 0.85em;
+  white-space: nowrap;
+  font-family: var(--font-interface);
+}
+.json-search-count.is-empty {
+  color: var(--jv-fg-faint);
+  font-style: italic;
+}
+.json-search-clear {
+  background: none;
+  border: none;
+  color: var(--jv-fg-muted);
+  cursor: pointer;
+  padding: 0 var(--jv-space-2);
+  font-size: 1.1em;
+  line-height: 1;
+  border-radius: var(--jv-radius-sm);
+  transition: color var(--jv-dur-fast) var(--jv-ease),
+              background var(--jv-dur-fast) var(--jv-ease);
+}
+.json-search-clear:hover {
+  color: var(--jv-fg);
+  background: var(--jv-hover);
 }
 
 /* ─── Mode toggle ─────────────────────────────────────────────────────
@@ -465,6 +529,27 @@
 }
 .json-codeblock .json-tree-root {
   padding: var(--jv-space-4) var(--jv-space-5);
+}
+
+/* ─── Search filter (strict-hide + match highlight) ───────────────── */
+/* When the filter is active, hide every row that is neither a match
+   nor on the ancestor chain of a match. */
+.json-tree-root.json-filter-active .json-row:not(.json-match):not(.json-on-path) {
+  display: none;
+}
+
+/* Match highlight — applies to the key span and any primitive value
+   span inside the matching row. */
+.json-tree-root .json-match > .json-key,
+.json-tree-root .json-match > .json-string,
+.json-tree-root .json-match > .json-number,
+.json-tree-root .json-match > .json-boolean,
+.json-tree-root .json-match > .json-null {
+  background: var(--jv-match-bg);
+  color: var(--jv-match-fg);
+  border-radius: 2px;
+  padding: 0 2px;
+  box-shadow: 0 0 0 1px var(--jv-match-bg);
 }
 
 /* ─── Reduced motion ──────────────────────────────────────────────── */

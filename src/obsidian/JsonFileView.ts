@@ -6,6 +6,7 @@ import { TreeView } from "./TreeView";
 import { SourceView } from "./SourceView";
 import type { JsonEditorSettings } from "./SettingsTab";
 import { Breadcrumb } from "./Breadcrumb";
+import { SearchBar } from "./SearchBar";
 import { Tooltip, tooltipContentForValue } from "./Tooltip";
 
 export const JSON_VIEW_TYPE = "json-editor-view";
@@ -26,6 +27,8 @@ export class JsonFileView extends TextFileView {
   private bodyEl!: HTMLDivElement;
   private bannerEl: HTMLDivElement | null = null;
   private breadcrumb!: Breadcrumb;
+  private searchBar!: SearchBar;
+  private currentQuery = "";
   private tooltip!: Tooltip;
 
   constructor(leaf: WorkspaceLeaf, private settings: JsonEditorSettings) {
@@ -98,9 +101,14 @@ export class JsonFileView extends TextFileView {
       onSegmentClick: (subPath) => this.treeView?.scrollToPath(subPath),
     });
 
+    this.searchBar = new SearchBar({
+      onQueryChange: (q) => this.onQueryChange(q),
+    });
+
     this.toolbarEl = document.createElement("div");
     this.toolbarEl.className = "json-toolbar";
     this.toolbarEl.appendChild(this.breadcrumb.getElement());
+    this.toolbarEl.appendChild(this.searchBar.getElement());
     this.toolbarEl.appendChild(this.toggleEl);
     this.contentEl.appendChild(this.toolbarEl);
 
@@ -156,6 +164,31 @@ export class JsonFileView extends TextFileView {
       });
       this.sourceView.setValue(this.data);
     }
+
+    this.searchBar.getElement().hidden = this.mode !== "tree";
+    if (this.mode === "tree" && this.treeView && this.currentQuery !== "") {
+      const result = this.treeView.applyFilter(this.currentQuery);
+      this.searchBar.setMatchInfo({ matchCount: result.matchCount });
+    } else if (this.mode !== "tree") {
+      this.searchBar.setMatchInfo(null);
+    }
+  }
+
+  private onQueryChange(query: string): void {
+    this.currentQuery = query;
+    if (this.treeView) {
+      const result = this.treeView.applyFilter(query);
+      this.searchBar.setMatchInfo(
+        query.trim() === "" ? null : { matchCount: result.matchCount }
+      );
+    }
+  }
+
+  focusSearch(): void {
+    if (this.mode !== "tree") {
+      this.switchTo("tree");
+    }
+    this.searchBar.focus();
   }
 
   private renderEmptyState(): void {
@@ -163,6 +196,8 @@ export class JsonFileView extends TextFileView {
     this.bodyEl.innerHTML = "";
     this.treeView = null;
     this.sourceView = null;
+    this.searchBar.getElement().hidden = true;
+    this.searchBar.setMatchInfo(null);
     const wrap = document.createElement("div");
     wrap.className = "json-empty-state";
     const title = document.createElement("div");
@@ -223,5 +258,6 @@ export class JsonFileView extends TextFileView {
 
   onunload(): void {
     this.tooltip.destroy();
+    this.searchBar.destroy();
   }
 }

@@ -22,6 +22,18 @@ export default class JsonEditorPlugin extends Plugin {
     );
 
     this.addSettingTab(new JsonEditorSettingsTab(this.app, this));
+
+    this.addCommand({
+      id: "focus-search",
+      name: "Focus JSON search",
+      hotkeys: [{ modifiers: ["Mod"], key: "f" }],
+      checkCallback: (checking: boolean) => {
+        const view = this.app.workspace.getActiveViewOfType(JsonFileView);
+        if (!view) return false;
+        if (!checking) view.focusSearch();
+        return true;
+      },
+    });
   }
 
   async saveSettings(): Promise<void> {

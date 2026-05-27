@@ -75,7 +75,7 @@ describe("JsonFileView", () => {
     v.setViewData('{"name":"jay"}', false);
     const value = v.contentEl.querySelector(".json-string") as HTMLElement;
     value.click();
-    const input = v.contentEl.querySelector("input[type='text']") as HTMLInputElement;
+    const input = v.contentEl.querySelector(".json-inline-edit") as HTMLInputElement;
     input.value = "sam";
     input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
     const data = v.getViewData();
@@ -89,7 +89,7 @@ describe("JsonFileView", () => {
     const before = v.saveCount;
     const value = v.contentEl.querySelector(".json-string") as HTMLElement;
     value.click();
-    const input = v.contentEl.querySelector("input[type='text']") as HTMLInputElement;
+    const input = v.contentEl.querySelector(".json-inline-edit") as HTMLInputElement;
     input.value = "sam";
     input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
     expect(v.saveCount).toBe(before + 1);
@@ -188,5 +188,88 @@ describe("JsonFileView", () => {
     const segs = v.contentEl.querySelectorAll(".json-breadcrumb .bc-seg");
     expect(segs.length).toBe(1);
     expect(segs[0].textContent).toBe("root");
+  });
+});
+
+describe("JsonFileView SearchBar integration", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("toolbar contains a SearchBar in tree mode", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"port":8080}', false);
+    const sb = v.contentEl.querySelector(".json-search-bar") as HTMLElement;
+    expect(sb).toBeInstanceOf(HTMLElement);
+    expect(sb.hidden).toBe(false);
+  });
+
+  it("SearchBar is hidden in source mode", () => {
+    const v = new JsonFileView(fakeLeaf(), { ...DEFAULT_SETTINGS, defaultMode: "source" });
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"port":8080}', false);
+    const sb = v.contentEl.querySelector(".json-search-bar") as HTMLElement;
+    expect(sb.hidden).toBe(true);
+  });
+
+  it("typing in SearchBar filters the tree", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"port":8080,"host":"localhost"}', false);
+    const input = v.contentEl.querySelector(".json-search-input") as HTMLInputElement;
+    input.value = "port";
+    input.dispatchEvent(new Event("input"));
+    const matches = v.contentEl.querySelectorAll(".json-match");
+    expect(matches.length).toBeGreaterThan(0);
+  });
+
+  it("match count is shown next to the input after a query", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"port":8080,"host":"localhost"}', false);
+    const input = v.contentEl.querySelector(".json-search-input") as HTMLInputElement;
+    input.value = "port";
+    input.dispatchEvent(new Event("input"));
+    const count = v.contentEl.querySelector(".json-search-count") as HTMLElement;
+    expect(count.hidden).toBe(false);
+    expect(count.textContent).toContain("match");
+  });
+
+  it("query persists through mode-switch tree→source→tree and re-applies", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"port":8080,"host":"localhost"}', false);
+    const input = v.contentEl.querySelector(".json-search-input") as HTMLInputElement;
+    input.value = "port";
+    input.dispatchEvent(new Event("input"));
+
+    const pills = v.contentEl.querySelectorAll<HTMLButtonElement>(".json-mode-pill");
+    pills[1].click(); // Source
+    pills[0].click(); // Tree
+
+    const newInput = v.contentEl.querySelector(".json-search-input") as HTMLInputElement;
+    expect(newInput.value).toBe("port");
+    const matches = v.contentEl.querySelectorAll(".json-match");
+    expect(matches.length).toBeGreaterThan(0);
+  });
+
+  it("SearchBar is hidden in empty-state", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData("", false);
+    const sb = v.contentEl.querySelector(".json-search-bar") as HTMLElement;
+    expect(sb.hidden).toBe(true);
+  });
+
+  it("focusSearch() switches to tree mode and focuses the input", () => {
+    const v = new JsonFileView(fakeLeaf(), { ...DEFAULT_SETTINGS, defaultMode: "source" });
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"a":1}', false);
+    v.focusSearch();
+    expect(v.contentEl.querySelector(".json-tree-root")).not.toBeNull();
+    expect(document.activeElement).toBe(
+      v.contentEl.querySelector(".json-search-input")
+    );
   });
 });

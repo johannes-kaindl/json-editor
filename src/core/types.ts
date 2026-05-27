@@ -27,3 +27,14 @@ export interface RenderOptions {
 export interface SerializeOptions {
   indent: number | "\t";
 }
+
+export interface SearchOptions {
+  matchKeys?: boolean;
+  matchValues?: boolean;
+}
+
+export interface SearchResult {
+  matches: Set<string>;
+  onPath: Set<string>;
+  counts: { keys: number; values: number };
+}
