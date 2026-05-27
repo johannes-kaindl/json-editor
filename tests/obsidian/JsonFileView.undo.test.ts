@@ -104,7 +104,7 @@ describe("JsonFileView undo/redo + structural edits", () => {
     expect(JSON.parse(v.getViewData())).toEqual({ new: 1 });
   });
 
-  it("switching to source mode clears undo history", () => {
+  it("switching to source mode preserves undo history (1.2.0 unified)", () => {
     const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
     document.body.appendChild(v.contentEl);
     v.setViewData('{"name":"jay"}', false);
@@ -116,7 +116,10 @@ describe("JsonFileView undo/redo + structural edits", () => {
     expect(v.canUndo()).toBe(true);
     const sourcePill = v.contentEl.querySelectorAll<HTMLButtonElement>(".json-mode-pill")[1];
     sourcePill.click();
-    expect(v.canUndo()).toBe(false);
+    // 1.2.0: history is preserved across mode switches.
+    expect(v.canUndo()).toBe(true);
+    v.undo();
+    expect(JSON.parse(v.getViewData())).toEqual({ name: "jay" });
   });
 
   it("add with duplicate key shows error (currentValue unchanged)", () => {
@@ -142,5 +145,72 @@ describe("JsonFileView undo/redo + structural edits", () => {
     // First row "a" is the default active. Press Backspace.
     treeRoot.dispatchEvent(new KeyboardEvent("keydown", { key: "Backspace", bubbles: true }));
     expect(JSON.parse(v.getViewData())).toEqual({ b: 2 });
+  });
+
+  // ─── 1.2.0: cross-mode unified undo ──────────────────────────────────
+  it("source-mode edit becomes undoable", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"a":1}', false);
+    expect(v.canUndo()).toBe(false);
+    // Programmatically simulate a source-mode change
+    (v as unknown as { handleSourceChange(t: string): void }).handleSourceChange('{"a":2}');
+    expect(v.canUndo()).toBe(true);
+    expect(JSON.parse(v.getViewData())).toEqual({ a: 2 });
+    v.undo();
+    expect(JSON.parse(v.getViewData())).toEqual({ a: 1 });
+  });
+
+  it("undo restores text correctly when crossing tree → source → undo", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"a":1}', false);
+    // Tree-mode edit
+    const value = v.contentEl.querySelector(".json-number") as HTMLElement;
+    value.click();
+    const input = v.contentEl.querySelector(".json-inline-edit") as HTMLInputElement;
+    input.value = "99";
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+    expect(JSON.parse(v.getViewData())).toEqual({ a: 99 });
+    // Switch to source
+    const sourcePill = v.contentEl.querySelectorAll<HTMLButtonElement>(".json-mode-pill")[1];
+    sourcePill.click();
+    // Undo from source mode
+    v.undo();
+    expect(JSON.parse(v.getViewData())).toEqual({ a: 1 });
+  });
+
+  it("undo restores text correctly when crossing source → tree → undo", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"a":1}', false);
+    // Switch to source
+    const sourcePill = v.contentEl.querySelectorAll<HTMLButtonElement>(".json-mode-pill")[1];
+    sourcePill.click();
+    // Source-mode edit (programmatic)
+    (v as unknown as { handleSourceChange(t: string): void }).handleSourceChange('{"a":2,"b":3}');
+    expect(JSON.parse(v.getViewData())).toEqual({ a: 2, b: 3 });
+    // Switch to tree
+    const treePill = v.contentEl.querySelectorAll<HTMLButtonElement>(".json-mode-pill")[0];
+    treePill.click();
+    expect(v.canUndo()).toBe(true);
+    v.undo();
+    expect(JSON.parse(v.getViewData())).toEqual({ a: 1 });
+  });
+
+  it("canUndo and canRedo are no longer mode-gated", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"a":1}', false);
+    (v as unknown as { handleSourceChange(t: string): void }).handleSourceChange('{"a":2}');
+    expect(v.canUndo()).toBe(true);
+    v.undo();
+    expect(v.canRedo()).toBe(true);
+    // Switch modes; both still hold
+    const sourcePill = v.contentEl.querySelectorAll<HTMLButtonElement>(".json-mode-pill")[1];
+    sourcePill.click();
+    expect(v.canRedo()).toBe(true);
+    v.redo();
+    expect(JSON.parse(v.getViewData())).toEqual({ a: 2 });
   });
 });

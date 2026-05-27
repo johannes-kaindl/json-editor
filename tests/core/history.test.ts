@@ -1,82 +1,86 @@
 import { describe, it, expect } from "vitest";
 import { History } from "../../src/core/history";
 
-describe("History", () => {
+describe("History<T>", () => {
   it("starts with no undo or redo available", () => {
-    const h = new History();
+    const h = new History<string>();
     expect(h.canUndo()).toBe(false);
     expect(h.canRedo()).toBe(false);
   });
 
   it("push enables undo", () => {
-    const h = new History();
-    h.push({ value: { a: 1 }, description: "initial" });
+    const h = new History<string>();
+    h.push("v1");
     expect(h.canUndo()).toBe(true);
     expect(h.canRedo()).toBe(false);
   });
 
   it("undo returns the pushed state and enables redo", () => {
-    const h = new History();
-    h.push({ value: { a: 1 }, description: "initial" });
-    const result = h.undo({ value: { a: 2 }, description: "current" });
-    expect(result?.value).toEqual({ a: 1 });
+    const h = new History<string>();
+    h.push("v1");
+    const result = h.undo("v2");
+    expect(result).toBe("v1");
     expect(h.canUndo()).toBe(false);
     expect(h.canRedo()).toBe(true);
   });
 
   it("redo returns the redone state and restores undo", () => {
-    const h = new History();
-    h.push({ value: { a: 1 }, description: "v1" });
-    h.undo({ value: { a: 2 }, description: "v2" });
-    const result = h.redo({ value: { a: 1 }, description: "v1-now" });
-    expect(result?.value).toEqual({ a: 2 });
+    const h = new History<string>();
+    h.push("v1");
+    h.undo("v2");
+    const result = h.redo("v1-now");
+    expect(result).toBe("v2");
     expect(h.canRedo()).toBe(false);
     expect(h.canUndo()).toBe(true);
   });
 
   it("push after undo clears the redo stack", () => {
-    const h = new History();
-    h.push({ value: { a: 1 }, description: "v1" });
-    h.undo({ value: { a: 2 }, description: "v2" });
+    const h = new History<string>();
+    h.push("v1");
+    h.undo("v2");
     expect(h.canRedo()).toBe(true);
-    h.push({ value: { a: 3 }, description: "v3" });
+    h.push("v3");
     expect(h.canRedo()).toBe(false);
   });
 
   it("undo returns null when stack empty", () => {
-    const h = new History();
-    expect(h.undo({ value: 1, description: "x" })).toBeNull();
+    const h = new History<string>();
+    expect(h.undo("x")).toBeNull();
   });
 
   it("redo returns null when stack empty", () => {
-    const h = new History();
-    expect(h.redo({ value: 1, description: "x" })).toBeNull();
+    const h = new History<string>();
+    expect(h.redo("x")).toBeNull();
   });
 
   it("clear empties both stacks", () => {
-    const h = new History();
-    h.push({ value: 1, description: "a" });
-    h.undo({ value: 2, description: "b" });
+    const h = new History<string>();
+    h.push("a");
+    h.undo("b");
     h.clear();
     expect(h.canUndo()).toBe(false);
     expect(h.canRedo()).toBe(false);
   });
 
   it("trims oldest entries beyond capacity", () => {
-    const h = new History(2);
-    h.push({ value: 1, description: "v1" });
-    h.push({ value: 2, description: "v2" });
-    h.push({ value: 3, description: "v3" });
-    // Undo gets v3, v2; the v1 was trimmed
-    expect(h.undo({ value: 4, description: "v4" })?.value).toBe(3);
-    expect(h.undo({ value: 3, description: "v3" })?.value).toBe(2);
-    expect(h.undo({ value: 2, description: "v2" })).toBeNull();
+    const h = new History<number>(2);
+    h.push(1);
+    h.push(2);
+    h.push(3);
+    expect(h.undo(4)).toBe(3);
+    expect(h.undo(3)).toBe(2);
+    expect(h.undo(2)).toBeNull();
   });
 
-  it("preserves description in returned state", () => {
-    const h = new History();
-    h.push({ value: 1, description: "add foo" });
-    const result = h.undo({ value: 2, description: "current" });
-    expect(result?.description).toBe("add foo");
+  it("works with arbitrary T (object snapshots)", () => {
+    interface Snap {
+      text: string;
+      cursor: number;
+    }
+    const h = new History<Snap>();
+    h.push({ text: "hello", cursor: 5 });
+    const result = h.undo({ text: "world", cursor: 0 });
+    expect(result?.text).toBe("hello");
+    expect(result?.cursor).toBe(5);
   });
 });

@@ -36,8 +36,8 @@ export default class JsonEditorPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "undo-tree-edit",
-      name: "Undo (tree mode)",
+      id: "undo-edit",
+      name: "Undo",
       hotkeys: [{ modifiers: ["Mod"], key: "z" }],
       checkCallback: (checking: boolean) => {
         const view = this.app.workspace.getActiveViewOfType(JsonFileView);
@@ -48,8 +48,8 @@ export default class JsonEditorPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "redo-tree-edit",
-      name: "Redo (tree mode)",
+      id: "redo-edit",
+      name: "Redo",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "z" }],
       checkCallback: (checking: boolean) => {
         const view = this.app.workspace.getActiveViewOfType(JsonFileView);

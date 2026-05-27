@@ -41,7 +41,7 @@ export class JsonFileView extends TextFileView {
   private searchBar!: SearchBar;
   private currentQuery = "";
   private tooltip!: Tooltip;
-  private history = new History();
+  private history = new History<string>();
 
   constructor(leaf: WorkspaceLeaf, private settings: JsonEditorSettings) {
     super(leaf);
@@ -144,10 +144,7 @@ export class JsonFileView extends TextFileView {
         return;
       }
     }
-    // Switching modes clears the tree-mode undo stack (source has its own).
-    if (this.mode !== target) {
-      this.history.clear();
-    }
+    // History persists across mode switches (unified 1.2.0+).
     this.mode = target;
     this.refreshMode();
   }
@@ -314,10 +311,9 @@ export class JsonFileView extends TextFileView {
     }
   }
 
-  private applyMutation(newValue: JsonValue, description: string): void {
-    if (this.currentValue !== null) {
-      this.history.push({ value: this.currentValue, description });
-    }
+  private applyMutation(newValue: JsonValue, _description: string): void {
+    // Unified history (1.2.0): push the pre-edit TEXT, not the JsonValue.
+    this.history.push(this.data);
     this.currentValue = newValue;
     this.data = serialize(newValue, { indent: this.settings.indent });
     this.requestSave();
@@ -331,48 +327,38 @@ export class JsonFileView extends TextFileView {
   }
 
   undo(): void {
-    if (this.mode !== "tree" || this.currentValue === null) return;
-    const prev = this.history.undo({
-      value: this.currentValue,
-      description: "current",
-    });
-    if (!prev) return;
-    this.currentValue = prev.value;
-    this.data = serialize(prev.value, { indent: this.settings.indent });
-    this.requestSave();
-    this.treeView?.setValue(prev.value);
-    if (this.currentQuery !== "" && this.treeView) {
-      const result = this.treeView.applyFilter(this.currentQuery);
-      this.searchBar.setMatchInfo({ matchCount: result.matchCount });
-    }
+    const prev = this.history.undo(this.data);
+    if (prev === null) return;
+    this.restoreText(prev);
   }
 
   redo(): void {
-    if (this.mode !== "tree" || this.currentValue === null) return;
-    const next = this.history.redo({
-      value: this.currentValue,
-      description: "current",
-    });
-    if (!next) return;
-    this.currentValue = next.value;
-    this.data = serialize(next.value, { indent: this.settings.indent });
+    const next = this.history.redo(this.data);
+    if (next === null) return;
+    this.restoreText(next);
+  }
+
+  private restoreText(text: string): void {
+    // Reuse setViewData's parse + refresh path so an undone state that is
+    // invalid JSON correctly snaps back to source mode with a banner.
+    this.setViewData(text, false);
     this.requestSave();
-    this.treeView?.setValue(next.value);
-    if (this.currentQuery !== "" && this.treeView) {
-      const result = this.treeView.applyFilter(this.currentQuery);
-      this.searchBar.setMatchInfo({ matchCount: result.matchCount });
-    }
   }
 
   canUndo(): boolean {
-    return this.mode === "tree" && this.history.canUndo();
+    return this.history.canUndo();
   }
 
   canRedo(): boolean {
-    return this.mode === "tree" && this.history.canRedo();
+    return this.history.canRedo();
   }
 
   private handleSourceChange(text: string): void {
+    // Push pre-state TEXT before applying the new text — keeps the unified
+    // stack capturing source-mode edits the same way it captures tree edits.
+    if (text !== this.data) {
+      this.history.push(this.data);
+    }
     this.data = text;
     const parsed = parse(text);
     if (parsed.ok) {
