@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-05-27
+
+### Added
+- **Search & Filter** — live search bar in the tree-view toolbar that strict-filters the tree to keys and primitive values matching the query (case-insensitive substring). Ancestors of matches stay visible; non-matching siblings are hidden. Auto-expands collapsed containers that contain a match. Match count displayed next to the input ("3 matches" / "no matches").
+- **`Cmd/Ctrl+F` hotkey** in any JSON view focuses the search bar (switches to tree mode first if you're in source).
+- **ESC behavior** in the search input: clears the query if non-empty; blurs the input if already empty.
+- **Clear button (×)** in the search input.
+- **`findMatches()`** pure function in `src/core/search.ts` — value-walks the tree and returns match + on-path path sets with key/value counts.
+- **`TreeView.applyFilter(query)`** API — applies CSS classes to the existing DOM via `data-path` attribute lookup; renderer is not touched.
+
+### Changed
+- Toolbar layout now hosts `Breadcrumb | SearchBar | mode toggle`. Breadcrumb stops claiming all flex space; SearchBar grows to fill (capped at 32em).
+- `--jv-match-bg` and `--jv-match-fg` design tokens added, theme-aware via `--text-highlight-bg`.
+- Test count: 133 → 181 (+48: 22 in `core/search`, 12 in `SearchBar`, 7 in `TreeView.applyFilter`, 6 in `JsonFileView` SearchBar integration, +1 selector hygiene fix).
+
+### Notes
+- Out of scope for this release (deferred to later): regex/case-toggle, substring highlighting inside matched text, match navigation (Cmd+G next/prev), filter inside code-block embeds, filter in source mode (CodeMirror has native Cmd+F), persistent query across file switches.
+
 ## [0.1.2] — 2026-05-27
 
 ### Added
@@ -45,7 +63,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Settings tab** — default open mode, indent style (2 / 4 / tab), tree marker style (modern / classic), auto-collapse depth.
 - **GitHub Actions release workflow** — tag push triggers build, test, and GitHub release with `main.js`, `manifest.json`, and `styles.css` as assets.
 
-[Unreleased]: https://codeberg.org/jkaindl/json-editor/compare/0.1.2...HEAD
+[Unreleased]: https://codeberg.org/jkaindl/json-editor/compare/0.2.0...HEAD
+[0.2.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.2.0
 [0.1.2]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.1.2
 [0.1.1]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.1.1
 [0.1.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.1.0
