@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-05-27
+
+**Unified cross-mode undo/redo.** Tree mode and source mode now share a single 100-deep text-based history. `Cmd/Ctrl+Z` and `Cmd/Ctrl+Shift+Z` work in both modes; switching between tree and source no longer wipes the undo stack.
+
+### Changed
+- **Unified history**: every change — tree-mode mutation or source-mode text edit — pushes the pre-state TEXT onto a single shared stack. Undo/redo restore that text and refresh the active mode.
+- Mode-switch no longer clears the undo history.
+- Source mode no longer keeps a separate CodeMirror-local undo stack; the unified history captures every doc change. Trade-off: `Cmd+Z` in source mode now undoes per `onChange` event (roughly per keystroke) rather than via CodeMirror's character-grouping heuristic. In practice this is similar granularity.
+
+### Internal
+- `History` is now generic (`History<T>`). `JsonFileView` uses `History<string>` instead of the previous tree-only `History<HistoryState>`. The old `HistoryState` interface is gone; the new API takes and returns the raw `T`.
+- Plugin command IDs renamed: `undo-tree-edit` → `undo-edit`, `redo-tree-edit` → `redo-edit`. Hotkey bindings are unchanged.
+- 4 new integration tests in `JsonFileView.undo.test.ts` covering source-mode undo, source→tree cross-mode undo, tree→source cross-mode undo, and the canUndo / canRedo mode-independence guarantee.
+- Test count: 369 → 373 (existing tree-history tests reused as-is via generic typing).
+
 ## [1.1.0] — 2026-05-27
 
 **Reorder and retype.** 1.0.0 made tree mode CRUD-capable. 1.1.0 closes the polish gap: drag any row to a new position in its container, and switch any value to a different JSON type from a single button.
@@ -127,7 +142,8 @@ The original 1.0.0 roadmap conflated all five into one release. Scope-decomposed
 - **Settings tab** — default open mode, indent style (2 / 4 / tab), tree marker style (modern / classic), auto-collapse depth.
 - **GitHub Actions release workflow** — tag push triggers build, test, and GitHub release with `main.js`, `manifest.json`, and `styles.css` as assets.
 
-[Unreleased]: https://codeberg.org/jkaindl/json-editor/compare/1.1.0...HEAD
+[Unreleased]: https://codeberg.org/jkaindl/json-editor/compare/1.2.0...HEAD
+[1.2.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.2.0
 [1.1.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.1.0
 [1.0.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.0.0
 [0.3.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.3.0
