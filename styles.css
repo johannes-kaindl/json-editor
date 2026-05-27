@@ -635,6 +635,32 @@
   box-shadow: 0 0 0 1px var(--jv-match-bg);
 }
 
+/* ─── Schema banner ──────────────────────────────────────────────── */
+.json-schema-banner {
+  margin: 0;
+  padding: var(--jv-space-3) var(--jv-space-5);
+  font-family: var(--font-interface);
+  font-size: 0.9em;
+  color: var(--text-error, #d32f2f);
+  background: color-mix(in srgb, var(--text-error, #d32f2f) 8%, var(--jv-bg-inset));
+  border-bottom: 1px solid var(--jv-border);
+}
+.json-schema-banner.is-schema-parse-error {
+  background: color-mix(in srgb, var(--text-warning, #c8862e) 8%, var(--jv-bg-inset));
+  color: var(--text-warning, #c8862e);
+}
+
+/* ─── Row error marker ───────────────────────────────────────────── */
+.json-row.json-row-error {
+  outline: 1px solid var(--text-error, #d32f2f);
+  outline-offset: -1px;
+  border-radius: var(--jv-radius-sm);
+}
+.json-row.json-row-error > .json-key,
+.json-row.json-row-error > .json-index {
+  color: var(--text-error, #d32f2f);
+}
+
 /* ─── Drag handle (per row) ──────────────────────────────────────── */
 .json-drag-handle {
   display: inline-block;

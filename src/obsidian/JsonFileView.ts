@@ -1,7 +1,10 @@
-import { Notice, TextFileView, type WorkspaceLeaf } from "obsidian";
+import { Notice, TextFileView, TFile, type WorkspaceLeaf } from "obsidian";
 import { parse } from "../core/parse";
 import { serialize } from "../core/serialize";
+import { pathToString } from "../core/path";
+import { compileSchema, type CompiledSchema, type PathError } from "../core/schema";
 import type { JsonValue, JsonPath } from "../core/types";
+import { SchemaBanner } from "./SchemaBanner";
 import {
   addObjectKey,
   addArrayItem,
@@ -41,6 +44,8 @@ export class JsonFileView extends TextFileView {
   private searchBar!: SearchBar;
   private currentQuery = "";
   private tooltip!: Tooltip;
+  private schemaBanner!: SchemaBanner;
+  private currentSchema: CompiledSchema | null = null;
   private history = new History<string>();
 
   constructor(leaf: WorkspaceLeaf, private settings: JsonEditorSettings) {
@@ -65,6 +70,7 @@ export class JsonFileView extends TextFileView {
       this.clearBanner();
       this.treePillEl.disabled = false;
       this.renderEmptyState();
+      this.applyValidation();
       return;
     }
     const parsed = parse(data);
@@ -81,6 +87,8 @@ export class JsonFileView extends TextFileView {
       this.treePillEl.disabled = true;
     }
     this.refreshMode();
+    this.applyValidation();
+    void this.tryLoadCompanionSchema();
   }
 
   override clear(): void {
@@ -124,9 +132,59 @@ export class JsonFileView extends TextFileView {
     this.toolbarEl.appendChild(this.toggleEl);
     this.contentEl.appendChild(this.toolbarEl);
 
+    this.schemaBanner = new SchemaBanner();
+    this.contentEl.appendChild(this.schemaBanner.getElement());
+
     this.tooltip = new Tooltip();
 
     this.contentEl.appendChild(this.bodyEl);
+  }
+
+  setSchema(schemaText: string): void {
+    if (!this.settings.validateAgainstSchema) return;
+    const result = compileSchema(schemaText);
+    if (!result.ok) {
+      this.currentSchema = null;
+      this.schemaBanner.setSchemaParseError(result.error);
+      return;
+    }
+    this.currentSchema = result.schema;
+    this.applyValidation();
+  }
+
+  private applyValidation(): void {
+    if (!this.settings.validateAgainstSchema || !this.currentSchema) {
+      this.schemaBanner.hide();
+      this.treeView?.setValidationErrors(new Map());
+      return;
+    }
+    if (this.currentValue === null) {
+      // Don't surface schema errors when the document doesn't parse — the
+      // parse-banner already tells the user.
+      this.schemaBanner.hide();
+      this.treeView?.setValidationErrors(new Map());
+      return;
+    }
+    const errors = this.currentSchema.validate(this.currentValue);
+    this.schemaBanner.setErrors(errors.length);
+    this.treeView?.setValidationErrors(pathErrorsToMap(errors));
+  }
+
+  private async tryLoadCompanionSchema(): Promise<void> {
+    if (!this.settings.validateAgainstSchema) return;
+    if (!this.file || !this.app?.vault) return;
+    const path = this.file.path;
+    if (!path.endsWith(".json")) return;
+    const schemaPath = path.slice(0, -".json".length) + this.settings.companionSchemaSuffix;
+    const sibling = this.app.vault.getAbstractFileByPath(schemaPath);
+    if (sibling instanceof TFile) {
+      try {
+        const schemaText = await this.app.vault.cachedRead(sibling);
+        this.setSchema(schemaText);
+      } catch {
+        // best-effort — ignore vault read errors silently
+      }
+    }
   }
 
   private switchTo(target: Mode): void {
@@ -147,6 +205,7 @@ export class JsonFileView extends TextFileView {
     // History persists across mode switches (unified 1.2.0+).
     this.mode = target;
     this.refreshMode();
+    this.applyValidation();
   }
 
   private refreshMode(): void {
@@ -324,6 +383,7 @@ export class JsonFileView extends TextFileView {
         this.searchBar.setMatchInfo({ matchCount: result.matchCount });
       }
     }
+    this.applyValidation();
   }
 
   undo(): void {
@@ -373,6 +433,7 @@ export class JsonFileView extends TextFileView {
       this.treePillEl.disabled = true;
     }
     this.requestSave();
+    this.applyValidation();
   }
 
   private showBanner(message: string): void {
@@ -393,4 +454,14 @@ export class JsonFileView extends TextFileView {
     this.tooltip.destroy();
     this.searchBar.destroy();
   }
+}
+
+function pathErrorsToMap(errors: PathError[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const err of errors) {
+    const key = err.path.length === 0 ? "root" : pathToString(err.path);
+    const existing = map.get(key);
+    map.set(key, existing ? `${existing}; ${err.message}` : err.message);
+  }
+  return map;
 }

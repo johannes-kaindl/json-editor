@@ -24,17 +24,26 @@ describe("JsonEditorSettingsTab", () => {
       indent: 2,
       markerStyle: "modern",
       autoCollapseDepth: 2,
+      validateAgainstSchema: true,
+      companionSchemaSuffix: ".schema.json",
     });
   });
 
-  it("display() renders four settings rows", () => {
+  it("display() renders six settings rows", () => {
     tab.display();
-    const inputs = tab.containerEl.querySelectorAll("input, select");
-    expect(inputs.length).toBeGreaterThanOrEqual(4);
+    const rows = tab.containerEl.children;
+    expect(rows.length).toBe(6);
   });
 
   it("display() pre-fills current settings into controls", () => {
-    plugin.settings = { defaultMode: "source", indent: 4, markerStyle: "classic", autoCollapseDepth: 1 };
+    plugin.settings = {
+      defaultMode: "source",
+      indent: 4,
+      markerStyle: "classic",
+      autoCollapseDepth: 1,
+      validateAgainstSchema: false,
+      companionSchemaSuffix: ".json-schema",
+    };
     tab.display();
     const select = tab.containerEl.querySelector("select") as HTMLSelectElement;
     expect(select.value).toBe("source");

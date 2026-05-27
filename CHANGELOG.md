@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-05-27
+
+**JSON Schema validation in real time.** Drop a companion schema file next to any `.json` you edit, and the plugin highlights validation errors as you type. Closes the 1.x roadmap.
+
+### Added
+- **JSON Schema validation** via [Ajv](https://ajv.js.org/) (v8). Default behavior: when you open `data.json`, the plugin looks for `data.schema.json` in the same folder; if found, every change in tree or source mode is validated against the schema.
+- **Schema banner** above the editor body shows the current error count (`"3 schema errors — hover the red rows for details"`). Hidden when the document is valid; switches to a yellow "schema not loaded" variant if the schema file itself is malformed.
+- **Inline row markers** — every tree row corresponding to a validation error gets a red outline + a hover-tooltip with the human-readable message.
+- **Two new settings**:
+  - `validateAgainstSchema` (default `true`) — master switch.
+  - `companionSchemaSuffix` (default `.schema.json`) — change to e.g. `.json-schema` if your conventions differ.
+- **New runtime dependency**: `ajv@8`.
+
+### Internal
+- New pure module `src/core/schema.ts` — `compileSchema(text)` returns a discriminated union (`{ok, schema}` | `{ok: false, error}`); the compiled schema has a `validate(value): PathError[]` that converts Ajv's `instancePath` JSON-Pointer to our `JsonPath` segment array (including `~0`/`~1` decoding).
+- New `src/obsidian/SchemaBanner.ts` UI component with `setErrors(n)` + `setSchemaParseError(msg)` + `hide()`.
+- `TreeView.setValidationErrors(map)` adds `.json-row-error` class + `title` attribute on offending rows; persists across re-renders.
+- `JsonFileView` gains `setSchema(text)` (public for tests/manual) and an async `tryLoadCompanionSchema()` that reads the sibling via `app.vault.cachedRead` on file open. Best-effort: silent failure if the vault is unavailable.
+- 33 new tests (12 schema core, 6 SchemaBanner, 5 TreeView row-marker, 6 JsonFileView integration, +4 settings extension). Total: 373 → 402.
+
+### Notes
+- **Bundle size**: `main.js` grows from ~37 KB to ~163 KB. The vast majority is Ajv; that is the cost of "real" JSON Schema. If you prefer the older lightweight bundle and don't need validation, turn the setting off — the validator code is still bundled but never runs.
+- **`$schema` URL fetching is out of scope.** The plugin treats `$schema` inside your data as metadata; it does not fetch remote schemas. Companion-file pattern is the canonical wire-up.
+
 ## [1.2.0] — 2026-05-27
 
 **Unified cross-mode undo/redo.** Tree mode and source mode now share a single 100-deep text-based history. `Cmd/Ctrl+Z` and `Cmd/Ctrl+Shift+Z` work in both modes; switching between tree and source no longer wipes the undo stack.
@@ -142,7 +166,8 @@ The original 1.0.0 roadmap conflated all five into one release. Scope-decomposed
 - **Settings tab** — default open mode, indent style (2 / 4 / tab), tree marker style (modern / classic), auto-collapse depth.
 - **GitHub Actions release workflow** — tag push triggers build, test, and GitHub release with `main.js`, `manifest.json`, and `styles.css` as assets.
 
-[Unreleased]: https://codeberg.org/jkaindl/json-editor/compare/1.2.0...HEAD
+[Unreleased]: https://codeberg.org/jkaindl/json-editor/compare/1.3.0...HEAD
+[1.3.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.3.0
 [1.2.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.2.0
 [1.1.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.1.0
 [1.0.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.0.0

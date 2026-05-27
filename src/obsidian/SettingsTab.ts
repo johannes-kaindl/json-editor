@@ -6,6 +6,8 @@ export interface JsonEditorSettings {
   indent: 2 | 4 | "\t";
   markerStyle: "modern" | "classic";
   autoCollapseDepth: number;
+  validateAgainstSchema: boolean;
+  companionSchemaSuffix: string;
 }
 
 export const DEFAULT_SETTINGS: JsonEditorSettings = {
@@ -13,6 +15,8 @@ export const DEFAULT_SETTINGS: JsonEditorSettings = {
   indent: 2,
   markerStyle: "modern",
   autoCollapseDepth: 2,
+  validateAgainstSchema: true,
+  companionSchemaSuffix: ".schema.json",
 };
 
 interface PluginWithSettings extends Plugin {
@@ -80,6 +84,35 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
           const n = parseInt(v, 10);
           if (Number.isFinite(n) && n >= 0) {
             s.autoCollapseDepth = n;
+            await this.settingsPlugin.saveSettings();
+          }
+        });
+      });
+
+    new Setting(this.containerEl)
+      .setName("Validate against JSON Schema")
+      .setDesc(
+        "When enabled, the plugin looks for a sibling schema file next to the current .json file (e.g. data.json → data.schema.json) and highlights validation errors in real time."
+      )
+      .addToggle((toggle) => {
+        toggle.setValue(s.validateAgainstSchema);
+        toggle.onChange(async (v) => {
+          s.validateAgainstSchema = v;
+          await this.settingsPlugin.saveSettings();
+        });
+      });
+
+    new Setting(this.containerEl)
+      .setName("Companion schema suffix")
+      .setDesc(
+        "Suffix used to find the sibling schema file. Default '.schema.json' resolves data.json → data.schema.json."
+      )
+      .addText((text) => {
+        text.setValue(s.companionSchemaSuffix);
+        text.onChange(async (v) => {
+          const trimmed = v.trim();
+          if (trimmed.length > 0) {
+            s.companionSchemaSuffix = trimmed;
             await this.settingsPlugin.saveSettings();
           }
         });
