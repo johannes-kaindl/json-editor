@@ -39,8 +39,32 @@ export class TreeView {
   private editing = false;
   private activeRow: HTMLElement | null = null;
   private dragSourcePath: JsonPath | null = null;
+  private validationErrors: Map<string, string> = new Map();
 
   constructor(private container: HTMLElement, private opts: TreeViewOptions) {}
+
+  setValidationErrors(errors: Map<string, string>): void {
+    this.validationErrors = errors;
+    const treeRoot = this.container.querySelector<HTMLElement>(".json-tree-root");
+    if (treeRoot) this.applyValidationMarkers(treeRoot);
+  }
+
+  private applyValidationMarkers(treeRoot: HTMLElement): void {
+    treeRoot.querySelectorAll<HTMLElement>(".json-row.json-row-error").forEach((row) => {
+      row.classList.remove("json-row-error");
+      row.removeAttribute("title");
+    });
+    if (this.validationErrors.size === 0) return;
+    for (const [pathStr, message] of this.validationErrors) {
+      const row = treeRoot.querySelector<HTMLElement>(
+        `.json-row[data-path="${cssEscapeAttr(pathStr)}"]`
+      );
+      if (row) {
+        row.classList.add("json-row-error");
+        row.setAttribute("title", message);
+      }
+    }
+  }
 
   setValue(value: JsonValue): void {
     this.current = value;
@@ -130,6 +154,7 @@ export class TreeView {
       this.attachStructuralActions(el);
     }
     this.container.appendChild(el);
+    this.applyValidationMarkers(el);
     this.setupKeyboardNav(el, previousPathStr);
   }
 
