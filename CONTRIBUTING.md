@@ -34,6 +34,7 @@ git clone https://codeberg.org/jkaindl/json-editor.git
 cd json-editor
 npm install            # uses .npmrc with legacy-peer-deps if needed
 npm test               # confirm green baseline
+npm run test:coverage  # all tests + v8 coverage (text + html in coverage/)
 npm run build          # confirm clean build
 ```
 

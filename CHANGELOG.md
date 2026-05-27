@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-05-27
+
+### Added
+- **Keyboard navigation** through the tree (WAI-ARIA tree pattern):
+  - `Tab` focuses the active row (roving tabindex).
+  - `↓` / `↑` move between visible rows.
+  - `→` expands a collapsed container, or jumps to the first child row inside an expanded one.
+  - `←` collapses an expanded container, or jumps to the parent row.
+  - `Home` / `End` jump to the first / last visible row.
+  - `Enter` / `F2` trigger inline-edit on a row's primitive value.
+- **ARIA roles**: tree-root carries `role="tree"` + `aria-label="JSON content"`; containers carry `role="treeitem"` + `aria-expanded` synced with collapse state; child wrappers carry `role="group"`; every row carries `role="treeitem"`.
+- **Coverage tooling**: `@vitest/coverage-v8` and a new `npm run test:coverage` script. Baseline: 92.9% statements, 87.1% branches, 91.8% functions.
+
+### Changed
+- **Render refactor**: `renderObject` and `renderArray` collapsed into a single `renderContainer(parent, items, path, depth, opts, kind)` plus three small helpers (`bracketsFor`, `keyOrIndexElement`, `collapseChipLabel`). `src/core/render.ts` lost ~50 LOC of duplicated scaffolding; structural parity verified by a new test.
+- Tree filter skipping is now keyboard-aware: arrow nav walks only visible rows (honours `.json-filter-active` and ancestor `.collapsed`).
+- Test count: 181 → 205 (+24: 9 ARIA, 14 keyboard nav, +1 render parity).
+
+### Notes
+- No visible UX change for mouse users. The only thing they may notice is that the tree now gets a Tab stop.
+- Out of scope (deferred): screen-reader-specific `aria-live` announcements, multi-select, type-ahead key-search, keyboard-shortcut help overlay.
+
 ## [0.2.0] — 2026-05-27
 
 ### Added
@@ -63,7 +85,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Settings tab** — default open mode, indent style (2 / 4 / tab), tree marker style (modern / classic), auto-collapse depth.
 - **GitHub Actions release workflow** — tag push triggers build, test, and GitHub release with `main.js`, `manifest.json`, and `styles.css` as assets.
 
-[Unreleased]: https://codeberg.org/jkaindl/json-editor/compare/0.2.0...HEAD
+[Unreleased]: https://codeberg.org/jkaindl/json-editor/compare/0.3.0...HEAD
+[0.3.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.3.0
 [0.2.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.2.0
 [0.1.2]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.1.2
 [0.1.1]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.1.1
