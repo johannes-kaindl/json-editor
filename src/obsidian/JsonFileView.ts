@@ -2,7 +2,16 @@ import { Notice, TextFileView, type WorkspaceLeaf } from "obsidian";
 import { parse } from "../core/parse";
 import { serialize } from "../core/serialize";
 import type { JsonValue, JsonPath } from "../core/types";
-import { addObjectKey, addArrayItem, deleteAt, renameKey } from "../core/edit";
+import {
+  addObjectKey,
+  addArrayItem,
+  deleteAt,
+  renameKey,
+  moveArrayItem,
+  moveObjectKey,
+  changeType,
+  type JsonType,
+} from "../core/edit";
 import { History } from "../core/history";
 import { TreeView } from "./TreeView";
 import { SourceView } from "./SourceView";
@@ -167,6 +176,10 @@ export class JsonFileView extends TextFileView {
         onAddItem: (parentPath) => this.handleAddItem(parentPath),
         onDelete: (path) => this.handleDelete(path),
         onRenameKey: (path, newKey) => this.handleRename(path, newKey),
+        onMoveItem: (parentPath, fromIdx, toIdx) =>
+          this.handleMoveItem(parentPath, fromIdx, toIdx),
+        onMoveKey: (parentPath, key, toPos) => this.handleMoveKey(parentPath, key, toPos),
+        onChangeType: (path, newType) => this.handleChangeType(path, newType),
         onError: (err) => new Notice(err.message),
       });
       this.treeView.setValue(this.currentValue);
@@ -266,6 +279,36 @@ export class JsonFileView extends TextFileView {
     try {
       const next = renameKey(this.currentValue, path, newKey);
       this.applyMutation(next, `Rename to "${newKey}"`);
+    } catch (e) {
+      new Notice((e as Error).message);
+    }
+  }
+
+  private handleMoveItem(parentPath: JsonPath, fromIdx: number, toIdx: number): void {
+    try {
+      const next = moveArrayItem(this.currentValue, parentPath, fromIdx, toIdx);
+      if (next === this.currentValue) return;
+      this.applyMutation(next, "Reorder item");
+    } catch (e) {
+      new Notice((e as Error).message);
+    }
+  }
+
+  private handleMoveKey(parentPath: JsonPath, key: string, toPos: number): void {
+    try {
+      const next = moveObjectKey(this.currentValue, parentPath, key, toPos);
+      if (next === this.currentValue) return;
+      this.applyMutation(next, `Reorder key "${key}"`);
+    } catch (e) {
+      new Notice((e as Error).message);
+    }
+  }
+
+  private handleChangeType(path: JsonPath, newType: JsonType): void {
+    try {
+      const next = changeType(this.currentValue, path, newType);
+      if (next === this.currentValue) return;
+      this.applyMutation(next, `Change type to ${newType}`);
     } catch (e) {
       new Notice((e as Error).message);
     }
