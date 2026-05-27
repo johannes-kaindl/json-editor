@@ -37,11 +37,30 @@ jobs:
             exit 1
           fi
 
+      - name: Extract release notes from CHANGELOG.md
+        id: notes
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          # Pull the section between "## [TAG]" and the next "## " header.
+          NOTES=$(awk -v tag="$TAG" '
+            $0 ~ "^## \\[" tag "\\]" {flag=1; next}
+            flag && /^## / {flag=0}
+            flag {print}
+          ' CHANGELOG.md)
+          if [ -z "$NOTES" ]; then
+            NOTES="Release $TAG — see [CHANGELOG.md](CHANGELOG.md) for details."
+          fi
+          {
+            echo "notes<<EOF"
+            echo "$NOTES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "$GITHUB_REF_NAME" \
             --title "$GITHUB_REF_NAME" \
-            --notes "Release $GITHUB_REF_NAME — see CHANGELOG / commits for details." \
+            --notes "${{ steps.notes.outputs.notes }}" \
             main.js manifest.json styles.css
