@@ -1,8 +1,21 @@
 {
   "name": "obsidian-json-editor",
   "version": "0.1.1",
-  "description": "View and edit JSON files in Obsidian with a Tree↔Source toggle.",
+  "description": "View and edit JSON files in Obsidian with a Tree/Source toggle. Renders json code blocks in Markdown notes as collapsible theme-aware trees.",
   "main": "main.js",
+  "author": {
+    "name": "Johannes Kaindl",
+    "url": "https://codeberg.org/jkaindl"
+  },
+  "license": "GPL-3.0-or-later",
+  "homepage": "https://codeberg.org/jkaindl/json-editor",
+  "repository": {
+    "type": "git",
+    "url": "git+https://codeberg.org/jkaindl/json-editor.git"
+  },
+  "bugs": {
+    "url": "https://codeberg.org/jkaindl/json-editor/issues"
+  },
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -p tsconfig.build.json -noEmit -skipLibCheck && node esbuild.config.mjs production",
@@ -11,11 +24,19 @@
   },
   "keywords": [
     "obsidian",
+    "obsidian-plugin",
+    "obsidian-md",
     "json",
+    "json-editor",
+    "json-viewer",
+    "tree-view",
+    "codemirror",
+    "codemirror6",
+    "typescript",
+    "markdown",
     "editor",
     "plugin"
   ],
-  "license": "GPL-3.0",
   "devDependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-json": "^6.0.1",
