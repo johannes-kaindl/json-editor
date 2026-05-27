@@ -1,37 +1,201 @@
 # Obsidian JSON Editor
 
-View and edit JSON files in Obsidian with a Tree↔Source toggle. Renders `` ```json `` code blocks inside Markdown notes as collapsible trees that respect your theme.
+[![License: GPL v3](https://img.shields.io/badge/License-GPL_v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Codeberg Release](https://img.shields.io/badge/codeberg-v0.1.1-green)](https://codeberg.org/jkaindl/json-editor/releases)
+[![Status: Active](https://img.shields.io/badge/status-active-brightgreen)](https://codeberg.org/jkaindl/json-editor)
+[![Obsidian](https://img.shields.io/badge/obsidian-1.4%2B-purple)](https://obsidian.md)
+[![Tests](https://img.shields.io/badge/tests-133%20passing-brightgreen)](https://codeberg.org/jkaindl/json-editor/src/branch/main/tests)
+
+View and edit `.json` files in Obsidian with a Tree↔Source toggle. Renders `` ```json `` code blocks inside Markdown notes as collapsible, theme-aware trees.
+
+**Target platform:** Obsidian 1.4+ on desktop and mobile. No external services, no remote resources, no telemetry.
+
+> **Status: 0.1.1 released, 0.1.2 pending.** The Direction-B visual redesign (token-based theme-aware stylesheet, nested tinted blocks, collapse chips, SVG icons, unified toolbar) is merged on `main` and awaiting release. See [`CHANGELOG.md`](CHANGELOG.md) for the full per-release log.
+
+---
+
+## About
+
+JSON inside Obsidian — without losing the editing affordances you'd expect from a real editor. Open a `.json` file and it opens in a dedicated view with two modes:
+
+- **Tree mode** — fold and inline-edit values, with a breadcrumb that follows the cursor.
+- **Source mode** — CodeMirror 6 with JSON syntax highlighting and a parse-error banner.
+
+The plugin also renders `` ```json `` fences inside regular Markdown notes as read-only collapsible trees, so your config snippets and API examples stop being unreadable walls of text.
+
+Everything stays inside your vault. The plugin uses Obsidian's own CSS variables, so it follows whichever theme you're using — light, dark, minimal, anything.
+
+---
 
 ## Features
 
-- **`.json` file view** with a mode toggle: a tree view for browsing and editing primitive values, and a CodeMirror 6 source view with JSON syntax highlighting.
-- **Inline editing** of strings, numbers, and booleans in the tree (click a value).
-- **Code-block rendering** — `` ```json `` blocks in Markdown notes show as read-only trees.
-- **Theme-aware** — uses Obsidian's CSS variables, follows whichever theme you've selected.
-- **Settings** — default mode, indent style (2 / 4 / tab), tree marker style (modern / classic), auto-collapse depth.
+- **`.json` file view** with a Tree↔Source mode toggle in a unified top toolbar.
+- **Inline editing** of strings, numbers, and booleans in tree mode — click a value, press Enter to commit, Escape to cancel.
+- **Breadcrumb** showing the current path; clicking a segment scrolls back up the tree.
+- **Copy buttons** on hover — click copies the value, Alt-click copies the JSON path.
+- **Theme-aware styling** via Obsidian CSS variables — no hardcoded colors, no theme breakage.
+- **Embedded code blocks** — `` ```json `` fences in any Markdown note render as a titled card with a collapsible tree. Blocks over 20 lines auto-collapse. Invalid JSON renders as a styled error card with line/column info, not a crash.
+- **Settings** — default open mode, indent style (2 / 4 / tab), tree marker style (modern / classic), auto-collapse depth.
+- **No telemetry, no remote resources.** All assets ship with the plugin.
 
-## Install (manual)
+---
 
-1. Build the plugin: `npm install && npm run build`.
-2. Copy `main.js`, `manifest.json`, and `styles.css` to your vault's `.obsidian/plugins/obsidian-json-editor/` directory.
-3. In Obsidian: Settings → Community Plugins → enable "JSON Editor".
+## Install
+
+### Manually (current)
+
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/johannes-kaindl/json-editor/releases/latest).
+2. Drop the three files into your vault's `.obsidian/plugins/obsidian-json-editor/` directory.
+3. In Obsidian: **Settings → Community plugins → Installed → Enable "JSON Editor"**.
+
+### From source
+
+```bash
+git clone https://codeberg.org/jkaindl/json-editor.git
+cd json-editor
+npm install
+npm run build
+# copy main.js, manifest.json, styles.css to <vault>/.obsidian/plugins/obsidian-json-editor/
+```
+
+### Community Plugin Directory
+
+Submission to the official Obsidian Community Plugin Directory is pending — see [Project status](#project-status). Once accepted, install via **Settings → Community plugins → Browse → "JSON Editor"**.
+
+---
 
 ## Usage
 
-- **Open a `.json` file** — the plugin's view opens by default.
-- **Toggle mode** with the Tree / Source pills in the top-right of the view.
-- **Edit values** by clicking them in tree mode. Press Enter to commit, Escape to cancel.
-- **Structural changes** (add/rename/remove keys, change types) are done in Source mode.
+- **Open a `.json` file** — the plugin's view is registered as the default opener for that extension.
+- **Switch mode** with the **Tree / Source** pills on the right of the toolbar.
+- **Edit values** in tree mode by clicking them. Strings get an `<input>`, numbers get numeric validation, booleans get a toggle. Press <kbd>Enter</kbd> to commit, <kbd>Esc</kbd> to cancel.
+- **Edit structure** (add / rename / remove keys, change types) in source mode. Switching back to tree re-renders from the current text.
+- **Copy** any value with the hover button — plain click = value, <kbd>Alt</kbd>-click = JSON path (e.g. `$.users[2].address.city`).
+- **Inside Markdown notes**, write a JSON code block and it renders as a collapsible tree:
+  ````markdown
+  ```json
+  { "feature": "tree-rendered", "collapsible": true }
+  ```
+  ````
+
+---
+
+## Settings
+
+| Setting | Default | Effect |
+|---|---|---|
+| Default open mode | `tree` | Mode `.json` files open in. |
+| Indent style | `2 spaces` | Serialization indent (`2 spaces` / `4 spaces` / `tab`). |
+| Tree marker style | `modern` | Visual style of the tree connectors (`modern` / `classic`). |
+| Auto-collapse depth | `2` | Tree nodes deeper than this start collapsed. |
+
+Settings live under **Settings → Community plugins → JSON Editor**.
+
+---
 
 ## Development
 
 ```bash
-npm install
-npm test           # run all Vitest tests
-npm run dev        # esbuild watch mode (rebuilds on change)
-npm run build      # production build
+npm install                                # use --legacy-peer-deps if needed; .npmrc handles it
+npm test                                   # 133 Vitest tests, ~1s
+npm run dev                                # esbuild watch mode
+npm run build                              # production build (tsc-check + esbuild)
+npx vitest run tests/core/parse.test.ts    # single test file
+npx vitest                                 # watch mode
 ```
+
+The codebase is strict TDD — every change in `src/core/` and `src/obsidian/` is backed by a failing test first. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the workflow.
+
+---
+
+## Project layout
+
+```
+obsidian-json-editor/
+├── src/
+│   ├── core/                  pure TS, no Obsidian imports — fully unit-testable
+│   │   ├── types.ts           JsonValue, JsonPath, ParseResult, RenderOptions
+│   │   ├── parse.ts           parse(text) → ParseResult (line/col errors)
+│   │   ├── serialize.ts       serialize(value, opts) → string
+│   │   ├── edit.ts            editValue(value, path, newVal) → immutable JsonValue
+│   │   ├── render.ts          renderTree(value, opts) → HTMLElement
+│   │   └── path.ts            pathToString utility
+│   ├── obsidian/              adapter layer — imports core/ + obsidian API
+│   │   ├── JsonFileView.ts    TextFileView; owns mode toggle, breadcrumb, error banner
+│   │   ├── TreeView.ts        wraps core/render + inline edit + copy buttons
+│   │   ├── SourceView.ts      CodeMirror 6 wrapper with @codemirror/lang-json
+│   │   ├── CodeblockProcessor.ts  read-only tree for ```json blocks in notes
+│   │   ├── SettingsTab.ts     default mode, indent, marker style, auto-collapse depth
+│   │   ├── Breadcrumb.ts      path display, segment-click → scrollToPath
+│   │   ├── CopyButton.ts      hover-only buttons; click=value, Alt+click=path
+│   │   └── Tooltip.ts         singleton hover-tooltip
+│   ├── main.ts                plugin entry — registers view, codeblock processor, settings
+│   └── __mocks__/obsidian.ts  Vitest-only mock (not bundled into production)
+├── tests/
+│   ├── core/                  parse, serialize, edit, render, path tests
+│   └── obsidian/              adapter tests against the obsidian mock
+├── docs/superpowers/          design specs and implementation plans (one per release)
+├── .github/workflows/         release.yml — tag-triggered build + GitHub release
+├── manifest.json              Obsidian plugin manifest
+├── styles.css                 token-based theme-aware stylesheet (Direction B redesign)
+├── CHANGELOG.md               Keep-A-Changelog release notes
+├── CONTRIBUTING.md            bug reports, PRs, TDD workflow
+└── SECURITY.md                security-reporting policy
+```
+
+**Two tsconfigs:**
+- `tsconfig.json` — IDE + Vitest, with `paths` alias `obsidian` → mock.
+- `tsconfig.build.json` — production `tsc` check, no paths alias (validates against real `obsidian.d.ts`).
+
+---
+
+## Documentation
+
+- [`CHANGELOG.md`](CHANGELOG.md) — per-release notes (Keep-A-Changelog format).
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — bug reports, pull requests, commit conventions, TDD workflow.
+- [`SECURITY.md`](SECURITY.md) — how to report a security issue.
+- [`docs/superpowers/specs/`](docs/superpowers/specs) — design specs (one per release, brainstormed before implementation).
+- [`docs/superpowers/plans/`](docs/superpowers/plans) — checkbox implementation plans (one per release, task-by-task with TDD steps).
+
+---
+
+## Hosting
+
+This project is mirrored across two forges:
+
+| Remote | URL | Role |
+|---|---|---|
+| Codeberg | <https://codeberg.org/jkaindl/json-editor> | **Primary** — source development, issues, PRs |
+| GitHub | <https://github.com/johannes-kaindl/json-editor> | Release mirror for Obsidian Community Plugin submission |
+
+Issues and pull requests are preferred on **Codeberg**. GitHub exists because the Obsidian Community Plugin Directory only links to GitHub releases.
+
+---
+
+## Contributing
+
+Bug reports and pull requests are welcome on Codeberg. For larger changes, please open an issue first to discuss the approach. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full workflow — commit conventions, branch naming, TDD requirements, and review notes.
+
+---
+
+## Project status
+
+Actively maintained by a single maintainer ([@jkaindl](https://codeberg.org/jkaindl) / [@johannes-kaindl](https://github.com/johannes-kaindl)). Built for personal use, released because it might be useful to others.
+
+**Roadmap (rough, in priority order):**
+1. **0.1.2 release** — Direction-B visual redesign (merged, awaiting visual sign-off + Community Plugin Directory submission).
+2. **0.2.0 — Search & Filter** — live search across keys/values, filter to matches, expand ancestors of matches.
+3. **0.3.0 — Code Quality & Infra** — coverage tooling, PR-time CI, ARIA + keyboard navigation, render-duplication refactor.
+4. **1.0.0 — Structural editing** — add / delete / rename keys, drag-and-drop reorder, type-switching, cross-mode unified undo/redo, optional JSON Schema validation.
+
+---
 
 ## License
 
-GPL-3.0
+GNU General Public License v3.0 or later (GPL-3.0-or-later) — see [LICENSE](LICENSE).
+
+**Dependency licenses:** All runtime dependencies (`@codemirror/*`) are MIT — GPL-3.0-compatible. The Obsidian plugin API itself is consumed via TypeScript declarations only and is not bundled.
+
+---
+
+Copyright © 2026 Johannes Kaindl. Licensed under GPL-3.0-or-later.
