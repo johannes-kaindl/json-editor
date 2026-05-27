@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-05-27
+
+**1.0.0 marks the point where the tree view becomes a real editor.** You can now do every basic structural edit (add / delete / rename keys, add / delete items) directly in tree mode, with full undo/redo support — no round-trip through source mode required for routine work.
+
+### Added
+- **Add object keys** — every container has a "+ Add key" affordance at the bottom of its content. Click → inline input → Enter to commit (empty value `null`).
+- **Add array items** — same affordance, labeled "+ Add item" for arrays; click immediately appends a `null`.
+- **Delete rows** — hover any row to reveal a ✕ button (also `Backspace` / `Delete` on the focused row). Undo restores it.
+- **Rename keys** — hover any object-key row to reveal a ✎ button. Click → key span becomes an inline input → Enter commits, Esc cancels. Validates against empty + duplicate keys (shown as a Notice).
+- **Undo / Redo** — `Cmd/Ctrl+Z` undoes the last structural or value edit; `Cmd/Ctrl+Shift+Z` redoes. Tree-mode only — source mode keeps CodeMirror's native history (cross-mode unified undo is deferred to 1.2.0). Capacity 100 entries.
+- **Pure-core mutation API** — `addObjectKey`, `addArrayItem`, `deleteAt`, `renameKey` in `src/core/edit.ts` and a `History` class in `src/core/history.ts`, both fully unit-tested without DOM.
+- **Empty containers now render with full container scaffolding** (toggle + brackets + chip + content slot + close) instead of a single `{}` / `[]` span. Lets you `+ Add` to an empty container without first switching to source.
+
+### Changed
+- Switching mode (tree ⇄ source) clears the tree-mode undo history. The source mode has its own CodeMirror history; mixing the two would be confusing in this iteration.
+- `RenderOptions` gains nothing — render.ts stays pure. All structural actions are attached post-render in `TreeView.attachStructuralActions()` (same pattern as `attachCopyButtons`).
+- Test count: 205 → 262 (+57: 24 core edit, 10 history, 6 RowActions, 7 AddAffordance, 10 undo integration; existing tests stay green).
+
+### Notes — explicitly NOT in 1.0.0 (deferred)
+- **Drag-and-drop reorder** → 1.1.0
+- **Type-switching** (string ↔ number ↔ boolean ↔ null ↔ object ↔ array) → 1.1.0
+- **Cross-mode unified undo/redo** (Source + Tree shared stack) → 1.2.0
+- **JSON Schema validation** via ajv → 1.3.0 (or could ship as a separate plugin)
+
+The original 1.0.0 roadmap conflated all five into one release. Scope-decomposed into focused milestones; each gets its own spec when picked up.
+
 ## [0.3.0] — 2026-05-27
 
 ### Added
@@ -85,7 +111,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Settings tab** — default open mode, indent style (2 / 4 / tab), tree marker style (modern / classic), auto-collapse depth.
 - **GitHub Actions release workflow** — tag push triggers build, test, and GitHub release with `main.js`, `manifest.json`, and `styles.css` as assets.
 
-[Unreleased]: https://codeberg.org/jkaindl/json-editor/compare/0.3.0...HEAD
+[Unreleased]: https://codeberg.org/jkaindl/json-editor/compare/1.0.0...HEAD
+[1.0.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.0.0
 [0.3.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.3.0
 [0.2.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.2.0
 [0.1.2]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.1.2
