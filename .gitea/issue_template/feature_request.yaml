@@ -1,0 +1,56 @@
+# SPDX-FileCopyrightText: 2026 Johannes Kaindl
+# SPDX-License-Identifier: CC-BY-SA-4.0
+name: Feature request
+about: Suggest a new feature or improvement
+title: "[feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This plugin is intentionally focused on **viewing and editing JSON
+        inside Obsidian**. Adjacent formats (YAML, TOML, etc.) and schema-aware
+        forms are out of scope. Proposals that fit that scope land quickly;
+        scope-breaking proposals will likely be declined — open them honestly
+        anyway, we can talk.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do that the plugin doesn't currently support?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: scope
+    attributes:
+      label: What's affected?
+      multiple: true
+      options:
+        - Tree mode (folding, inline-edit, breadcrumb)
+        - Source mode (CodeMirror, error banner)
+        - ```json fence rendering in Markdown
+        - Settings tab
+        - Theme / styling
+        - Documentation
+        - Tests
+        - Other
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-flight checks
+      options:
+        - label: I checked [existing issues](https://codeberg.org/jkaindl/json-editor/issues) for duplicates.
+          required: true
+        - label: My proposal fits the plugin's scope (JSON viewing/editing inside Obsidian).
+          required: true

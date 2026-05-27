@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2026 Johannes Kaindl
+# SPDX-License-Identifier: CC-BY-SA-4.0
+blank_issues_enabled: true
+contact_links:
+  - name: Security report
+    url: https://codeberg.org/jkaindl/json-editor/src/branch/main/SECURITY.md
+    about: Security-sensitive issues — please do not file publicly. See SECURITY.md.
+  - name: Contributing guide
+    url: https://codeberg.org/jkaindl/json-editor/src/branch/main/CONTRIBUTING.md
+    about: Local setup, test conventions, PR checklist.
+  - name: GitHub mirror
+    url: https://github.com/johannes-kaindl/json-editor/issues
+    about: This project is also mirrored on GitHub — Codeberg is primary, but GitHub issues are read.

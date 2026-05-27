@@ -1,0 +1,92 @@
+# SPDX-FileCopyrightText: 2026 Johannes Kaindl
+# SPDX-License-Identifier: CC-BY-SA-4.0
+name: Bug report
+about: Report a problem with the JSON Editor plugin
+title: "[bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please fill in as much as you can.
+
+        **Security-sensitive issues** do not belong here — see
+        [`SECURITY.md`](https://codeberg.org/jkaindl/json-editor/src/branch/main/SECURITY.md).
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: Settings → Community plugins → Installed → JSON Editor
+      placeholder: "0.1.2"
+    validations:
+      required: true
+  - type: input
+    id: obsidian-version
+    attributes:
+      label: Obsidian version
+      description: Settings → About → Current version
+      placeholder: "1.5.x"
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - macOS (desktop)
+        - Windows (desktop)
+        - Linux (desktop)
+        - iOS
+        - iPadOS
+        - Android
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Which surface?
+      options:
+        - .json file view (Tree mode)
+        - .json file view (Source mode)
+        - ```json fence in Markdown
+        - Settings tab
+        - Other / not sure
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: A minimal `.json` file or `` ```json `` block that triggers the issue.
+      placeholder: |
+        1. Open a `.json` file with content `{ "foo": null }`
+        2. Click the "Source" pill
+        3. Observe …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: console
+    attributes:
+      label: Console errors (optional)
+      description: Open the developer console with Cmd/Ctrl+Shift+I → Console tab, and paste anything red here.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-flight checks
+      options:
+        - label: I checked [existing issues](https://codeberg.org/jkaindl/json-editor/issues) for duplicates.
+          required: true
+        - label: This is not a security issue (otherwise → SECURITY.md).
+          required: true
