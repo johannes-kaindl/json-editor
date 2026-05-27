@@ -2,11 +2,26 @@ export interface RowActionsOptions {
   canRename: boolean;
   onRename: () => void;
   onDelete: () => void;
+  onChangeType?: () => void;
 }
 
 export function createRowActions(opts: RowActionsOptions): HTMLElement {
   const wrap = document.createElement("span");
   wrap.className = "json-row-actions";
+
+  if (opts.onChangeType) {
+    const typeBtn = document.createElement("button");
+    typeBtn.className = "json-row-action json-row-type";
+    typeBtn.type = "button";
+    typeBtn.title = "Change type";
+    typeBtn.setAttribute("aria-label", "Change type");
+    typeBtn.textContent = "T";
+    typeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      opts.onChangeType!();
+    });
+    wrap.appendChild(typeBtn);
+  }
 
   if (opts.canRename) {
     const renameBtn = document.createElement("button");
