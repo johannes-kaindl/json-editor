@@ -65,6 +65,14 @@ git push github main && git push github 0.1.X
 
 The GitHub Actions release workflow builds, tests, and publishes the release with `main.js`, `manifest.json`, and `styles.css` attached.
 
+## Licensing and the CLA
+
+This project is **dual-licensed**: open source under GPL-3.0-or-later, with a separate commercial license available on request (see [`LICENSING.md`](LICENSING.md)). To keep that model possible, external contributions are accepted under the [Contributor License Agreement](CLA.md) — you keep your copyright, but you grant the maintainer the right to relicense your contribution (including commercially).
+
+You accept the CLA by adding this line to your pull request description (or as a `Signed-off-by:` trailer on your commits):
+
+> I have read and agree to the Contributor License Agreement (CLA.md).
+
 ## Scope
 
 This plugin is intentionally focused: view and edit JSON inside Obsidian. Adjacent features (YAML, TOML, schema-aware forms, etc.) are out of scope.
