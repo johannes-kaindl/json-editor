@@ -6,9 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-06-07
+
 ### Changed
 - **Relicensed from GPL-3.0-or-later to AGPL-3.0-or-later.** Documentation is now licensed separately under CC BY-SA 4.0 (see `LICENSE-DOCS`). Part of adopting the shared workspace conventions.
 - Adopted **Biome** for linting/formatting; added `lint` and `typecheck` npm scripts.
+- Convention alignment: shields.io badge row, `AGENTS.md` now committed with the standard section skeleton, `.claude/` gitignored.
 
 ## [1.3.0] — 2026-05-27
 
