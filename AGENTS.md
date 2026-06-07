@@ -156,6 +156,10 @@ git push github main && git push github 0.1.X
 A local Obsidian vault (production-ish) for manual E2E. Install path:
 
 ```bash
+# Deploy to a vault (npm run deploy — PROF-OBS-02):
+OBSIDIAN_PLUGIN_DIR=<your-test-vault>/.obsidian/plugins/obsidian-json-editor npm run deploy
+
+# Equivalent manual copy:
 cp main.js manifest.json styles.css \
    <your-test-vault>/.obsidian/plugins/obsidian-json-editor/
 # Then Cmd+R in Obsidian to reload the plugin.
