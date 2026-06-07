@@ -14,9 +14,6 @@ _archiv/
 # Design exploration drop (Kuro alt-redesign — local reference, harvested into the redesign spec)
 design/
 
-# Local agent/session orientation — not part of public repo
-AGENTS.md
-
 # Python
 __pycache__/
 *.pyc
@@ -35,3 +32,6 @@ coverage/
 
 # Remember plugin buffer (local state)
 .remember/
+
+# Claude Code local session/logs
+.claude/

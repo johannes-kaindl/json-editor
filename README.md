@@ -1,10 +1,9 @@
 # Obsidian JSON Editor
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPL_v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Codeberg Release](https://img.shields.io/badge/codeberg-v1.0.0-green)](https://codeberg.org/jkaindl/json-editor/releases)
-[![Status: Active](https://img.shields.io/badge/status-active-brightgreen)](https://codeberg.org/jkaindl/json-editor)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
+[![Docs: CC BY-SA 4.0](https://img.shields.io/badge/docs-CC%20BY--SA%204.0-lightgrey.svg)](LICENSE-DOCS)
+[![Release](https://img.shields.io/gitea/v/release/jkaindl/json-editor?gitea_url=https%3A%2F%2Fcodeberg.org&label=release)](https://codeberg.org/jkaindl/json-editor/releases)
 [![Obsidian](https://img.shields.io/badge/obsidian-1.4%2B-purple)](https://obsidian.md)
-[![Tests](https://img.shields.io/badge/tests-262%20passing-brightgreen)](https://codeberg.org/jkaindl/json-editor/src/branch/main/tests)
 
 View and edit `.json` files in Obsidian with a Tree↔Source toggle. Renders `` ```json `` code blocks inside Markdown notes as collapsible, theme-aware trees.
 
