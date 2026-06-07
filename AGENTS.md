@@ -189,7 +189,7 @@ In priority order:
    - 1.1.0: hover row → drag-handle reveal, drag to reorder, T-button → type-menu, Cmd+Z undoes both
    - 1.2.0: edit in source, switch to tree, Cmd+Z restores source state (and vice versa)
    - 1.3.0: drop a `<file>.schema.json` next to a `.json`, see red rows + banner; fix the data, banner clears
-   - Test vault `X1_v6t2b9` has 1.3.0 deployed; Cmd+R to reload.
+   - Test vault `10_Pallas` has 1.3.0 deployed; Cmd+R to reload.
 
 3. **Marketing assets** (~1h with running plugin)
    - 5 screenshots for the Community Directory listing per spec §7
@@ -234,7 +234,7 @@ Sequence:
 2. **1.2.0 — Cross-mode unified Undo/Redo** — refactor `History` → `History<T>` (generic), JsonFileView holds `History<string>`. Both `applyMutation` and `handleSourceChange` push pre-state text; mode-switch no longer clears. SourceView drops CodeMirror's local `history()`. Plugin command IDs renamed `undo-tree-edit` → `undo-edit` (similar redo) since they're no longer mode-gated. Trade-off: source-mode undo is per-onChange (~per keystroke) instead of CM heuristic-grouped. Tests 369 → 373.
 3. **1.3.0 — JSON Schema Validation** — `ajv@8` added as runtime dep. New pure `src/core/schema.ts` (compileSchema + PathError; JSON-Pointer → JsonPath conversion handles `~0`/`~1`). New `SchemaBanner` component, `TreeView.setValidationErrors` for inline `.json-row-error` markers. JsonFileView.setSchema() + async tryLoadCompanionSchema() (best-effort, silent on vault unavailability). Two new settings: master switch + suffix. Tests 373 → 402. Bundle 37 KB → 163 KB (Ajv is the bulk; acceptable cost).
 
-Hosting flow per release: feature branch with multiple semantically-grouped commits → `merge --no-ff` into main with a multi-paragraph merge commit → tag (no `v` prefix) → push to both `origin` (Codeberg) and `github`. GitHub Actions release workflow triggers off the tag on the GitHub side. Test vault `X1_v6t2b9` updated after each release (Cmd+R reload for visual smoke pending — out of CC's autonomy).
+Hosting flow per release: feature branch with multiple semantically-grouped commits → `merge --no-ff` into main with a multi-paragraph merge commit → tag (no `v` prefix) → push to both `origin` (Codeberg) and `github`. GitHub Actions release workflow triggers off the tag on the GitHub side. Test vault `10_Pallas` updated after each release (Cmd+R reload for visual smoke pending — out of CC's autonomy).
 
 Final state: coverage 94.1% statements / 85.6% branches / 95.8% functions. No `Unreleased` content on main. The 1.x roadmap that was decomposed during the 1.0.0 session is now fully shipped. Backlog rewritten: only Community Submission, visual smoke test, marketing screenshots remain — all manual / external.
 
@@ -250,7 +250,7 @@ Sequence:
 
 Scope-decomposition decision in 1.0.0: original roadmap entry listed 5 features (add/del/rename + drag-drop + type-switch + cross-mode-undo + JSON Schema). Trimmed to "structural-edit core + tree-mode undo/redo"; deferred drag-drop and type-switch to 1.1.0, cross-mode-undo to 1.2.0, JSON Schema to 1.3.0. Documented in CHANGELOG. User can override.
 
-All four releases pushed to both remotes, GitHub Actions release workflows triggered automatically, test vault X1_v6t2b9 updated to 1.0.0 after each release. ~70 commits, ~2.5h compressed work.
+All four releases pushed to both remotes, GitHub Actions release workflows triggered automatically, test vault 10_Pallas updated to 1.0.0 after each release. ~70 commits, ~2.5h compressed work.
 
 ### 2026-05-27 — Public-docs overhaul + Codeberg metadata
 
@@ -266,7 +266,7 @@ All four releases pushed to both remotes, GitHub Actions release workflows trigg
 - Chose Direction B (structured/IDE: nested tinted blocks, collapse chips) over native-refined and editorial; theme-aware (Obsidian CSS vars, no hardcoding, no new settings, no remote resources).
 - User dropped a `design/` folder (a "Kuro Signal Protocol" alt-redesign). Harvested its theme-aware token layer + SVG icons + chrome CSS into the spec; rejected the Kuro lore layer (AI persona, 7 lore settings) as off-scope for a public plugin. `design/` is now gitignored.
 - Implemented: `render.ts` (data-depth, SVG chevron, collapse chip), `CodeblockProcessor.ts` (titled card, >20-line auto-collapse, error card), `JsonFileView.ts` (unified toolbar, empty-state polish), full `styles.css` rewrite (`--jv-` tokens). 9 feat commits, merged `--no-ff` (`a743ff0`). 122 → 133 tests.
-- Installed in test vault `X1_v6t2b9`. Open: visual sign-off in real Obsidian, marketing screenshots (spec §7), release (bump → tag → push, needs user go-ahead).
+- Installed in test vault `10_Pallas`. Open: visual sign-off in real Obsidian, marketing screenshots (spec §7), release (bump → tag → push, needs user go-ahead).
 
 ### 2026-05-20 / 2026-05-21 — Initial build through v1.1
 
