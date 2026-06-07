@@ -196,12 +196,13 @@ Actively maintained by a single maintainer ([@jkaindl](https://codeberg.org/jkai
 
 ## License
 
-- **Open source (default):** GNU General Public License v3.0 or later (GPL-3.0-or-later) — see [LICENSE](LICENSE). This applies to everyone by default.
-- **Commercial license (on request):** If the GPL's copyleft does not fit your use case — for example a **proprietary/closed-source product or an Apple App Store build** (App Store terms are incompatible with the GPL) — a separate commercial license is available. See [`LICENSING.md`](LICENSING.md).
+- **Open source (default):** GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later) — see [LICENSE](LICENSE). This applies to everyone by default.
+- **Commercial license (on request):** If the AGPL's copyleft does not fit your use case — for example a **proprietary/closed-source product or an Apple App Store build** (App Store terms are incompatible with the AGPL) — a separate commercial license is available. See [`LICENSING.md`](LICENSING.md).
 - **Contributing:** external contributions are accepted under the [Contributor License Agreement](CLA.md), which keeps the dual-licensing model possible.
+- **Documentation/text:** Creative Commons Attribution-ShareAlike 4.0 (CC BY-SA 4.0) — see [`LICENSE-DOCS`](LICENSE-DOCS).
 
-**Dependency licenses:** All runtime dependencies (`@codemirror/*`) are MIT — GPL-3.0-compatible. The Obsidian plugin API itself is consumed via TypeScript declarations only and is not bundled.
+**Dependency licenses:** All runtime dependencies (`@codemirror/*`) are MIT — AGPL-3.0-compatible. The Obsidian plugin API itself is consumed via TypeScript declarations only and is not bundled.
 
 ---
 
-Copyright © 2026 Johannes Kaindl. Licensed under GPL-3.0-or-later.
+Copyright © 2026 Johannes Kaindl. Code: AGPL-3.0-or-later · Docs: CC BY-SA 4.0.
