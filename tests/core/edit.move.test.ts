@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { moveArrayItem, moveObjectKey, computeInsertionIndex } from "../../src/core/edit";
+import { describe, expect, it } from "vitest";
+import { computeInsertionIndex, moveArrayItem, moveObjectKey } from "../../src/core/edit";
 
 describe("moveArrayItem", () => {
   it("moves item forward within array at root", () => {

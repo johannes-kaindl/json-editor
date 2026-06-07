@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { addObjectKey, addArrayItem, deleteAt, renameKey } from "../../src/core/edit";
+import { describe, expect, it } from "vitest";
+import { addArrayItem, addObjectKey, deleteAt, renameKey } from "../../src/core/edit";
 
 describe("addObjectKey", () => {
   it("adds a key at root", () => {

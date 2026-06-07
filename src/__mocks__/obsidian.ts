@@ -2,9 +2,15 @@
 // and their tests. Mirrors the public shapes from obsidian.d.ts; behavior is
 // minimal but observable.
 
-export interface App {}
-export interface WorkspaceLeaf { app: App }
-export interface PluginManifest { id: string; name: string; version: string }
+export type App = Record<string, unknown>;
+export interface WorkspaceLeaf {
+  app: App;
+}
+export interface PluginManifest {
+  id: string;
+  name: string;
+  version: string;
+}
 export interface MarkdownPostProcessorContext {
   sourcePath: string;
   getSectionInfo(el: HTMLElement): { lineStart: number; lineEnd: number; text: string } | null;
@@ -14,7 +20,7 @@ export class Plugin {
   app: App;
   manifest: PluginManifest;
   views: Record<string, (leaf: WorkspaceLeaf) => unknown> = {};
-  postprocessors: Record<string, Function> = {};
+  postprocessors: Record<string, (...args: unknown[]) => unknown> = {};
   settingTabs: PluginSettingTab[] = [];
   storedData: unknown = null;
   constructor(app: App, manifest: PluginManifest) {
@@ -27,7 +33,7 @@ export class Plugin {
   registerExtensions(_extensions: string[], _viewType: string) {}
   registerMarkdownCodeBlockProcessor(
     lang: string,
-    handler: (src: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => void
+    handler: (src: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => void,
   ) {
     this.postprocessors[lang] = handler;
   }
@@ -58,7 +64,7 @@ export class PluginSettingTab {
 
 export class TextFileView {
   app: App;
-  data: string = "";
+  data = "";
   contentEl: HTMLElement;
   saveCount = 0;
   constructor(public leaf: WorkspaceLeaf) {
@@ -83,7 +89,10 @@ export class TextFileView {
 }
 
 export class Notice {
-  constructor(public message: string, public timeout?: number) {}
+  constructor(
+    public message: string,
+    public timeout?: number,
+  ) {}
 }
 
 export class Setting {
@@ -94,8 +103,14 @@ export class Setting {
     this.settingEl = document.createElement("div");
     containerEl.appendChild(this.settingEl);
   }
-  setName(name: string): this { this.nameValue = name; return this; }
-  setDesc(desc: string): this { this.descValue = desc; return this; }
+  setName(name: string): this {
+    this.nameValue = name;
+    return this;
+  }
+  setDesc(desc: string): this {
+    this.descValue = desc;
+    return this;
+  }
   addText(cb: (text: TextComponent) => void): this {
     const c = new TextComponent();
     this.settingEl.appendChild(c.inputEl);
@@ -119,8 +134,14 @@ export class Setting {
 export class TextComponent {
   inputEl: HTMLInputElement = document.createElement("input");
   changeHandlers: Array<(v: string) => void> = [];
-  setValue(v: string): this { this.inputEl.value = v; return this; }
-  onChange(cb: (v: string) => void): this { this.changeHandlers.push(cb); return this; }
+  setValue(v: string): this {
+    this.inputEl.value = v;
+    return this;
+  }
+  onChange(cb: (v: string) => void): this {
+    this.changeHandlers.push(cb);
+    return this;
+  }
 }
 export class DropdownComponent {
   selectEl: HTMLSelectElement = document.createElement("select");
@@ -132,7 +153,10 @@ export class DropdownComponent {
     this.selectEl.appendChild(opt);
     return this;
   }
-  setValue(v: string): this { this.selectEl.value = v; return this; }
+  setValue(v: string): this {
+    this.selectEl.value = v;
+    return this;
+  }
   onChange(cb: (v: string) => void): this {
     this.changeHandlers.push(cb);
     this.selectEl.addEventListener("change", () => cb(this.selectEl.value));
@@ -143,6 +167,12 @@ export class ToggleComponent {
   toggleEl: HTMLElement = document.createElement("div");
   value = false;
   changeHandlers: Array<(v: boolean) => void> = [];
-  setValue(v: boolean): this { this.value = v; return this; }
-  onChange(cb: (v: boolean) => void): this { this.changeHandlers.push(cb); return this; }
+  setValue(v: boolean): this {
+    this.value = v;
+    return this;
+  }
+  onChange(cb: (v: boolean) => void): this {
+    this.changeHandlers.push(cb);
+    return this;
+  }
 }

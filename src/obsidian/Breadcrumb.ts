@@ -19,9 +19,7 @@ export class Breadcrumb {
 
   setPath(path: JsonPath): void {
     this.el.innerHTML = "";
-    const segments: Array<{ label: string; subPath: JsonPath }> = [
-      { label: "root", subPath: [] },
-    ];
+    const segments: Array<{ label: string; subPath: JsonPath }> = [{ label: "root", subPath: [] }];
     path.forEach((seg, i) => {
       const subPath = path.slice(0, i + 1);
       const label = typeof seg === "number" ? `[${seg}]` : String(seg);

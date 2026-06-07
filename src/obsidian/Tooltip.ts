@@ -1,5 +1,5 @@
-import type { JsonValue, JsonPath } from "../core/types";
 import { pathToString } from "../core/path";
+import type { JsonPath, JsonValue } from "../core/types";
 
 export interface TooltipContent {
   typeLabel: string;
@@ -97,7 +97,7 @@ export function tooltipContentForValue(value: JsonValue, path: JsonPath): Toolti
   }
   if (typeof value === "string") {
     let preview = value;
-    if (preview.length > 200) preview = preview.slice(0, 199) + "…";
+    if (preview.length > 200) preview = `${preview.slice(0, 199)}…`;
     return { typeLabel: "string", pathStr, preview: `"${preview}"` };
   }
   if (Array.isArray(value)) {

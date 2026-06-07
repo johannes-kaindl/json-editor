@@ -1,5 +1,5 @@
-import type { JsonValue, SearchOptions, SearchResult } from "./types";
 import { pathToString } from "./path";
+import type { JsonValue, SearchOptions, SearchResult } from "./types";
 
 function primitiveMatches(v: JsonValue, lowerQ: string): boolean {
   if (v === null) return "null".includes(lowerQ);
@@ -9,11 +9,7 @@ function primitiveMatches(v: JsonValue, lowerQ: string): boolean {
   return false;
 }
 
-export function findMatches(
-  value: JsonValue,
-  query: string,
-  opts?: SearchOptions
-): SearchResult {
+export function findMatches(value: JsonValue, query: string, opts?: SearchOptions): SearchResult {
   const result: SearchResult = {
     matches: new Set(),
     onPath: new Set(),

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { pathToString } from "../../src/core/path";
 
 describe("pathToString", () => {
@@ -41,7 +41,7 @@ describe("pathToString", () => {
 
   it("handles mixed deep paths", () => {
     expect(pathToString(["api", "v2", "users", 5, "addresses", 0, "street name"])).toBe(
-      'api.v2.users[5].addresses[0]["street name"]'
+      'api.v2.users[5].addresses[0]["street name"]',
     );
   });
 });

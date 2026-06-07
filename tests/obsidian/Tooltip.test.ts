@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Tooltip, tooltipContentForValue } from "../../src/obsidian/Tooltip";
 
 describe("Tooltip", () => {
@@ -89,8 +89,8 @@ describe("tooltipContentForValue", () => {
   it("truncates long strings at 200 chars with ellipsis", () => {
     const long = "x".repeat(300);
     const c = tooltipContentForValue(long, []);
-    expect(c.preview!.length).toBeLessThanOrEqual(202); // 200 chars + 2 quote chars approx, plus ellipsis
-    expect(c.preview!.endsWith("…\"")).toBe(true);
+    expect(c.preview?.length).toBeLessThanOrEqual(202); // 200 chars + 2 quote chars approx, plus ellipsis
+    expect(c.preview?.endsWith('…"')).toBe(true);
   });
 
   it("returns number type with value as preview", () => {

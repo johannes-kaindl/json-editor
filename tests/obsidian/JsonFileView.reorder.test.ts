@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import type { WorkspaceLeaf } from "obsidian";
+import { beforeEach, describe, expect, it } from "vitest";
 import { JsonFileView } from "../../src/obsidian/JsonFileView";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
-import type { WorkspaceLeaf } from "obsidian";
 
-const fakeLeaf = (): WorkspaceLeaf => ({ app: {} } as WorkspaceLeaf);
+const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as WorkspaceLeaf;
 
 function fireDragEvent(row: HTMLElement, type: string, clientY = 0, dt?: DataTransfer): void {
   const ev = new Event(type, { bubbles: true, cancelable: true });
@@ -53,10 +53,8 @@ describe("JsonFileView reorder + type-switching wiring", () => {
     document.body.appendChild(v.contentEl);
     v.setViewData('{"n":42}', false);
     const row = v.contentEl.querySelector<HTMLElement>('.json-row[data-path="n"]')!;
-    row.querySelector<HTMLButtonElement>(".json-row-type")!.click();
-    const opt = document.querySelector<HTMLButtonElement>(
-      '.json-type-option[data-type="string"]'
-    )!;
+    row.querySelector<HTMLButtonElement>(".json-row-type")?.click();
+    const opt = document.querySelector<HTMLButtonElement>('.json-type-option[data-type="string"]')!;
     opt.click();
     expect(JSON.parse(v.getViewData())).toEqual({ n: "" });
     v.undo();
@@ -68,9 +66,9 @@ describe("JsonFileView reorder + type-switching wiring", () => {
     document.body.appendChild(v.contentEl);
     v.setViewData('{"arr":[1,2,3]}', false);
     const row = v.contentEl.querySelector<HTMLElement>('.json-row[data-path="arr[1]"]')!;
-    row.querySelector<HTMLButtonElement>(".json-row-type")!.click();
+    row.querySelector<HTMLButtonElement>(".json-row-type")?.click();
     const opt = document.querySelector<HTMLButtonElement>(
-      '.json-type-option[data-type="boolean"]'
+      '.json-type-option[data-type="boolean"]',
     )!;
     opt.click();
     expect(JSON.parse(v.getViewData())).toEqual({ arr: [1, false, 3] });

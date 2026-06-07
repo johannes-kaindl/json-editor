@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { renderTree } from "../../src/core/render";
 
 describe("renderTree", () => {
@@ -60,7 +60,7 @@ describe("renderTree", () => {
       { name: "jay" },
       {
         onValueClick: (path, value) => calls.push({ path, value }),
-      }
+      },
     );
     document.body.appendChild(el);
     const valueEl = el.querySelector(".json-string") as HTMLElement;
@@ -75,7 +75,7 @@ describe("renderTree", () => {
       {
         readonly: true,
         onValueClick: () => calls.push(1),
-      }
+      },
     );
     document.body.appendChild(el);
     const valueEl = el.querySelector(".json-string") as HTMLElement;
@@ -103,7 +103,9 @@ describe("renderTree", () => {
     const el = renderTree({ a: 1, b: 2 }, { markerStyle: "classic" });
     const markers = el.querySelectorAll(".json-marker");
     expect(markers.length).toBeGreaterThan(0);
-    const text = Array.from(markers).map((m) => m.textContent).join("");
+    const text = Array.from(markers)
+      .map((m) => m.textContent)
+      .join("");
     expect(text).toMatch(/[┐├┘]/);
   });
 
@@ -147,7 +149,7 @@ describe("renderTree", () => {
     const calls: Array<{ path: (string | number)[]; value: unknown }> = [];
     const el = renderTree(
       { name: "jay" },
-      { onValueHover: (_t, path, value) => calls.push({ path, value }) }
+      { onValueHover: (_t, path, value) => calls.push({ path, value }) },
     );
     document.body.appendChild(el);
     const valueEl = el.querySelector(".json-string") as HTMLElement;
@@ -163,7 +165,7 @@ describe("renderTree", () => {
       {
         onPathClick: (p) => pathCalls.push(p),
         onValueClick: (p, _v) => valueCalls.push(p),
-      }
+      },
     );
     document.body.appendChild(el);
     const valueEl = el.querySelector(".json-string") as HTMLElement;
@@ -230,8 +232,7 @@ describe("renderTree", () => {
     const objEl = renderTree({ a: 1 }, {}).querySelector(".json-container") as HTMLElement;
     const arrEl = renderTree([1], {}).querySelector(".json-container") as HTMLElement;
     // Both must have toggle, open-bracket, chip, content, close-bracket as direct children
-    const childClassesOf = (el: HTMLElement) =>
-      Array.from(el.children).map((c) => c.className);
+    const childClassesOf = (el: HTMLElement) => Array.from(el.children).map((c) => c.className);
     expect(childClassesOf(objEl)).toEqual(childClassesOf(arrEl));
   });
 });

@@ -79,8 +79,7 @@
   border-radius: var(--jv-radius-sm);
   color: var(--jv-fg-muted);
   cursor: pointer;
-  transition: background var(--jv-dur-fast) var(--jv-ease),
-              color var(--jv-dur-fast) var(--jv-ease);
+  transition: background var(--jv-dur-fast) var(--jv-ease), color var(--jv-dur-fast) var(--jv-ease);
 }
 .bc-seg:hover {
   background: var(--jv-hover);
@@ -152,8 +151,7 @@
   font-size: 1.1em;
   line-height: 1;
   border-radius: var(--jv-radius-sm);
-  transition: color var(--jv-dur-fast) var(--jv-ease),
-              background var(--jv-dur-fast) var(--jv-ease);
+  transition: color var(--jv-dur-fast) var(--jv-ease), background var(--jv-dur-fast) var(--jv-ease);
 }
 .json-search-clear:hover {
   color: var(--jv-fg);
@@ -180,8 +178,7 @@
   cursor: pointer;
   font-size: var(--font-ui-small);
   font-family: var(--font-interface);
-  transition: background var(--jv-dur-fast) var(--jv-ease),
-              color var(--jv-dur-fast) var(--jv-ease);
+  transition: background var(--jv-dur-fast) var(--jv-ease), color var(--jv-dur-fast) var(--jv-ease);
 }
 .json-mode-pill:hover:not(:disabled):not(.active) {
   color: var(--jv-fg);
@@ -231,8 +228,8 @@
   max-height: 5000px;
   opacity: 1;
   overflow: hidden;
-  transition: max-height var(--jv-dur-base) var(--jv-ease),
-              opacity var(--jv-dur-fast) var(--jv-ease);
+  transition: max-height var(--jv-dur-base) var(--jv-ease), opacity var(--jv-dur-fast)
+    var(--jv-ease);
 }
 .json-content.collapsed {
   max-height: 0;
@@ -363,9 +360,8 @@
   border-radius: var(--jv-radius-sm);
   cursor: pointer;
   opacity: 0;
-  transition: opacity var(--jv-dur-fast) var(--jv-ease),
-              color var(--jv-dur-fast) var(--jv-ease),
-              background var(--jv-dur-fast) var(--jv-ease);
+  transition: opacity var(--jv-dur-fast) var(--jv-ease), color var(--jv-dur-fast) var(--jv-ease),
+    background var(--jv-dur-fast) var(--jv-ease);
 }
 .json-row:hover .json-copy-btn {
   opacity: 0.7;
@@ -511,8 +507,7 @@
   color: var(--jv-fg-muted);
   font-size: 0.8em;
   cursor: pointer;
-  transition: color var(--jv-dur-fast) var(--jv-ease),
-              background var(--jv-dur-fast) var(--jv-ease);
+  transition: color var(--jv-dur-fast) var(--jv-ease), background var(--jv-dur-fast) var(--jv-ease);
 }
 .json-codeblock-copy:hover {
   color: var(--jv-fg);
@@ -555,9 +550,8 @@
   padding: 0 var(--jv-space-2);
   font-size: 0.85em;
   line-height: 1.4;
-  transition: color var(--jv-dur-fast) var(--jv-ease),
-              background var(--jv-dur-fast) var(--jv-ease),
-              border-color var(--jv-dur-fast) var(--jv-ease);
+  transition: color var(--jv-dur-fast) var(--jv-ease), background var(--jv-dur-fast) var(--jv-ease),
+    border-color var(--jv-dur-fast) var(--jv-ease);
 }
 .json-row-action:hover {
   color: var(--jv-fg);
@@ -581,9 +575,8 @@
   padding: var(--jv-space-1) var(--jv-space-3);
   font-family: var(--font-interface);
   font-size: 0.85em;
-  transition: color var(--jv-dur-fast) var(--jv-ease),
-              border-color var(--jv-dur-fast) var(--jv-ease),
-              background var(--jv-dur-fast) var(--jv-ease);
+  transition: color var(--jv-dur-fast) var(--jv-ease), border-color var(--jv-dur-fast)
+    var(--jv-ease), background var(--jv-dur-fast) var(--jv-ease);
 }
 .json-add-trigger:hover {
   color: var(--jv-fg);
@@ -703,7 +696,7 @@
   background: var(--jv-bg-inset);
   border: 1px solid var(--jv-border);
   border-radius: var(--jv-radius-sm);
-  box-shadow: var(--jv-shadow-sm, 0 2px 8px rgba(0,0,0,0.12));
+  box-shadow: var(--jv-shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.12));
   z-index: 10;
 }
 .json-type-option {
@@ -715,8 +708,8 @@
   padding: var(--jv-space-1) var(--jv-space-3);
   font-family: var(--font-interface);
   font-size: 0.85em;
-  transition: background var(--jv-dur-fast) var(--jv-ease),
-              border-color var(--jv-dur-fast) var(--jv-ease);
+  transition: background var(--jv-dur-fast) var(--jv-ease), border-color var(--jv-dur-fast)
+    var(--jv-ease);
 }
 .json-type-option:hover:not(:disabled) {
   background: var(--jv-hover);

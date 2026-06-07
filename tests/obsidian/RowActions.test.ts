@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { createRowActions } from "../../src/obsidian/RowActions";
 
 describe("createRowActions", () => {
@@ -40,7 +40,7 @@ describe("createRowActions", () => {
       onDelete: () => called++,
     });
     document.body.appendChild(el);
-    el.querySelector<HTMLButtonElement>(".json-row-delete")!.click();
+    el.querySelector<HTMLButtonElement>(".json-row-delete")?.click();
     expect(called).toBe(1);
   });
 
@@ -74,7 +74,7 @@ describe("createRowActions", () => {
       onChangeType: () => called++,
     });
     document.body.appendChild(el);
-    el.querySelector<HTMLButtonElement>(".json-row-type")!.click();
+    el.querySelector<HTMLButtonElement>(".json-row-type")?.click();
     expect(called).toBe(1);
   });
 

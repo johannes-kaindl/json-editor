@@ -1,60 +1,108 @@
 # Contributor License Agreement (CLA)
 
-Thank you for contributing to Obsidian JSON Editor. To keep the project's
-[dual-licensing model](LICENSING.md) possible, contributors agree to the
-following terms before their contributions are merged. This is intentionally
-short and plain.
+`json-editor` (the *Project*) is published under the **GNU Affero General
+Public License v3.0 or later** (AGPL-3.0-or-later). To keep the Project healthy —
+and to keep a small, deliberate option open (see *Why this exists* below) — every
+contribution is accepted under the terms of this Agreement.
 
-In this document, **"You"** means the contributor, and the **"Maintainer"**
-means Johannes Kaindl, the project's copyright holder.
+This is a lightweight, inbound CLA. It does **not** take your copyright away. It
+asks you to grant the maintainer the rights needed to keep distributing the
+Project, including the ability to offer it under a separate commercial license.
 
-## 1. You keep your copyright
+By submitting a contribution (a pull request, patch, or any other change) to the
+Project, **You** agree to the following.
 
-You retain full ownership of the copyright in your contributions. This
-agreement does **not** transfer your copyright to the Maintainer.
+## 1. Definitions
 
-## 2. You grant a broad license — including the right to relicense
+- **You** / **Your** — the individual or legal entity submitting the contribution.
+- **Maintainer** — Johannes Kaindl, the copyright holder and project lead.
+- **Contribution** — any original work of authorship (code, documentation, assets,
+  configuration) You intentionally submit to the Project for inclusion.
 
-You grant the Maintainer a **perpetual, worldwide, non-exclusive,
-royalty-free, irrevocable** license to use, reproduce, modify, prepare
-derivative works of, publicly display, publicly perform, sublicense, and
-distribute your contributions and such derivative works **under any license
-terms** — including:
+## 2. You keep your copyright
 
-- the **GPL-3.0-or-later** (the project's open-source license), and
-- **other licenses, including proprietary/commercial licenses.**
+You retain all right, title, and interest in Your Contribution. This Agreement
+grants licenses; it is **not** a copyright assignment.
 
-This is the clause that lets the Maintainer offer the project commercially
-(see [`LICENSING.md`](LICENSING.md)) while still releasing it as GPL. Your
-contribution itself also remains available under the GPL, like the rest of
-the project.
+## 3. Copyright license (the relicensing grant)
 
-## 3. You have the right to grant this
+You grant the Maintainer a perpetual, worldwide, non-exclusive, royalty-free,
+irrevocable license to reproduce, prepare derivative works of, publicly display,
+publicly perform, sublicense, and distribute Your Contribution and such derivative
+works **under any license terms the Maintainer chooses** — including both the
+AGPL-3.0-or-later and a separate, proprietary or otherwise commercial license.
 
-You confirm that each contribution is either your own original work, or that
-you otherwise have the right to submit it under these terms — and that, to
-your knowledge, it does not knowingly infringe anyone else's rights. If your
-employer has rights to work you create, you confirm you have permission to
-contribute, or that your employer has waived those rights for this project.
+This is the single operative clause: it lets the Maintainer continue to offer the
+Project to the commons under AGPL **and** offer a commercial license to parties who
+cannot comply with AGPL §13, without having to chase down every contributor for
+permission later.
 
-## 4. No warranty
+## 4. Patent license
 
-You provide your contributions "as is", without warranties or conditions of
-any kind. You are not expected to provide support for your contributions.
+You grant the Maintainer and recipients of the Project a perpetual, worldwide,
+non-exclusive, royalty-free, irrevocable (except as stated below) patent license to
+make, have made, use, offer to sell, sell, import, and otherwise transfer Your
+Contribution, where such license applies only to patent claims licensable by You
+that are necessarily infringed by Your Contribution alone or by combination of Your
+Contribution with the Project. If any entity institutes patent litigation alleging
+that the Project or a Contribution constitutes patent infringement, the patent
+licenses granted under this Agreement for that Contribution terminate for that
+entity.
 
-## How to accept
+## 5. Your certification of origin
 
-You accept this agreement when you open a pull request, by including the
-following line in the PR description (or as a `Signed-off-by:` trailer on your
-commits):
+You certify that:
 
-> I have read and agree to the Contributor License Agreement (CLA.md).
+1. The Contribution is Your original creation, **or** You have the right to submit
+   it under this Agreement; and
+2. To Your knowledge, the Contribution does not violate any third party's rights;
+   and
+3. If Your employer has rights to intellectual property You create, You have either
+   received permission to make the Contribution on behalf of that employer, or the
+   employer has waived such rights.
 
-For substantial contributions, the Maintainer may ask you to confirm this
-explicitly before merging.
+## 6. Inbound = outbound
+
+Your Contribution is, and remains, available to everyone under the Project's public
+license (AGPL-3.0-or-later for code, CC BY-SA 4.0 for documentation). Nothing here
+removes Your Contribution from the commons; it only adds the Maintainer's ability to
+**also** license it on other terms.
+
+## 7. No warranty
+
+You provide Your Contribution "as is", without warranties or conditions of any kind,
+to the extent permitted by applicable law.
 
 ---
 
-*This is a lightweight agreement intended for a solo open-source project; it
-is not legal advice. If a contribution or commercial arrangement ever becomes
-significant, both parties should consider independent legal review.*
+## How to accept
+
+You accept this Agreement automatically by submitting a contribution. For any
+non-trivial contribution, please make it explicit by adding a sign-off line to your
+commit (`git commit -s`):
+
+```
+Signed-off-by: Your Name <your-email@example.com>
+```
+
+A `Signed-off-by` line certifies that You have read and agree to this CLA. For
+substantial contributions the Maintainer may ask you to confirm agreement in the
+pull request.
+
+---
+
+## Why this exists
+
+The Project is AGPL because contributions to the commons should **stay** in the
+commons. But the Maintainer is the sole copyright holder, which keeps one option
+open: offering a paid commercial license to organisations that genuinely cannot work
+under AGPL §13. That option has real value — and it only survives if every external
+contribution is covered by a relicensing grant *before* it lands.
+
+Accepting even one non-trivial contribution **without** such a grant would
+permanently remove the Maintainer's ability to dual-license. This CLA is the
+lightweight insurance against that one irreversible mistake. It costs contributors
+nothing and takes nothing away.
+
+Questions about this Agreement or about a commercial license:
+**code@jkaindl.de**.

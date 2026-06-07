@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { type App, PluginSettingTab, Setting } from "obsidian";
 import type { Plugin } from "obsidian";
 
 export interface JsonEditorSettings {
@@ -25,7 +25,10 @@ interface PluginWithSettings extends Plugin {
 }
 
 export class JsonEditorSettingsTab extends PluginSettingTab {
-  constructor(app: App, private settingsPlugin: PluginWithSettings) {
+  constructor(
+    app: App,
+    private settingsPlugin: PluginWithSettings,
+  ) {
     super(app, settingsPlugin);
   }
 
@@ -55,7 +58,7 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
         dd.addOption("tab", "Tab");
         dd.setValue(s.indent === "\t" ? "tab" : String(s.indent));
         dd.onChange(async (v) => {
-          s.indent = v === "tab" ? "\t" : (parseInt(v, 10) as 2 | 4);
+          s.indent = v === "tab" ? "\t" : (Number.parseInt(v, 10) as 2 | 4);
           await this.settingsPlugin.saveSettings();
         });
       });
@@ -75,13 +78,11 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
 
     new Setting(this.containerEl)
       .setName("Auto-collapse depth")
-      .setDesc(
-        "Nodes strictly deeper than this depth start collapsed. 0 = collapse all but root."
-      )
+      .setDesc("Nodes strictly deeper than this depth start collapsed. 0 = collapse all but root.")
       .addText((text) => {
         text.setValue(String(s.autoCollapseDepth));
         text.onChange(async (v) => {
-          const n = parseInt(v, 10);
+          const n = Number.parseInt(v, 10);
           if (Number.isFinite(n) && n >= 0) {
             s.autoCollapseDepth = n;
             await this.settingsPlugin.saveSettings();
@@ -92,7 +93,7 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
     new Setting(this.containerEl)
       .setName("Validate against JSON Schema")
       .setDesc(
-        "When enabled, the plugin looks for a sibling schema file next to the current .json file (e.g. data.json → data.schema.json) and highlights validation errors in real time."
+        "When enabled, the plugin looks for a sibling schema file next to the current .json file (e.g. data.json → data.schema.json) and highlights validation errors in real time.",
       )
       .addToggle((toggle) => {
         toggle.setValue(s.validateAgainstSchema);
@@ -105,7 +106,7 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
     new Setting(this.containerEl)
       .setName("Companion schema suffix")
       .setDesc(
-        "Suffix used to find the sibling schema file. Default '.schema.json' resolves data.json → data.schema.json."
+        "Suffix used to find the sibling schema file. Default '.schema.json' resolves data.json → data.schema.json.",
       )
       .addText((text) => {
         text.setValue(s.companionSchemaSuffix);

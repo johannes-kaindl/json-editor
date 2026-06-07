@@ -1,10 +1,12 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { Plugin, type App } from "obsidian";
-import { JsonEditorSettingsTab, DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
+import { type App, Plugin } from "obsidian";
+import { beforeEach, describe, expect, it } from "vitest";
+import { DEFAULT_SETTINGS, JsonEditorSettingsTab } from "../../src/obsidian/SettingsTab";
 
 class FakePlugin extends Plugin {
   settings = { ...DEFAULT_SETTINGS };
-  async saveSettings() { await this.saveData(this.settings); }
+  async saveSettings() {
+    await this.saveData(this.settings);
+  }
 }
 
 describe("JsonEditorSettingsTab", () => {
