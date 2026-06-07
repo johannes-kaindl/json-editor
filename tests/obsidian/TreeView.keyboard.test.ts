@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { TreeView } from "../../src/obsidian/TreeView";
 
 const dispatchKey = (target: HTMLElement, key: string): boolean => {

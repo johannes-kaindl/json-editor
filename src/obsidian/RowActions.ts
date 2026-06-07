@@ -18,7 +18,7 @@ export function createRowActions(opts: RowActionsOptions): HTMLElement {
     typeBtn.textContent = "T";
     typeBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      opts.onChangeType!();
+      opts.onChangeType?.();
     });
     wrap.appendChild(typeBtn);
   }

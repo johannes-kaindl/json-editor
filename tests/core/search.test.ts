@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { findMatches } from "../../src/core/search";
 
 describe("findMatches", () => {
@@ -73,7 +73,10 @@ describe("findMatches", () => {
   });
 
   it("matches at root-level primitive value", () => {
-    const r = findMatches("hello world" as unknown as import("../../src/core/types").JsonValue, "world");
+    const r = findMatches(
+      "hello world" as unknown as import("../../src/core/types").JsonValue,
+      "world",
+    );
     expect(r.matches).toEqual(new Set(["root"]));
     expect(r.counts.values).toBe(1);
   });

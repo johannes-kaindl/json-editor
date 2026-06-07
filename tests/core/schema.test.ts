@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { compileSchema } from "../../src/core/schema";
 
 const PERSON_SCHEMA = `{
@@ -62,7 +62,9 @@ describe("compiled schema validate", () => {
   });
 
   it("converts instancePath to JsonPath segments (object keys)", () => {
-    const r = compileSchema('{"type":"object","properties":{"foo":{"type":"object","properties":{"bar":{"type":"number"}}}}}');
+    const r = compileSchema(
+      '{"type":"object","properties":{"foo":{"type":"object","properties":{"bar":{"type":"number"}}}}}',
+    );
     if (!r.ok) throw new Error("schema compile failed");
     const errors = r.schema.validate({ foo: { bar: "no" } });
     expect(errors.length).toBe(1);
@@ -78,7 +80,9 @@ describe("compiled schema validate", () => {
   });
 
   it("returns all errors with allErrors: true", () => {
-    const r = compileSchema('{"type":"object","properties":{"a":{"type":"number"},"b":{"type":"number"}}}');
+    const r = compileSchema(
+      '{"type":"object","properties":{"a":{"type":"number"},"b":{"type":"number"}}}',
+    );
     if (!r.ok) throw new Error("schema compile failed");
     const errors = r.schema.validate({ a: "x", b: "y" });
     expect(errors.length).toBe(2);
@@ -93,7 +97,9 @@ describe("compiled schema validate", () => {
   });
 
   it("handles JSON pointer escape sequences", () => {
-    const r = compileSchema('{"type":"object","properties":{"a/b":{"type":"number"},"c~d":{"type":"number"}}}');
+    const r = compileSchema(
+      '{"type":"object","properties":{"a/b":{"type":"number"},"c~d":{"type":"number"}}}',
+    );
     if (!r.ok) throw new Error("schema compile failed");
     const errors = r.schema.validate({ "a/b": "x", "c~d": "y" });
     expect(errors.length).toBe(2);

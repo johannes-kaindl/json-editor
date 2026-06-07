@@ -1,5 +1,5 @@
-import type { JsonValue, JsonPath } from "../core/types";
 import { pathToString } from "../core/path";
+import type { JsonPath, JsonValue } from "../core/types";
 
 export function createCopyButton(value: JsonValue, path: JsonPath): HTMLButtonElement {
   const btn = document.createElement("button");
@@ -16,7 +16,7 @@ export function createCopyButton(value: JsonValue, path: JsonPath): HTMLButtonEl
       () => markCopied(btn),
       () => {
         /* swallow — clipboard might be unavailable; no UI for v1.1 */
-      }
+      },
     );
   });
 

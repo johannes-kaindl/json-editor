@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { openTypeMenu } from "../../src/obsidian/TypeMenu";
+import { beforeEach, describe, expect, it } from "vitest";
 import type { JsonType } from "../../src/core/edit";
+import { openTypeMenu } from "../../src/obsidian/TypeMenu";
 
 const ALL_TYPES: JsonType[] = ["string", "number", "boolean", "null", "object", "array"];
 
@@ -15,7 +15,7 @@ describe("openTypeMenu", () => {
     openTypeMenu(anchor, { currentType: "string", onPick: () => {} });
     const menu = document.querySelector(".json-type-menu");
     expect(menu).not.toBeNull();
-    expect(menu!.querySelectorAll(".json-type-option").length).toBe(6);
+    expect(menu?.querySelectorAll(".json-type-option").length).toBe(6);
   });
 
   it("disables the option matching the current type", () => {
@@ -23,7 +23,7 @@ describe("openTypeMenu", () => {
     document.body.appendChild(anchor);
     openTypeMenu(anchor, { currentType: "number", onPick: () => {} });
     const numOption = document.querySelector<HTMLButtonElement>(
-      '.json-type-option[data-type="number"]'
+      '.json-type-option[data-type="number"]',
     );
     expect(numOption?.disabled).toBe(true);
   });
@@ -39,7 +39,7 @@ describe("openTypeMenu", () => {
       },
     });
     const opt = document.querySelector<HTMLButtonElement>(
-      '.json-type-option[data-type="boolean"]'
+      '.json-type-option[data-type="boolean"]',
     )!;
     opt.click();
     expect(picked).toBe("boolean");
@@ -56,9 +56,7 @@ describe("openTypeMenu", () => {
         picked = t;
       },
     });
-    const opt = document.querySelector<HTMLButtonElement>(
-      '.json-type-option[data-type="string"]'
-    )!;
+    const opt = document.querySelector<HTMLButtonElement>('.json-type-option[data-type="string"]')!;
     opt.click();
     expect(picked).toBeNull();
     expect(document.querySelector(".json-type-menu")).not.toBeNull();
@@ -96,9 +94,7 @@ describe("openTypeMenu", () => {
     document.body.appendChild(anchor);
     openTypeMenu(anchor, { currentType: "null", onPick: () => {} });
     for (const t of ALL_TYPES) {
-      const opt = document.querySelector<HTMLButtonElement>(
-        `.json-type-option[data-type="${t}"]`
-      );
+      const opt = document.querySelector<HTMLButtonElement>(`.json-type-option[data-type="${t}"]`);
       expect(opt?.textContent?.toLowerCase()).toContain(t);
     }
   });

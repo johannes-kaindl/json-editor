@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { JsonFileView, JSON_VIEW_TYPE } from "../../src/obsidian/JsonFileView";
-import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
 import type { WorkspaceLeaf } from "obsidian";
+import { beforeEach, describe, expect, it } from "vitest";
+import { JSON_VIEW_TYPE, JsonFileView } from "../../src/obsidian/JsonFileView";
+import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
 
-const fakeLeaf = (): WorkspaceLeaf => ({ app: {} } as WorkspaceLeaf);
+const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as WorkspaceLeaf;
 
 describe("JsonFileView", () => {
   beforeEach(() => {
@@ -268,8 +268,6 @@ describe("JsonFileView SearchBar integration", () => {
     v.setViewData('{"a":1}', false);
     v.focusSearch();
     expect(v.contentEl.querySelector(".json-tree-root")).not.toBeNull();
-    expect(document.activeElement).toBe(
-      v.contentEl.querySelector(".json-search-input")
-    );
+    expect(document.activeElement).toBe(v.contentEl.querySelector(".json-search-input"));
   });
 });

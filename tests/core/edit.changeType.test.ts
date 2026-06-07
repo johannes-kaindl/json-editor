@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { changeType, type JsonType } from "../../src/core/edit";
+import { describe, expect, it } from "vitest";
+import { type JsonType, changeType } from "../../src/core/edit";
 
 describe("changeType", () => {
   describe("primitive → primitive", () => {
@@ -97,9 +97,9 @@ describe("changeType", () => {
     });
 
     it("changes deeply nested value", () => {
-      expect(
-        changeType({ outer: { inner: true } }, ["outer", "inner"], "string")
-      ).toEqual({ outer: { inner: "" } });
+      expect(changeType({ outer: { inner: true } }, ["outer", "inner"], "string")).toEqual({
+        outer: { inner: "" },
+      });
     });
 
     it("preserves siblings", () => {

@@ -1,5 +1,5 @@
 import Ajv, { type ErrorObject } from "ajv";
-import type { JsonValue, JsonPath } from "./types";
+import type { JsonPath, JsonValue } from "./types";
 
 export interface PathError {
   path: JsonPath;
@@ -70,7 +70,7 @@ function ajvErrorMessage(e: ErrorObject): string {
 function instancePathToJsonPath(
   pointer: string,
   rootValue: JsonValue,
-  _err: ErrorObject
+  _err: ErrorObject,
 ): JsonPath {
   if (pointer === "") return [];
   const rawSegments = pointer.split("/").slice(1).map(decodePointerSegment);
@@ -78,7 +78,7 @@ function instancePathToJsonPath(
   let cur: JsonValue = rootValue;
   for (const seg of rawSegments) {
     if (Array.isArray(cur)) {
-      const idx = parseInt(seg, 10);
+      const idx = Number.parseInt(seg, 10);
       result.push(idx);
       cur = cur[idx];
     } else if (cur !== null && typeof cur === "object") {

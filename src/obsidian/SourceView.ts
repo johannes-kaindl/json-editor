@@ -1,7 +1,7 @@
+import { defaultKeymap } from "@codemirror/commands";
+import { json } from "@codemirror/lang-json";
 import { EditorState, Transaction } from "@codemirror/state";
 import { EditorView, keymap, lineNumbers } from "@codemirror/view";
-import { json } from "@codemirror/lang-json";
-import { defaultKeymap } from "@codemirror/commands";
 
 export interface SourceViewOptions {
   onChange?: (newText: string) => void;
@@ -11,7 +11,10 @@ export class SourceView {
   private view: EditorView | null = null;
   private suppressChange = false;
 
-  constructor(private container: HTMLElement, private opts: SourceViewOptions) {
+  constructor(
+    private container: HTMLElement,
+    private opts: SourceViewOptions,
+  ) {
     this.mount("");
   }
 

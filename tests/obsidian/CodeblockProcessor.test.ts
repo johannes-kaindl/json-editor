@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import type { MarkdownPostProcessorContext } from "obsidian";
+import { beforeEach, describe, expect, it } from "vitest";
 import { renderJsonCodeblock } from "../../src/obsidian/CodeblockProcessor";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
-import type { MarkdownPostProcessorContext } from "obsidian";
 
 const fakeCtx = (): MarkdownPostProcessorContext => ({
   sourcePath: "fake/path.md",
@@ -49,7 +49,11 @@ describe("renderJsonCodeblock", () => {
     expect(container).not.toBeNull();
     expect(container.classList.contains("is-empty")).toBe(true);
     const brackets = container.querySelectorAll(".json-bracket");
-    expect(Array.from(brackets).map((b) => b.textContent).join("")).toBe("{}");
+    expect(
+      Array.from(brackets)
+        .map((b) => b.textContent)
+        .join(""),
+    ).toBe("{}");
   });
 
   it("wraps valid JSON in a .json-codeblock card with a header label", () => {

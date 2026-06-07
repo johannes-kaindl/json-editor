@@ -19,12 +19,15 @@ function extractPosition(text: string, message: string): { line: number; col: nu
   // "line N column M" depending on engine/version. Try both.
   const posMatch = /position\s+(\d+)/i.exec(message);
   if (posMatch) {
-    const offset = parseInt(posMatch[1], 10);
+    const offset = Number.parseInt(posMatch[1], 10);
     return offsetToLineCol(text, offset);
   }
   const lineColMatch = /line\s+(\d+)\s+column\s+(\d+)/i.exec(message);
   if (lineColMatch) {
-    return { line: parseInt(lineColMatch[1], 10), col: parseInt(lineColMatch[2], 10) };
+    return {
+      line: Number.parseInt(lineColMatch[1], 10),
+      col: Number.parseInt(lineColMatch[2], 10),
+    };
   }
   // Fallback for Node >=24 V8 messages that omit position info ("Unexpected
   // token 'X', ... is not valid JSON"). lastIndexOf is heuristic: it can

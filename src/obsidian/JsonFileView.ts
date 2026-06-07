@@ -1,27 +1,27 @@
-import { Notice, TextFileView, TFile, type WorkspaceLeaf } from "obsidian";
-import { parse } from "../core/parse";
-import { serialize } from "../core/serialize";
-import { pathToString } from "../core/path";
-import { compileSchema, type CompiledSchema, type PathError } from "../core/schema";
-import type { JsonValue, JsonPath } from "../core/types";
-import { SchemaBanner } from "./SchemaBanner";
+import { Notice, TFile, TextFileView, type WorkspaceLeaf } from "obsidian";
 import {
-  addObjectKey,
+  type JsonType,
   addArrayItem,
+  addObjectKey,
+  changeType,
   deleteAt,
-  renameKey,
   moveArrayItem,
   moveObjectKey,
-  changeType,
-  type JsonType,
+  renameKey,
 } from "../core/edit";
 import { History } from "../core/history";
-import { TreeView } from "./TreeView";
-import { SourceView } from "./SourceView";
-import type { JsonEditorSettings } from "./SettingsTab";
+import { parse } from "../core/parse";
+import { pathToString } from "../core/path";
+import { type CompiledSchema, type PathError, compileSchema } from "../core/schema";
+import { serialize } from "../core/serialize";
+import type { JsonPath, JsonValue } from "../core/types";
 import { Breadcrumb } from "./Breadcrumb";
+import { SchemaBanner } from "./SchemaBanner";
 import { SearchBar } from "./SearchBar";
+import type { JsonEditorSettings } from "./SettingsTab";
+import { SourceView } from "./SourceView";
 import { Tooltip, tooltipContentForValue } from "./Tooltip";
+import { TreeView } from "./TreeView";
 
 export const JSON_VIEW_TYPE = "json-editor-view";
 
@@ -48,7 +48,10 @@ export class JsonFileView extends TextFileView {
   private currentSchema: CompiledSchema | null = null;
   private history = new History<string>();
 
-  constructor(leaf: WorkspaceLeaf, private settings: JsonEditorSettings) {
+  constructor(
+    leaf: WorkspaceLeaf,
+    private settings: JsonEditorSettings,
+  ) {
     super(leaf);
     this.mode = settings.defaultMode;
     this.buildChrome();
@@ -197,7 +200,9 @@ export class JsonFileView extends TextFileView {
         this.currentValue = parsed.value;
       } else {
         this.invalid = true;
-        this.showBanner(`Invalid JSON at line ${parsed.line}, column ${parsed.col}: ${parsed.error}`);
+        this.showBanner(
+          `Invalid JSON at line ${parsed.line}, column ${parsed.col}: ${parsed.error}`,
+        );
         this.treePillEl.disabled = true;
         return;
       }
@@ -232,8 +237,7 @@ export class JsonFileView extends TextFileView {
         onAddItem: (parentPath) => this.handleAddItem(parentPath),
         onDelete: (path) => this.handleDelete(path),
         onRenameKey: (path, newKey) => this.handleRename(path, newKey),
-        onMoveItem: (parentPath, fromIdx, toIdx) =>
-          this.handleMoveItem(parentPath, fromIdx, toIdx),
+        onMoveItem: (parentPath, fromIdx, toIdx) => this.handleMoveItem(parentPath, fromIdx, toIdx),
         onMoveKey: (parentPath, key, toPos) => this.handleMoveKey(parentPath, key, toPos),
         onChangeType: (path, newType) => this.handleChangeType(path, newType),
         onError: (err) => new Notice(err.message),
@@ -259,9 +263,7 @@ export class JsonFileView extends TextFileView {
     this.currentQuery = query;
     if (this.treeView) {
       const result = this.treeView.applyFilter(query);
-      this.searchBar.setMatchInfo(
-        query.trim() === "" ? null : { matchCount: result.matchCount }
-      );
+      this.searchBar.setMatchInfo(query.trim() === "" ? null : { matchCount: result.matchCount });
     }
   }
 

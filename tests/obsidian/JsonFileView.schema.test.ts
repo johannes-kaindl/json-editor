@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import type { WorkspaceLeaf } from "obsidian";
+import { beforeEach, describe, expect, it } from "vitest";
 import { JsonFileView } from "../../src/obsidian/JsonFileView";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
-import type { WorkspaceLeaf } from "obsidian";
 
-const fakeLeaf = (): WorkspaceLeaf => ({ app: {} } as WorkspaceLeaf);
+const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as WorkspaceLeaf;
 
 const PERSON_SCHEMA = `{
   "type": "object",
@@ -44,9 +44,7 @@ describe("JsonFileView schema validation", () => {
     document.body.appendChild(v.contentEl);
     v.setViewData('{"name":"Jay","age":"old"}', false);
     v.setSchema(PERSON_SCHEMA);
-    const row = v.contentEl.querySelector<HTMLElement>(
-      '.json-row[data-path="age"].json-row-error'
-    );
+    const row = v.contentEl.querySelector<HTMLElement>('.json-row[data-path="age"].json-row-error');
     expect(row).not.toBeNull();
     expect(row?.getAttribute("title")?.toLowerCase()).toMatch(/integer|type/);
   });

@@ -1,11 +1,11 @@
-import type { JsonValue, JsonPath, MarkerStyle } from "../core/types";
-import { renderTree } from "../core/render";
-import { editValue, computeInsertionIndex, type JsonType } from "../core/edit";
+import { type JsonType, computeInsertionIndex, editValue } from "../core/edit";
 import { pathToString } from "../core/path";
+import { renderTree } from "../core/render";
 import { findMatches } from "../core/search";
+import type { JsonPath, JsonValue, MarkerStyle } from "../core/types";
+import { createAddAffordance } from "./AddAffordance";
 import { createCopyButton } from "./CopyButton";
 import { createRowActions } from "./RowActions";
-import { createAddAffordance } from "./AddAffordance";
 import { openTypeMenu } from "./TypeMenu";
 
 export interface TreeViewOptions {
@@ -41,7 +41,10 @@ export class TreeView {
   private dragSourcePath: JsonPath | null = null;
   private validationErrors: Map<string, string> = new Map();
 
-  constructor(private container: HTMLElement, private opts: TreeViewOptions) {}
+  constructor(
+    private container: HTMLElement,
+    private opts: TreeViewOptions,
+  ) {}
 
   setValidationErrors(errors: Map<string, string>): void {
     this.validationErrors = errors;
@@ -57,7 +60,7 @@ export class TreeView {
     if (this.validationErrors.size === 0) return;
     for (const [pathStr, message] of this.validationErrors) {
       const row = treeRoot.querySelector<HTMLElement>(
-        `.json-row[data-path="${cssEscapeAttr(pathStr)}"]`
+        `.json-row[data-path="${cssEscapeAttr(pathStr)}"]`,
       );
       if (row) {
         row.classList.add("json-row-error");
@@ -99,17 +102,13 @@ export class TreeView {
 
     for (const pathStr of result.matches) {
       if (pathStr === "root") continue;
-      const row = treeRoot.querySelector<HTMLElement>(
-        `[data-path="${cssEscapeAttr(pathStr)}"]`
-      );
+      const row = treeRoot.querySelector<HTMLElement>(`[data-path="${cssEscapeAttr(pathStr)}"]`);
       row?.classList.add("json-match");
     }
 
     for (const pathStr of result.onPath) {
       if (pathStr === "root") continue;
-      const row = treeRoot.querySelector<HTMLElement>(
-        `[data-path="${cssEscapeAttr(pathStr)}"]`
-      );
+      const row = treeRoot.querySelector<HTMLElement>(`[data-path="${cssEscapeAttr(pathStr)}"]`);
       row?.classList.add("json-on-path");
     }
 
@@ -122,7 +121,7 @@ export class TreeView {
   private openContainersWithMatches(treeRoot: HTMLElement): void {
     treeRoot
       .querySelectorAll<HTMLElement>(
-        ".json-on-path .json-container.is-collapsed, .json-match .json-container.is-collapsed"
+        ".json-on-path .json-container.is-collapsed, .json-match .json-container.is-collapsed",
       )
       .forEach((container) => {
         const content = container.querySelector<HTMLElement>(":scope > .json-content");
@@ -214,7 +213,7 @@ export class TreeView {
     const current = typeOfJsonValue(value);
     openTypeMenu(row, {
       currentType: current,
-      onPick: (newType) => this.opts.onChangeType!(path, newType),
+      onPick: (newType) => this.opts.onChangeType?.(path, newType),
     });
   }
 
@@ -250,9 +249,7 @@ export class TreeView {
       if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
       this.clearDropTargets();
       const pos = this.dropPosition(row, e.clientY);
-      row.classList.add(
-        pos === "before" ? "json-drop-target-before" : "json-drop-target-after"
-      );
+      row.classList.add(pos === "before" ? "json-drop-target-before" : "json-drop-target-after");
     });
 
     row.addEventListener("dragleave", () => {
@@ -317,9 +314,7 @@ export class TreeView {
   private clearDropTargets(): void {
     this.container
       .querySelectorAll(".json-drop-target-before, .json-drop-target-after")
-      .forEach((el) =>
-        el.classList.remove("json-drop-target-before", "json-drop-target-after")
-      );
+      .forEach((el) => el.classList.remove("json-drop-target-before", "json-drop-target-after"));
   }
 
   private getValueAt(path: JsonPath): JsonValue {
@@ -439,9 +434,9 @@ export class TreeView {
   private visibleRows(): HTMLElement[] {
     const treeRoot = this.container.querySelector(".json-tree-root");
     if (!treeRoot) return [];
-    return Array.from(
-      treeRoot.querySelectorAll<HTMLElement>('.json-row[role="treeitem"]')
-    ).filter((r) => this.isRowVisible(r));
+    return Array.from(treeRoot.querySelectorAll<HTMLElement>('.json-row[role="treeitem"]')).filter(
+      (r) => this.isRowVisible(r),
+    );
   }
 
   private directChildWithClass(parent: HTMLElement, cls: string): HTMLElement | null {
@@ -640,7 +635,7 @@ export class TreeView {
     }
     if (!current) return null;
     const primitive = current.querySelector(
-      ".json-string, .json-number, .json-boolean, .json-null"
+      ".json-string, .json-number, .json-boolean, .json-null",
     ) as HTMLElement | null;
     return primitive ?? current;
   }
@@ -650,7 +645,7 @@ function locateChildForSegment(parent: HTMLElement, segment: string | number): H
   const content = parent.querySelector<HTMLElement>(".json-content");
   if (!content) return null;
   const rows = Array.from(content.children).filter(
-    (el): el is HTMLElement => el instanceof HTMLElement && el.classList.contains("json-row")
+    (el): el is HTMLElement => el instanceof HTMLElement && el.classList.contains("json-row"),
   );
   if (typeof segment === "string") {
     for (const row of rows) {
@@ -733,7 +728,7 @@ function parsePathStr(pathStr: string): JsonPath {
       } else {
         const close = pathStr.indexOf("]", i);
         const inner = pathStr.slice(i + 1, close);
-        segments.push(parseInt(inner, 10));
+        segments.push(Number.parseInt(inner, 10));
         i = close + 1;
       }
     } else {
@@ -753,7 +748,7 @@ function replaceWithInput(
   target: HTMLElement,
   type: "text" | "number",
   initial: string,
-  onDone: (rawValue: string, committed: boolean) => void
+  onDone: (rawValue: string, committed: boolean) => void,
 ): void {
   const input = document.createElement("input");
   input.type = type;
@@ -788,7 +783,7 @@ function replaceWithInput(
 function replaceWithCheckbox(
   target: HTMLElement,
   initial: boolean,
-  onDone: (newValue: boolean, committed: boolean) => void
+  onDone: (newValue: boolean, committed: boolean) => void,
 ): void {
   const input = document.createElement("input");
   input.type = "checkbox";

@@ -1,5 +1,5 @@
-import type { JsonValue, JsonPath, RenderOptions } from "./types";
 import { pathToString } from "./path";
+import type { JsonPath, JsonValue, RenderOptions } from "./types";
 
 type ContainerKind = "object" | "array";
 
@@ -22,7 +22,7 @@ function renderValue(
   value: JsonValue,
   path: JsonPath,
   depth: number,
-  opts: RenderOptions
+  opts: RenderOptions,
 ): void {
   if (value === null) {
     parent.appendChild(makePrimitive("null", "json-null", path, value, opts));
@@ -55,7 +55,7 @@ function makePrimitive(
   cls: string,
   path: JsonPath,
   value: JsonValue,
-  opts: RenderOptions
+  opts: RenderOptions,
 ): HTMLElement {
   const span = document.createElement("span");
   span.className = cls;
@@ -71,7 +71,7 @@ function makePrimitive(
   }
   if (opts.onValueHover) {
     span.addEventListener("mouseenter", () => {
-      opts.onValueHover!(span, path, value);
+      opts.onValueHover?.(span, path, value);
     });
   }
   return span;
@@ -83,7 +83,7 @@ function renderContainer(
   path: JsonPath,
   depth: number,
   opts: RenderOptions,
-  kind: ContainerKind
+  kind: ContainerKind,
 ): void {
   const { open, close } = bracketsFor(kind);
 
@@ -114,8 +114,7 @@ function renderContainer(
   const content = document.createElement("div");
   content.className = "json-content";
   content.setAttribute("role", "group");
-  const shouldCollapse =
-    opts.autoCollapseDepth !== undefined && depth > opts.autoCollapseDepth;
+  const shouldCollapse = opts.autoCollapseDepth !== undefined && depth > opts.autoCollapseDepth;
   if (shouldCollapse) {
     content.classList.add("collapsed");
     container.classList.add("is-collapsed");
@@ -141,7 +140,7 @@ function renderContainer(
     const itemPath = [...path, item.segment];
     row.setAttribute("data-path", pathToString(itemPath));
     if (opts.onPathClick) {
-      row.addEventListener("click", () => opts.onPathClick!(itemPath), true);
+      row.addEventListener("click", () => opts.onPathClick?.(itemPath), true);
     }
     if (opts.markerStyle === "classic") {
       const marker = document.createElement("span");

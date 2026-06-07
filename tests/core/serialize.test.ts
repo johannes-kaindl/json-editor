@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { serialize } from "../../src/core/serialize";
+import { describe, expect, it } from "vitest";
 import { parse } from "../../src/core/parse";
+import { serialize } from "../../src/core/serialize";
 
 describe("serialize", () => {
   it("serializes primitives with no indent (indent: 0)", () => {
@@ -28,9 +28,7 @@ describe("serialize", () => {
   it("serializes nested structures", () => {
     const value = { users: [{ name: "jay" }] };
     const result = serialize(value, { indent: 2 });
-    expect(result).toBe(
-      '{\n  "users": [\n    {\n      "name": "jay"\n    }\n  ]\n}'
-    );
+    expect(result).toBe('{\n  "users": [\n    {\n      "name": "jay"\n    }\n  ]\n}');
   });
 
   it("round-trips: parse then serialize yields equivalent JSON", () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TreeView } from "../../src/obsidian/TreeView";
 
 describe("TreeView", () => {
@@ -127,9 +127,7 @@ describe("TreeView", () => {
     document.body.appendChild(container);
     const view = new TreeView(container, {});
     view.setValue({ users: [{ name: "jay" }] });
-    const innerRow = container.querySelector(
-      '.json-row[data-path="users[0].name"]'
-    ) as HTMLElement;
+    const innerRow = container.querySelector('.json-row[data-path="users[0].name"]') as HTMLElement;
     const btn = innerRow.querySelector(".json-copy-btn") as HTMLButtonElement;
     btn.click();
     await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
@@ -163,14 +161,14 @@ describe("TreeView", () => {
     // Use two keys so one string remains in the DOM while the other is being edited.
     view.setValue({ name: "jay", tag: "admin" });
     const nameEl = container.querySelector(
-      '.json-row[data-path="name"] .json-string'
+      '.json-row[data-path="name"] .json-string',
     ) as HTMLElement;
     nameEl.click();
     const input = container.querySelector("input[type='text']") as HTMLInputElement;
     input.focus();
     // 'tag' value is still rendered; hover it — must be suppressed by editing flag.
     const tagValue = container.querySelector(
-      '.json-row[data-path="tag"] .json-string'
+      '.json-row[data-path="tag"] .json-string',
     ) as HTMLElement;
     expect(tagValue).not.toBeNull();
     tagValue.dispatchEvent(new MouseEvent("mouseenter"));
@@ -190,7 +188,7 @@ describe("TreeView", () => {
     const rows = Array.from(container.querySelectorAll<HTMLElement>(".json-row"));
     const row = rows.find((r) => r.getAttribute("data-path") === '["weird]key"]');
     expect(row).toBeDefined();
-    const btn = row!.querySelector(".json-copy-btn") as HTMLButtonElement;
+    const btn = row?.querySelector(".json-copy-btn") as HTMLButtonElement;
     btn.click();
     await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
     expect(writeText).toHaveBeenCalledWith('"secret"');
@@ -227,7 +225,7 @@ describe("TreeView.applyFilter", () => {
     expect(r.matchCount).toBe(0);
     expect(container.querySelectorAll(".json-match").length).toBe(0);
     expect(
-      container.querySelector(".json-tree-root")?.classList.contains("json-filter-active")
+      container.querySelector(".json-tree-root")?.classList.contains("json-filter-active"),
     ).toBe(false);
   });
 
@@ -243,7 +241,7 @@ describe("TreeView.applyFilter", () => {
   it("marks ancestor rows with json-on-path", () => {
     tv.applyFilter("port");
     const onPath = Array.from(container.querySelectorAll(".json-on-path")).map((el) =>
-      el.getAttribute("data-path")
+      el.getAttribute("data-path"),
     );
     expect(onPath).toContain("config");
     expect(onPath).toContain("config.server");
@@ -263,7 +261,7 @@ describe("TreeView.applyFilter", () => {
     expect(container.querySelectorAll(".json-match").length).toBe(0);
     expect(container.querySelectorAll(".json-on-path").length).toBe(0);
     expect(
-      container.querySelector(".json-tree-root")?.classList.contains("json-filter-active")
+      container.querySelector(".json-tree-root")?.classList.contains("json-filter-active"),
     ).toBe(false);
   });
 
@@ -271,7 +269,7 @@ describe("TreeView.applyFilter", () => {
     const r = tv.applyFilter("nonexistent_xyz_123");
     expect(r.matchCount).toBe(0);
     expect(
-      container.querySelector(".json-tree-root")?.classList.contains("json-filter-active")
+      container.querySelector(".json-tree-root")?.classList.contains("json-filter-active"),
     ).toBe(true);
   });
 
@@ -290,7 +288,7 @@ describe("TreeView.applyFilter", () => {
 
     // After filter: all on-path containers should be open
     const stillCollapsed = container.querySelectorAll(
-      ".json-on-path .json-container.is-collapsed, .json-match .json-container.is-collapsed"
+      ".json-on-path .json-container.is-collapsed, .json-match .json-container.is-collapsed",
     );
     expect(stillCollapsed.length).toBe(0);
   });

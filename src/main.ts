@@ -1,10 +1,10 @@
 import { Plugin, type WorkspaceLeaf } from "obsidian";
-import { JsonFileView, JSON_VIEW_TYPE } from "./obsidian/JsonFileView";
 import { renderJsonCodeblock } from "./obsidian/CodeblockProcessor";
+import { JSON_VIEW_TYPE, JsonFileView } from "./obsidian/JsonFileView";
 import {
   DEFAULT_SETTINGS,
-  JsonEditorSettingsTab,
   type JsonEditorSettings,
+  JsonEditorSettingsTab,
 } from "./obsidian/SettingsTab";
 
 export default class JsonEditorPlugin extends Plugin {
@@ -14,11 +14,14 @@ export default class JsonEditorPlugin extends Plugin {
     const stored = (await this.loadData()) as Partial<JsonEditorSettings> | null;
     this.settings = { ...DEFAULT_SETTINGS, ...(stored ?? {}) };
 
-    this.registerView(JSON_VIEW_TYPE, (leaf: WorkspaceLeaf) => new JsonFileView(leaf, this.settings));
+    this.registerView(
+      JSON_VIEW_TYPE,
+      (leaf: WorkspaceLeaf) => new JsonFileView(leaf, this.settings),
+    );
     this.registerExtensions(["json"], JSON_VIEW_TYPE);
 
     this.registerMarkdownCodeBlockProcessor("json", (src, el, ctx) =>
-      renderJsonCodeblock(src, el, ctx, this.settings)
+      renderJsonCodeblock(src, el, ctx, this.settings),
     );
 
     this.addSettingTab(new JsonEditorSettingsTab(this.app, this));

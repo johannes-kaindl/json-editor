@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import type { WorkspaceLeaf } from "obsidian";
+import { beforeEach, describe, expect, it } from "vitest";
 import { JsonFileView } from "../../src/obsidian/JsonFileView";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
-import type { WorkspaceLeaf } from "obsidian";
 
-const fakeLeaf = (): WorkspaceLeaf => ({ app: {} } as WorkspaceLeaf);
+const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as WorkspaceLeaf;
 
 describe("JsonFileView undo/redo + structural edits", () => {
   beforeEach(() => {
@@ -57,7 +57,7 @@ describe("JsonFileView undo/redo + structural edits", () => {
     document.body.appendChild(v.contentEl);
     v.setViewData('{"a":1,"b":2}', false);
     const delBtn = v.contentEl.querySelector<HTMLButtonElement>(
-      '.json-row[data-path="a"] .json-row-delete'
+      '.json-row[data-path="a"] .json-row-delete',
     )!;
     delBtn.click();
     expect(JSON.parse(v.getViewData())).toEqual({ b: 2 });
@@ -70,7 +70,7 @@ describe("JsonFileView undo/redo + structural edits", () => {
     document.body.appendChild(v.contentEl);
     v.setViewData('{"a":1}', false);
     const trigger = v.contentEl.querySelector<HTMLButtonElement>(
-      ".json-container > .json-content > .json-add-affordance > .json-add-trigger"
+      ".json-container > .json-content > .json-add-affordance > .json-add-trigger",
     )!;
     trigger.click();
     const input = v.contentEl.querySelector(".json-add-input") as HTMLInputElement;
@@ -83,9 +83,7 @@ describe("JsonFileView undo/redo + structural edits", () => {
     const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
     document.body.appendChild(v.contentEl);
     v.setViewData("[1,2]", false);
-    const trigger = v.contentEl.querySelector<HTMLButtonElement>(
-      ".json-add-trigger"
-    )!;
+    const trigger = v.contentEl.querySelector<HTMLButtonElement>(".json-add-trigger")!;
     trigger.click();
     expect(JSON.parse(v.getViewData())).toEqual([1, 2, null]);
   });
@@ -95,7 +93,7 @@ describe("JsonFileView undo/redo + structural edits", () => {
     document.body.appendChild(v.contentEl);
     v.setViewData('{"old":1}', false);
     const renameBtn = v.contentEl.querySelector<HTMLButtonElement>(
-      '.json-row[data-path="old"] .json-row-rename'
+      '.json-row[data-path="old"] .json-row-rename',
     )!;
     renameBtn.click();
     const input = v.contentEl.querySelector(".json-key-rename") as HTMLInputElement;
@@ -126,9 +124,7 @@ describe("JsonFileView undo/redo + structural edits", () => {
     const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
     document.body.appendChild(v.contentEl);
     v.setViewData('{"a":1}', false);
-    const trigger = v.contentEl.querySelector<HTMLButtonElement>(
-      ".json-add-trigger"
-    )!;
+    const trigger = v.contentEl.querySelector<HTMLButtonElement>(".json-add-trigger")!;
     trigger.click();
     const input = v.contentEl.querySelector(".json-add-input") as HTMLInputElement;
     input.value = "a";

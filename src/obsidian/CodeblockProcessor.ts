@@ -7,7 +7,7 @@ export function renderJsonCodeblock(
   source: string,
   el: HTMLElement,
   _ctx: MarkdownPostProcessorContext,
-  settings: JsonEditorSettings
+  settings: JsonEditorSettings,
 ): void {
   const parsed = parse(source);
   if (!parsed.ok) {
@@ -54,7 +54,7 @@ function makeCopyButton(source: string): HTMLButtonElement {
       },
       () => {
         /* clipboard unavailable — no UI */
-      }
+      },
     );
   });
   return btn;

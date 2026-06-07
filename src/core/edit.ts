@@ -1,4 +1,4 @@
-import type { JsonValue, JsonPath } from "./types";
+import type { JsonPath, JsonValue } from "./types";
 
 export function editValue(value: JsonValue, path: JsonPath, newVal: JsonValue): JsonValue {
   if (path.length === 0) {
@@ -44,7 +44,7 @@ export function addObjectKey(
   value: JsonValue,
   parentPath: JsonPath,
   key: string,
-  newVal: JsonValue
+  newVal: JsonValue,
 ): JsonValue {
   if (key === "") throw new Error("Key cannot be empty");
   const parent = getAt(value, parentPath);
@@ -62,7 +62,7 @@ export function addArrayItem(
   value: JsonValue,
   parentPath: JsonPath,
   newVal: JsonValue,
-  atIndex?: number
+  atIndex?: number,
 ): JsonValue {
   const parent = getAt(value, parentPath);
   if (!Array.isArray(parent)) {
@@ -161,7 +161,7 @@ export function moveArrayItem(
   value: JsonValue,
   parentPath: JsonPath,
   fromIdx: number,
-  toIdx: number
+  toIdx: number,
 ): JsonValue {
   const parent = getAt(value, parentPath);
   if (!Array.isArray(parent)) {
@@ -183,7 +183,7 @@ export function moveObjectKey(
   value: JsonValue,
   parentPath: JsonPath,
   key: string,
-  toPos: number
+  toPos: number,
 ): JsonValue {
   const parent = getAt(value, parentPath);
   if (parent === null || typeof parent !== "object" || Array.isArray(parent)) {
@@ -213,7 +213,7 @@ export function moveObjectKey(
 export function computeInsertionIndex(
   fromIdx: number,
   toIdx: number,
-  dropPosition: "before" | "after"
+  dropPosition: "before" | "after",
 ): number {
   if (fromIdx === toIdx) return fromIdx;
   // Step 1: target index after removal of the dragged item.

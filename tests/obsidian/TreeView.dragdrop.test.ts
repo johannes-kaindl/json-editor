@@ -1,13 +1,19 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { TreeView } from "../../src/obsidian/TreeView";
-import type { JsonPath } from "../../src/core/types";
+import { beforeEach, describe, expect, it } from "vitest";
 import type { JsonType } from "../../src/core/edit";
+import type { JsonPath } from "../../src/core/types";
+import { TreeView } from "../../src/obsidian/TreeView";
 
 beforeEach(() => {
   document.body.innerHTML = "";
 });
 
-function mountWithArray(arr: unknown[]): { container: HTMLDivElement; view: TreeView; moves: { parentPath: JsonPath; fromIdx: number; toIdx: number }[]; movesKey: { parentPath: JsonPath; key: string; toPos: number }[]; types: { path: JsonPath; newType: JsonType }[] } {
+function mountWithArray(arr: unknown[]): {
+  container: HTMLDivElement;
+  view: TreeView;
+  moves: { parentPath: JsonPath; fromIdx: number; toIdx: number }[];
+  movesKey: { parentPath: JsonPath; key: string; toPos: number }[];
+  types: { path: JsonPath; newType: JsonType }[];
+} {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const moves: { parentPath: JsonPath; fromIdx: number; toIdx: number }[] = [];
@@ -26,7 +32,12 @@ function rowByPath(container: HTMLElement, pathStr: string): HTMLElement {
   return container.querySelector<HTMLElement>(`.json-row[data-path="${pathStr}"]`)!;
 }
 
-function fireDragEvent(row: HTMLElement, type: string, clientY = 0, transfer?: DataTransfer): boolean {
+function fireDragEvent(
+  row: HTMLElement,
+  type: string,
+  clientY = 0,
+  transfer?: DataTransfer,
+): boolean {
   const ev = new Event(type, { bubbles: true, cancelable: true });
   Object.defineProperty(ev, "dataTransfer", { value: transfer ?? new DataTransfer() });
   Object.defineProperty(ev, "clientY", { value: clientY });
@@ -158,10 +169,8 @@ describe("TreeView type-switching", () => {
   it("picking a different type fires onChangeType with the path", () => {
     const { container, types } = mountWithArray([42]);
     const row = rowByPath(container, "[0]");
-    row.querySelector<HTMLButtonElement>(".json-row-type")!.click();
-    const opt = document.querySelector<HTMLButtonElement>(
-      '.json-type-option[data-type="string"]'
-    )!;
+    row.querySelector<HTMLButtonElement>(".json-row-type")?.click();
+    const opt = document.querySelector<HTMLButtonElement>('.json-type-option[data-type="string"]')!;
     opt.click();
     expect(types).toEqual([{ path: [0], newType: "string" }]);
   });
