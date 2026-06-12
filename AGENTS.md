@@ -13,10 +13,10 @@ Deliberately small surface: vanilla TypeScript, one runtime dependency (`ajv`), 
 
 ## Current state
 
-- **Latest release:** `1.3.0` (JSON Schema Validation — closes the 1.x roadmap)
-- **Released today (2026-05-27):** `0.1.2`, `0.2.0`, `0.3.0`, `1.0.0`, `1.1.0`, `1.2.0`, `1.3.0` (full autonomous run from Direction-B-redesign merge through the entire 1.x roadmap)
+- **Latest release:** `1.4.0` (Leitkonvention-Adoption: AGPL-relicense, badges, `npm run deploy`)
+- **2026-05-27:** `0.1.2` → `1.3.0` released in one autonomous run (entire 1.x feature roadmap)
 - **Unreleased on `main`:** nothing pending
-- **Roadmap (next):** Community Plugin Directory submission. No further functional 1.x work planned. Open questions if/when picked up: drag-drop **between** containers (currently same-parent-only), `$schema` URL fetching (currently companion-file-only).
+- **Roadmap (next):** fix the submission blockers from the 2026-06-12 gap audit (`docs/superpowers/specs/2026-06-12-gap-audit.md` — 8 blockers incl. cross-file undo data loss, ReDoS via companion schema, plugin-ID rename), **then** Community Plugin submission via the Community Hub portal (the `obsidianmd/obsidian-releases` PR path was retired May 2026). Older open questions: drag-drop **between** containers (currently same-parent-only), `$schema` URL fetching (currently companion-file-only).
 - **Tests:** 402 Vitest tests, all green; `npm test`
 - **Coverage:** 94.10% statements / 85.56% branches / 95.78% functions; `npm run test:coverage`
 - **Build:** `npm run build` clean. Bundle is ~163 KB (Ajv is the bulk; was ~37 KB pre-1.3.0).
@@ -171,6 +171,8 @@ E2E checklist: `docs/superpowers/plans/2026-05-20-manual-e2e.md`.
 
 The 1.x roadmap is shipped. Remaining items are external/manual or future-version ideas.
 
+> **⚠ Stand 2026-06-12:** Submission ist **blockiert**, bis die 8 Blocker aus dem Gap-Audit gefixt sind (`docs/superpowers/specs/2026-06-12-gap-audit.md`, Sektion 1 + empfohlene Reihenfolge im Kopf). Der unten dokumentierte PR-Weg über `obsidianmd/obsidian-releases` wurde im Mai 2026 eingestellt — die Submission läuft jetzt über das Community-Hub-Portal (community.obsidian.md). Die Plugin-ID muss vorher auf `json-editor` umbenannt werden (Audit 1.1; ID ist first-come-first-served, „JSON Viewer" ist seit 2026-06 gelistet — Zeitfenster beachten).
+
 In priority order:
 
 1. **Obsidian Community Plugin Submission** — open a PR on `obsidianmd/obsidian-releases` with this entry in `community-plugins.json`:
@@ -224,6 +226,14 @@ In priority order:
 ## Session history
 
 Append new entries at the top. Each entry = one working session.
+
+### 2026-06-10/12 — Multi-Agent-Gap-Audit vor der Community-Submission
+
+User-Anstoß: fehlender Cmd+E-Tree↔Source-Toggle + Wunsch nach einem Best-Practices-/Community-Check. Zweistufiger Workflow-Audit (13 Dimensionen: 5 Code-Auditoren, 4 Web-Rechercheure, 4 Critic-Nachzügler inkl. Screenreader/A11y), 120 Roh-Findings, adversarial verifiziert (2 widerlegt), dedupliziert auf 73 Einträge → **`docs/superpowers/specs/2026-06-12-gap-audit.md`** (maßgebliches Arbeitsdokument für die nächsten Sessions, inkl. 9-Schritte-Reihenfolge bis zur Submission).
+
+Kernergebnis: Submission ist **nicht** ready — 8 Blocker: Cross-File-Undo-Datenverlust (History wird in `clear()`/`setViewData()` nie resettet; Repro: `tests/obsidian/JsonFileView.fileswitch.repro.test.ts`, **bewusst untracked + rot** — gehört TDD-konform als failing-test-first in den Fix-Branch; `npm test` ist deshalb lokal rot), ReDoS via Companion-Schema-Autoload (synchron auf Main-Thread, default-on), 6× `innerHTML` (Review-Gate), ungeschützter `registerExtensions`-Claim (Kollision mit neuem „JSON Viewer"-Plugin jetzt real), `max-height: 5000px`-Clipping ab ~200 Rows, Voll-Re-Render verliert Expand/Scroll/Fokus, verlustbehafteter Zahlen-Roundtrip (>2^53), Plugin-ID-Rename auf `json-editor` (als letzter Schritt vor dem Release). Prozess-Fund: Submission-PR-Weg über `obsidianmd/obsidian-releases` seit Mai 2026 eingestellt → Community-Hub-Portal.
+
+Empfohlene Dekomposition für die Umsetzung: (1) Blocker-/Stabilitäts-Release, (2) Guideline+UX-Release (Default-Hotkeys entfernen, Toggle-Command, Source-Mode-Suche), (3) Doku-Paket (README-Abgleich, Lizenz-Attribution, SECURITY.md), (4) ID-Rename + Release + Submission. A11y/Mobile als Folge-Releases. Methodik-Hinweis: Der Workflow scheiterte zweimal am Monats-Spend-Limit; alle Ergebnisse wurden aus `journal.jsonl` + Agent-Transcripts geborgen — Findings gingen nicht verloren.
 
 ### 2026-05-27 — Autonomous run from 1.0.0 to 1.3.0 (three more releases, closes 1.x roadmap)
 
