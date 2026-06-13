@@ -36,6 +36,14 @@ describe("TreeView touch mode", () => {
     expect(container.querySelector(".json-copy-btn")).not.toBeNull();
   });
 
+  it("still renders the AddAffordance (+ Add) on touch — it is not hover-gated", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const view = new TreeView(container, { touchMode: true });
+    view.setValue({ a: { b: 1 } });
+    expect(container.querySelector(".json-add-affordance")).not.toBeNull();
+  });
+
   it("long-press (contextmenu) on a row in touch mode calls onContextMenu with path", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);

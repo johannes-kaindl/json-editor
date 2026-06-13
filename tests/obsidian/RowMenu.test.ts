@@ -87,6 +87,19 @@ describe("openRowMenu", () => {
     expect(opts.onMoveUp).toHaveBeenCalled();
   });
 
+  it("Copy path / Rename key / Move down / Delete each invoke their callback", () => {
+    const opts = baseOpts();
+    const menu = openRowMenu(evt(), opts);
+    menu.items.find((i) => i.titleText === "Copy path")!.clickHandler!();
+    menu.items.find((i) => i.titleText === "Rename key")!.clickHandler!();
+    menu.items.find((i) => i.titleText === "Move down")!.clickHandler!();
+    menu.items.find((i) => i.titleText === "Delete")!.clickHandler!();
+    expect(opts.onCopyPath).toHaveBeenCalled();
+    expect(opts.onRename).toHaveBeenCalled();
+    expect(opts.onMoveDown).toHaveBeenCalled();
+    expect(opts.onDelete).toHaveBeenCalled();
+  });
+
   it("Change type opens a follow-up menu with 6 entries, current disabled; picking calls onChangeType", () => {
     const opts = baseOpts();
     const menu = openRowMenu(evt(), opts);

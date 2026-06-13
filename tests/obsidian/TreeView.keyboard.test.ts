@@ -197,6 +197,16 @@ describe("TreeView keyboard navigation", () => {
     expect(moves).toEqual([{ key: "b", toPos: 0 }]);
   });
 
+  it("Alt+ArrowDown is a no-op when the tree is readonly", () => {
+    const moves: unknown[] = [];
+    tv = new TreeView(container, { readonly: true, onMoveItem: () => moves.push(1) });
+    tv.setValue([10, 20, 30]);
+    const treeRoot = container.querySelector(".json-tree-root") as HTMLElement;
+    rowAt(container, "[0]").focus();
+    dispatchAltKey(treeRoot, "ArrowDown");
+    expect(moves).toEqual([]);
+  });
+
   it("Alt+ArrowDown on the last object key is a no-op", () => {
     const moves: unknown[] = [];
     tv = new TreeView(container, { onMoveKey: () => moves.push(1) });

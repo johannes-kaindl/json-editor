@@ -4,6 +4,20 @@ import { JsonFileView } from "../../src/obsidian/JsonFileView";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
 
 const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as WorkspaceLeaf;
+const VALIDATING = { ...DEFAULT_SETTINGS, validateAgainstSchema: true };
+const PERSON_SCHEMA = `{
+  "type": "object",
+  "properties": { "name": { "type": "string" }, "age": { "type": "integer" } },
+  "required": ["name"]
+}`;
+const sourceChange = (v: JsonFileView, text: string) =>
+  (v as unknown as { handleSourceChange(t: string): void }).handleSourceChange(text);
+const shownMenu = () => Menu.instances.find((m) => m.shown)!;
+const longPress = (v: JsonFileView, pathStr: string) => {
+  const row = v.contentEl.querySelector<HTMLElement>(`.json-row[data-path="${pathStr}"]`)!;
+  row.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+  return shownMenu();
+};
 
 describe("JsonFileView mobile", () => {
   beforeEach(() => {
@@ -102,5 +116,62 @@ describe("JsonFileView mobile", () => {
     document.body.appendChild(v.contentEl);
     v.setViewData('{"a":1}', false);
     expect(v.contentEl.querySelector(".json-undo-btn")).toBeNull();
+  });
+
+  it("a source-mode edit enables the undo button immediately", () => {
+    const v = new JsonFileView(fakeLeaf(), { ...DEFAULT_SETTINGS, defaultMode: "source" });
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"a":1}', true);
+    const undoBtn = v.contentEl.querySelector<HTMLButtonElement>(".json-undo-btn")!;
+    expect(undoBtn.disabled).toBe(true);
+    sourceChange(v, '{"a":12}');
+    expect(undoBtn.disabled).toBe(false);
+  });
+
+  it("long-press Rename key on an object key starts the inline rename editor", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"a":1}', false);
+    longPress(v, "a").items.find((i) => i.titleText === "Rename key")!.clickHandler!();
+    const input = v.contentEl.querySelector<HTMLInputElement>(".json-inline-edit.json-key-rename");
+    expect(input).not.toBeNull();
+    expect(input?.value).toBe("a");
+  });
+
+  it("long-press Change type → Number changes the value type end-to-end", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"x":"hello"}', false);
+    longPress(v, "x").items.find((i) => i.titleText === "Change type")!.clickHandler!();
+    const typeMenu = Menu.instances.at(-1)!; // follow-up menu
+    typeMenu.items.find((i) => i.titleText === "Number")!.clickHandler!();
+    expect(JSON.parse(v.getViewData())).toEqual({ x: 0 });
+  });
+
+  it("schema validation error appears as a disabled menu header (D4)", () => {
+    const v = new JsonFileView(fakeLeaf(), VALIDATING);
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"name":"Jay","age":"old"}', false);
+    v.setSchema(PERSON_SCHEMA);
+    const menu = longPress(v, "age");
+    expect(menu.items[0].disabled).toBe(true);
+    expect(menu.items[0].titleText.toLowerCase()).toMatch(/integer|type/);
+  });
+
+  it("array item row menu omits Rename key and disables Move up on the first item", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData("[10,20,30]", false);
+    const menu = longPress(v, "[0]");
+    expect(menu.items.map((i) => i.titleText)).not.toContain("Rename key");
+    expect(menu.items.find((i) => i.titleText === "Move up")!.disabled).toBe(true);
+  });
+
+  it("Move down is disabled on the last array item", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData("[10,20,30]", false);
+    const menu = longPress(v, "[2]");
+    expect(menu.items.find((i) => i.titleText === "Move down")!.disabled).toBe(true);
   });
 });

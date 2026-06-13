@@ -470,6 +470,7 @@ export class JsonFileView extends TextFileView {
     } else if (this.mode !== "tree") {
       this.searchBar.setMatchInfo(null);
     }
+    this.refreshUndoButtons();
   }
 
   private onQueryChange(query: string): void {
@@ -743,6 +744,9 @@ export class JsonFileView extends TextFileView {
     this.updateLossyState();
     this.requestSave();
     this.applyValidation();
+    // A source-mode edit grows the unified history, so the mobile undo button
+    // must reflect it immediately (not wait for the next refresh).
+    this.refreshUndoButtons();
   }
 
   private showBanner(message: string): void {
