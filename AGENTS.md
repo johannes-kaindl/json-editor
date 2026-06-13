@@ -13,11 +13,12 @@ Deliberately small surface: vanilla TypeScript, one runtime dependency (`ajv`), 
 
 ## Current state
 
-- **Latest release:** `1.4.0` (Leitkonvention-Adoption: AGPL-relicense, badges, `npm run deploy`)
+- **Latest release:** `1.5.0` (Stability & data-integrity: Phase-1 blocker fixes from the 2026-06-12 gap audit — cross-file undo data loss, max-height clip, `.json` collision guard, re-render state/focus preservation, schema-autoload opt-in + ReDoS guards, lossy-number warn/read-only)
+- **2026-06-13:** `1.5.0` — Phase-1 blocker release (audit Section 1 + 2.8); 8 commits, multi-agent review + 2 rounds of fixes
 - **2026-05-27:** `0.1.2` → `1.3.0` released in one autonomous run (entire 1.x feature roadmap)
 - **Unreleased on `main`:** nothing pending
-- **Roadmap (next):** fix the submission blockers from the 2026-06-12 gap audit (`docs/superpowers/specs/2026-06-12-gap-audit.md` — 8 blockers incl. cross-file undo data loss, ReDoS via companion schema, plugin-ID rename), **then** Community Plugin submission via the Community Hub portal (the `obsidianmd/obsidian-releases` PR path was retired May 2026). Older open questions: drag-drop **between** containers (currently same-parent-only), `$schema` URL fetching (currently companion-file-only).
-- **Tests:** 402 Vitest tests, all green; `npm test`
+- **Roadmap (next):** **Phase 2 — Guideline+UX release** (default-hotkeys removal + view-scoped Scope, source-mode undo via CM transaction, `__proto__` rebuilds 2.3/2.16, popout/lifecycle 2.11/2.12, Tree↔Source toggle command 3.1, source-mode search 3.2, large-file guard 4.1, eslint-plugin-obsidianmd 2.14). **Phase 3 — Docs + ID-rename `json-editor` + Community-Hub submission.** See `docs/superpowers/specs/2026-06-12-gap-audit.md`. Older open questions: drag-drop **between** containers (currently same-parent-only), `$schema` URL fetching (currently companion-file-only).
+- **Tests:** 478 Vitest tests, all green; `npm test`
 - **Coverage:** 94.10% statements / 85.56% branches / 95.78% functions; `npm run test:coverage`
 - **Build:** `npm run build` clean. Bundle is ~163 KB (Ajv is the bulk; was ~37 KB pre-1.3.0).
 - **Predecessor:** `0.1.0` (v1.0 — core viewer/editor)
@@ -225,6 +226,14 @@ In priority order:
 ## Session history
 
 Append new entries at the top. Each entry = one working session.
+
+### 2026-06-13 — Phase 1: Blocker-/Stabilitäts-Release (`1.5.0`)
+
+Umsetzung der Audit-Sektion 1 (+ gebündeltes 2.8), strikt TDD (failing-test-first), inline ausgeführt (Blocker teilen sich `JsonFileView.ts`/`TreeView.ts`). Plan: `docs/superpowers/plans/2026-06-13-phase1-blocker-release.md`.
+
+Acht Blocker gefixt: **1.2/2.8** `resetPerFileState()` (History/Schema/Query/Mode pro Datei zurücksetzen — die 3 untracked Repro-Tests sind jetzt grün und committet); **1.5** `innerHTML`→`replaceChildren()` (6 Stellen, + fs-Regression-Lint über `src/`); **1.4** Lossy-Number-Detektor (`src/core/roundtrip.ts`) + `LossBanner` + read-only Tree; **1.3** Schema-Autoload Opt-in (`validateAgainstSchema` default→`false`) + ReDoS-Pattern/Größen-Guards in `compileSchema`; **1.6** `registerExtensions`-try/catch + Registrierungs-Reihenfolge; **1.7** `max-height:5000px`-Clipping entfernt; **1.8** Collapse/Scroll/Fokus über Re-Render erhalten.
+
+Methodik: zwei Multi-Agent-Workflows (Recon + adversarialer 4-Dimensions-Review). Der Review fand 13 verifizierte Findings — alle adressiert: u.a. ReDoS-Guard erwischte Brace-Quantoren `(a{1,}){1,}` nicht (gefixt), Lossy-Detektor flaggte wertgleiche `1.0`/`1e3` und sperrte fälschlich den Tree (jetzt nur echter >2^53-Verlust), Companion-Schema-Race (Generations-Guard), Unsafe-Integer-Eingabe (abgelehnt). Tests 402→478, build + Biome clean. **Offen für Phase 3 (Doku):** numerisches Key-Reordering (Audit 1.4) als README-Limitation dokumentieren (Detektion bewusst nicht umgesetzt).
 
 ### 2026-06-10/12 — Multi-Agent-Gap-Audit vor der Community-Submission
 
