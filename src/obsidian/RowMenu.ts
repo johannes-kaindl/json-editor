@@ -39,29 +39,34 @@ export function openRowMenu(evt: MouseEvent, opts: RowMenuOptions): Menu {
     menu.addSeparator();
   }
 
-  menu.addItem((i) => i.setTitle("Copy value").setIcon("copy").onClick(() => opts.onCopyValue()));
-  menu.addItem((i) => i.setTitle("Copy path").setIcon("route").onClick(() => opts.onCopyPath()));
+  menu.addItem((i) =>
+    i
+      .setTitle("Copy value")
+      .setIcon("copy")
+      .onClick(() => opts.onCopyValue()),
+  );
+  menu.addItem((i) =>
+    i
+      .setTitle("Copy path")
+      .setIcon("route")
+      .onClick(() => opts.onCopyPath()),
+  );
 
   if (!opts.readonly) {
     if (opts.canRename) {
       menu.addItem((i) =>
-        i.setTitle("Rename key").setIcon("pencil").onClick(() => opts.onRename()),
+        i
+          .setTitle("Rename key")
+          .setIcon("pencil")
+          .onClick(() => opts.onRename()),
       );
     }
-    menu.addItem((i) => {
-      i.setTitle("Change type").setIcon("shapes");
-      const sub = i.setSubmenu();
-      for (const t of TYPES) {
-        sub.addItem((si) => {
-          si.setTitle(LABELS[t]);
-          if (t === opts.currentType) {
-            si.setDisabled(true);
-          } else {
-            si.onClick(() => opts.onChangeType(t));
-          }
-        });
-      }
-    });
+    menu.addItem((i) =>
+      i
+        .setTitle("Change type")
+        .setIcon("shapes")
+        .onClick(() => openTypeChoiceMenu(evt, opts.currentType, opts.onChangeType)),
+    );
     menu.addSeparator();
     menu.addItem((i) =>
       i
@@ -79,10 +84,36 @@ export function openRowMenu(evt: MouseEvent, opts: RowMenuOptions): Menu {
     );
     menu.addSeparator();
     menu.addItem((i) =>
-      i.setTitle("Delete").setIcon("trash-2").setWarning(true).onClick(() => opts.onDelete()),
+      i
+        .setTitle("Delete")
+        .setIcon("trash-2")
+        .setWarning(true)
+        .onClick(() => opts.onDelete()),
     );
   }
 
+  menu.showAtMouseEvent(evt);
+  return menu;
+}
+
+/**
+ * Follow-up menu listing the six JSON types (current one disabled). Used instead
+ * of a nested submenu — flatter and more reliable on touch, and avoids the
+ * Menu.setSubmenu API which isn't in the pinned Obsidian typings.
+ */
+function openTypeChoiceMenu(
+  evt: MouseEvent,
+  current: JsonType,
+  onPick: (t: JsonType) => void,
+): Menu {
+  const menu = new Menu();
+  for (const t of TYPES) {
+    menu.addItem((i) => {
+      i.setTitle(LABELS[t]);
+      if (t === current) i.setDisabled(true);
+      else i.onClick(() => onPick(t));
+    });
+  }
   menu.showAtMouseEvent(evt);
   return menu;
 }

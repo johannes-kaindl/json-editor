@@ -30,6 +30,7 @@ import type { JsonPath, JsonValue } from "../core/types";
 import { Breadcrumb } from "./Breadcrumb";
 import { LargeFileBanner } from "./LargeFileBanner";
 import { LossBanner } from "./LossBanner";
+import { openRowMenu } from "./RowMenu";
 import { SchemaBanner } from "./SchemaBanner";
 import { SearchBar } from "./SearchBar";
 import type { JsonEditorSettings } from "./SettingsTab";
@@ -37,7 +38,6 @@ import { SourceView } from "./SourceView";
 import { Tooltip, tooltipContentForValue } from "./Tooltip";
 import { TreeView } from "./TreeView";
 import { closeActiveMenu } from "./TypeMenu";
-import { openRowMenu } from "./RowMenu";
 import { copyJsonPath, copyJsonValue } from "./clipboard";
 
 export const JSON_VIEW_TYPE = "json-editor-view";

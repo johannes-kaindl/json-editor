@@ -1,3 +1,4 @@
+import { Menu } from "obsidian";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { JsonType } from "../../src/core/edit";
 import { openRowMenu } from "../../src/obsidian/RowMenu";
@@ -25,6 +26,7 @@ const evt = () => new MouseEvent("contextmenu");
 describe("openRowMenu", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
+    Menu.instances = [];
   });
 
   it("editable object key: shows copy + rename + change-type + move + delete", () => {
@@ -85,14 +87,16 @@ describe("openRowMenu", () => {
     expect(opts.onMoveUp).toHaveBeenCalled();
   });
 
-  it("Change type submenu has 6 entries with the current type disabled; picking calls onChangeType", () => {
+  it("Change type opens a follow-up menu with 6 entries, current disabled; picking calls onChangeType", () => {
     const opts = baseOpts();
     const menu = openRowMenu(evt(), opts);
     const changeType = menu.items.find((i) => i.titleText === "Change type")!;
-    const sub = changeType.submenu!;
-    expect(sub.items.length).toBe(6);
-    expect(sub.items.find((i) => i.titleText.toLowerCase() === "string")!.disabled).toBe(true);
-    sub.items.find((i) => i.titleText.toLowerCase() === "number")!.clickHandler!();
+    changeType.clickHandler!();
+    const typeMenu = Menu.instances.at(-1)!; // the follow-up menu created by the click
+    expect(typeMenu).not.toBe(menu);
+    expect(typeMenu.items.length).toBe(6);
+    expect(typeMenu.items.find((i) => i.titleText.toLowerCase() === "string")!.disabled).toBe(true);
+    typeMenu.items.find((i) => i.titleText.toLowerCase() === "number")!.clickHandler!();
     expect(opts.onChangeType).toHaveBeenCalledWith("number");
   });
 });
