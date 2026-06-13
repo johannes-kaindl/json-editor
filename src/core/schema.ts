@@ -18,16 +18,18 @@ export type SchemaCompileResult =
 const MAX_SCHEMA_BYTES = 1_000_000;
 
 /**
- * Conservative nested-quantifier heuristic: a group containing a `+`/`*`
- * quantifier that is itself quantified — e.g. `(a+)+`, `(x+)*`, `(.*)+` — the
- * classic catastrophic-backtracking shape. This does NOT catch every possible
- * ReDoS (e.g. alternation-based `(a|a)+`); the primary defense is that schema
+ * Conservative nested-quantifier heuristic: a group that is itself quantified
+ * and contains an inner quantifier — covering both `+`/`*` and brace forms,
+ * e.g. `(a+)+`, `(x+)*`, `(.*)+`, `(a{1,}){1,}`, `(\w{2,}){2,}` — the classic
+ * catastrophic-backtracking shapes. This does NOT catch every possible ReDoS
+ * (e.g. alternation-based `(a|a)+`); the primary defense is that schema
  * autoload is opt-in (validateAgainstSchema defaults to false). A truly hard
- * timeout would require running validation in a Worker — out of scope for this
- * minimal pre-submission fix, since a synchronous regex cannot be aborted on
- * the main thread.
+ * guarantee would require running validation in a Worker with a timeout — out
+ * of scope for this minimal pre-submission fix, since a synchronous regex
+ * cannot be aborted on the main thread.
  */
-const UNSAFE_PATTERN = /\([^)]*[+*][^)]*\)\s*(?:[+*]|\{)/;
+const QUANT = "(?:[+*]|\\{\\d*,?\\d*\\})";
+const UNSAFE_PATTERN = new RegExp(`\\([^)]*${QUANT}[^)]*\\)\\s*${QUANT}`);
 
 function collectPatterns(node: unknown, out: string[]): void {
   if (node === null || typeof node !== "object") return;

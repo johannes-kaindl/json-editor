@@ -1,13 +1,38 @@
 /**
+ * Does this number literal lose VALUE (not just formatting) when parsed into a
+ * JS number and serialized back?
+ *
+ * - Integer literals (no `.`/`e`): lossy iff the double cannot hold them
+ *   exactly — i.e. BigInt(literal) !== BigInt(Number(literal)). This catches
+ *   64-bit IDs beyond 2^53 (9007199254740993 → …992).
+ * - Any literal that overflows to ±Infinity is lossy.
+ * - Decimal/exponent literals are treated as value-preserving: `1.0` → `1`,
+ *   `1e3` → `1000`, `2.50` → `2.5` change only the format, not the value, and
+ *   a tree edit already reformats the whole document harmlessly. (Trade-off:
+ *   an over-precise decimal like 0.123456789012345678 is NOT flagged — rare in
+ *   real configs, and worth it to avoid false positives on common files.)
+ */
+function literalLosesValue(literal: string): boolean {
+  const n = Number(literal);
+  if (!Number.isFinite(n)) return true; // overflow to ±Infinity
+  if (/[.eE]/.test(literal)) return false; // decimal/exponent: format-only
+  try {
+    return BigInt(literal) !== BigInt(n);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Detect whether parsing `text` as JSON and re-serializing it would silently
- * alter a number literal — e.g. integers beyond 2^53 losing precision
- * (9007199254740993 → …992), normalized formats (1.0 → 1, 1e3 → 1000).
+ * change a number's VALUE — integers beyond 2^53 (typical 64-bit IDs) lose
+ * precision, and overflowing literals collapse to Infinity.
  *
  * Works on the ORIGINAL text and compares number TOKENS only: it scans the
  * document, skips string contents (so numeric-looking text inside strings or
- * keys never triggers), and for each bare number literal checks whether
- * JSON.stringify(JSON.parse(lit)) reproduces it verbatim. Whitespace/indent
- * differences are inherently ignored because only number tokens are compared.
+ * keys never triggers), and tests each bare number literal with
+ * literalLosesValue. Whitespace/indent and value-preserving format
+ * normalization are inherently ignored.
  *
  * Pure — no Obsidian imports. Returns true on the FIRST lossy literal found.
  */
@@ -51,12 +76,7 @@ export function hasNumberRoundtripLoss(text: string): boolean {
         while (i < n && text[i] >= "0" && text[i] <= "9") i++;
       }
       const literal = text.slice(start, i);
-      try {
-        if (JSON.stringify(JSON.parse(literal)) !== literal) return true;
-      } catch {
-        // Not a standalone-parseable number (e.g. a lone "-"); ignore — the
-        // parse-error banner already covers malformed JSON.
-      }
+      if (literalLosesValue(literal)) return true;
       continue;
     }
 
