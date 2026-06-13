@@ -23,6 +23,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The copy button is now revealed on `:focus-within`, not just `:hover` (keyboard / touch-laptop access; audit §4.3.1).
 - The type-change menu now also closes on `pointerdown` outside, not only `mousedown`, so it can't get stuck open on touch.
 
+### Toolbar polish (audit §6.1)
+- Removed the redundant Tree/Source **view-header action** — the labeled toolbar toggle and the `toggle-tree-source` command remain the toggle paths.
+- The breadcrumb's current segment is now emphasized by font weight instead of a filled accent chip, so it reads as a path location rather than a button.
+
 ### Notes
 - `isDesktopOnly` stays `false` (the plugin uses no Node/Electron APIs). Real pointer-events touch-drag and the broader mobile/perf items (virtualization, source-mode debounce) remain deferred to a later release.
 

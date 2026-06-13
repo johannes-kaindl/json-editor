@@ -85,10 +85,10 @@
   background: var(--jv-hover);
   color: var(--jv-fg);
 }
-.bc-seg-terminal,
-.bc-seg-terminal:hover {
-  background: var(--jv-accent);
-  color: var(--jv-accent-text);
+/* Current location: emphasized by weight, not a filled accent chip — a filled
+   breadcrumb segment reads as a button/tab rather than a path location. */
+.bc-seg-terminal {
+  color: var(--jv-fg);
   font-weight: 600;
 }
 .bc-sep {

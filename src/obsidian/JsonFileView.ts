@@ -419,10 +419,6 @@ export class JsonFileView extends TextFileView {
     this.switchTo(this.mode === "tree" ? "source" : "tree");
   }
 
-  override async onOpen(): Promise<void> {
-    this.addAction("list-tree", "Toggle tree/source view", () => this.toggleMode());
-  }
-
   private refreshMode(): void {
     this.sourceView?.destroy();
     this.bodyEl.replaceChildren();
