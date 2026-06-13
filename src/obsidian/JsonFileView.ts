@@ -65,7 +65,12 @@ export class JsonFileView extends TextFileView {
     return this.data;
   }
 
-  override setViewData(data: string, _clear: boolean): void {
+  override setViewData(data: string, clear: boolean): void {
+    // A truthy `clear` flag means Obsidian is loading a *different* file into
+    // this reused view (file switch or external reload) — per the TextFileView
+    // contract, drop all per-file state. Internal undo/redo restores pass
+    // clear=false so the unified history survives those.
+    if (clear) this.resetPerFileState();
     this.data = data;
     if (data.trim() === "") {
       this.invalid = false;
@@ -95,12 +100,27 @@ export class JsonFileView extends TextFileView {
   }
 
   override clear(): void {
+    this.resetPerFileState();
     this.data = "";
     this.currentValue = null;
     this.invalid = false;
     this.clearBanner();
     this.bodyEl.replaceChildren();
     this.breadcrumb.setPath([]);
+  }
+
+  /**
+   * Drop all state that belongs to the previously-open file. Called from
+   * clear() (file unload) and from setViewData() when Obsidian flags a
+   * different file (clear=true). Bundles the history reset (blocker 1.2) with
+   * the schema/query/mode reset (blocker 2.8) in one place.
+   */
+  private resetPerFileState(): void {
+    this.history.clear();
+    this.currentSchema = null;
+    this.currentQuery = "";
+    this.searchBar.clear();
+    this.mode = this.settings.defaultMode;
   }
 
   private buildChrome(): void {
