@@ -1,6 +1,6 @@
-import { Notice } from "obsidian";
 import { pathToString } from "../core/path";
 import type { JsonPath, JsonValue } from "../core/types";
+import { copyToClipboard } from "./clipboard";
 
 export function createCopyButton(value: JsonValue, path: JsonPath): HTMLButtonElement {
   const btn = document.createElement("button");
@@ -11,19 +11,8 @@ export function createCopyButton(value: JsonValue, path: JsonPath): HTMLButtonEl
 
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
-    const wantsPath = e.altKey;
-    const text = wantsPath ? pathToString(path) : JSON.stringify(value, null, 2);
-    // navigator.clipboard is absent on older Android WebViews / non-secure
-    // contexts; reading .writeText there throws synchronously (audit 2.19).
-    const clipboard = navigator.clipboard;
-    if (!clipboard) {
-      new Notice("Copy failed");
-      return;
-    }
-    clipboard.writeText(text).then(
-      () => markCopied(btn),
-      () => new Notice("Copy failed"),
-    );
+    const text = e.altKey ? pathToString(path) : JSON.stringify(value, null, 2);
+    copyToClipboard(text, () => markCopied(btn));
   });
 
   return btn;
