@@ -96,6 +96,17 @@ export class TFile {
   constructor(public path: string) {}
 }
 
+type KeymapHandler = (...args: unknown[]) => unknown;
+export class Scope {
+  keys: Array<{ modifiers: string[] | null; key: string | null; handler: KeymapHandler }> = [];
+  constructor(public parent?: Scope) {}
+  register(modifiers: string[] | null, key: string | null, handler: KeymapHandler): KeymapHandler {
+    this.keys.push({ modifiers, key, handler });
+    return handler;
+  }
+  unregister(_handler: unknown): void {}
+}
+
 export function normalizePath(path: string): string {
   return path
     .replace(/\\/g, "/")

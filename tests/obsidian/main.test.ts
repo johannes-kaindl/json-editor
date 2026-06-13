@@ -58,4 +58,27 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
     expect(calls).toEqual([[["json"], JSON_VIEW_TYPE]]);
     expect(Notice.instances.length).toBe(0);
   });
+
+  it("registers no default hotkey on any command (audit 2.1)", async () => {
+    class OkPlugin extends JsonEditorPlugin {
+      override registerExtensions(): void {}
+    }
+    const plugin = new OkPlugin(appStub(), MANIFEST);
+    await plugin.onload();
+    for (const cmd of plugin.commands as Array<{ hotkeys?: unknown }>) {
+      expect(cmd.hotkeys).toBeUndefined();
+    }
+  });
+
+  it("uses sentence-case command names without redundant 'JSON' (audit 2.23)", async () => {
+    class OkPlugin extends JsonEditorPlugin {
+      override registerExtensions(): void {}
+    }
+    const plugin = new OkPlugin(appStub(), MANIFEST);
+    await plugin.onload();
+    const names = (plugin.commands as Array<{ name: string }>).map((c) => c.name);
+    expect(names).toContain("Focus search");
+    expect(names).toContain("Undo edit");
+    expect(names).toContain("Redo edit");
+  });
 });

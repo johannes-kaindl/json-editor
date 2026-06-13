@@ -27,8 +27,7 @@ export default class JsonEditorPlugin extends Plugin {
 
     this.addCommand({
       id: "focus-search",
-      name: "Focus JSON search",
-      hotkeys: [{ modifiers: ["Mod"], key: "f" }],
+      name: "Focus search",
       checkCallback: (checking: boolean) => {
         const view = this.app.workspace.getActiveViewOfType(JsonFileView);
         if (!view) return false;
@@ -39,8 +38,7 @@ export default class JsonEditorPlugin extends Plugin {
 
     this.addCommand({
       id: "undo-edit",
-      name: "Undo",
-      hotkeys: [{ modifiers: ["Mod"], key: "z" }],
+      name: "Undo edit",
       checkCallback: (checking: boolean) => {
         const view = this.app.workspace.getActiveViewOfType(JsonFileView);
         if (!view || !view.canUndo()) return false;
@@ -51,8 +49,7 @@ export default class JsonEditorPlugin extends Plugin {
 
     this.addCommand({
       id: "redo-edit",
-      name: "Redo",
-      hotkeys: [{ modifiers: ["Mod", "Shift"], key: "z" }],
+      name: "Redo edit",
       checkCallback: (checking: boolean) => {
         const view = this.app.workspace.getActiveViewOfType(JsonFileView);
         if (!view || !view.canRedo()) return false;

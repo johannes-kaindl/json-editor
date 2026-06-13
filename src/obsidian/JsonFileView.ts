@@ -1,4 +1,4 @@
-import { Notice, TFile, TextFileView, type WorkspaceLeaf, normalizePath } from "obsidian";
+import { Notice, Scope, TFile, TextFileView, type WorkspaceLeaf, normalizePath } from "obsidian";
 import {
   type JsonType,
   addArrayItem,
@@ -63,6 +63,39 @@ export class JsonFileView extends TextFileView {
     super(leaf);
     this.mode = settings.defaultMode;
     this.buildChrome();
+    this.registerKeymap();
+  }
+
+  /**
+   * View-local key bindings (audit 2.1). The commands carry NO default
+   * hotkeys (which violated the guideline and shadowed user bindings); instead
+   * a view Scope handles Mod+F/Mod+Z/Mod+Shift+Z only while this view is
+   * focused. Mod+Z/Mod+Shift+Z fall through (return undefined) when a text
+   * input or the CodeMirror editor is focused, so native input undo works.
+   */
+  private registerKeymap(): void {
+    this.scope = new Scope(this.app.scope);
+    this.scope.register(["Mod"], "f", () => {
+      this.focusSearch();
+      return false;
+    });
+    this.scope.register(["Mod"], "z", () => {
+      if (this.isTextInputFocused() || !this.canUndo()) return undefined;
+      this.undo();
+      return false;
+    });
+    this.scope.register(["Mod", "Shift"], "z", () => {
+      if (this.isTextInputFocused() || !this.canRedo()) return undefined;
+      this.redo();
+      return false;
+    });
+  }
+
+  private isTextInputFocused(): boolean {
+    const active = this.contentEl.ownerDocument.activeElement as HTMLElement | null;
+    if (!active) return false;
+    if (active.tagName === "INPUT" || active.tagName === "TEXTAREA") return true;
+    return active.closest(".cm-editor") !== null;
   }
 
   getViewType(): string {
