@@ -1,5 +1,20 @@
 import type { JsonPath, JsonValue } from "./types";
 
+/** Own-property check that does not walk the prototype chain (audit 2.16). */
+function hasOwn(obj: object, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(obj, key);
+}
+
+/**
+ * Rebuild a plain object from [key, value] entries WITHOUT triggering the
+ * native `__proto__` setter (audit 2.3). Object.fromEntries uses
+ * [[DefineOwnProperty]], so an own "__proto__" entry stays an own data
+ * property instead of becoming the prototype (which JSON.stringify would drop).
+ */
+function objectFromEntries(entries: Array<[string, JsonValue]>): { [k: string]: JsonValue } {
+  return Object.fromEntries(entries) as { [k: string]: JsonValue };
+}
+
 export function editValue(value: JsonValue, path: JsonPath, newVal: JsonValue): JsonValue {
   if (path.length === 0) {
     return newVal;
@@ -52,7 +67,7 @@ export function addObjectKey(
     throw new Error("Parent is not an object");
   }
   const obj = parent as { [k: string]: JsonValue };
-  if (key in obj) throw new Error(`Key "${key}" already exists`);
+  if (hasOwn(obj, key)) throw new Error(`Key "${key}" already exists`);
   const updated: { [k: string]: JsonValue } = { ...obj, [key]: newVal };
   if (parentPath.length === 0) return updated;
   return editValue(value, parentPath, updated);
@@ -101,11 +116,8 @@ export function deleteAt(value: JsonValue, path: JsonPath): JsonValue {
       throw new Error(`Expected string key for object, got ${typeof lastSeg}`);
     }
     const obj = parent as { [k: string]: JsonValue };
-    if (!(lastSeg in obj)) return value;
-    const updated: { [k: string]: JsonValue } = {};
-    for (const [k, v] of Object.entries(obj)) {
-      if (k !== lastSeg) updated[k] = v;
-    }
+    if (!hasOwn(obj, lastSeg)) return value;
+    const updated = objectFromEntries(Object.entries(obj).filter(([k]) => k !== lastSeg));
     if (parentPath.length === 0) return updated;
     return editValue(value, parentPath, updated);
   }
@@ -198,8 +210,7 @@ export function moveObjectKey(
   const reordered = keys.slice();
   reordered.splice(currentPos, 1);
   reordered.splice(clamped, 0, key);
-  const updated: { [k: string]: JsonValue } = {};
-  for (const k of reordered) updated[k] = obj[k];
+  const updated = objectFromEntries(reordered.map((k) => [k, obj[k]]));
   if (parentPath.length === 0) return updated;
   return editValue(value, parentPath, updated);
 }
@@ -237,15 +248,14 @@ export function renameKey(value: JsonValue, path: JsonPath, newKey: string): Jso
     throw new Error("Parent is not an object");
   }
   const obj = parent as { [k: string]: JsonValue };
-  if (!(oldKey in obj)) return value;
-  if (newKey in obj) throw new Error(`Key "${newKey}" already exists`);
+  if (!hasOwn(obj, oldKey)) return value;
+  if (hasOwn(obj, newKey)) throw new Error(`Key "${newKey}" already exists`);
 
   // Preserve insertion order: rebuild object replacing oldKey with newKey at
   // the same position.
-  const updated: { [k: string]: JsonValue } = {};
-  for (const [k, v] of Object.entries(obj)) {
-    updated[k === oldKey ? newKey : k] = v;
-  }
+  const updated = objectFromEntries(
+    Object.entries(obj).map(([k, v]) => [k === oldKey ? newKey : k, v]),
+  );
   if (parentPath.length === 0) return updated;
   return editValue(value, parentPath, updated);
 }
