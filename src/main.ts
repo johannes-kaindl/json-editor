@@ -1,4 +1,4 @@
-import { Plugin, type WorkspaceLeaf } from "obsidian";
+import { Notice, Plugin, type WorkspaceLeaf } from "obsidian";
 import { renderJsonCodeblock } from "./obsidian/CodeblockProcessor";
 import { JSON_VIEW_TYPE, JsonFileView } from "./obsidian/JsonFileView";
 import {
@@ -18,7 +18,6 @@ export default class JsonEditorPlugin extends Plugin {
       JSON_VIEW_TYPE,
       (leaf: WorkspaceLeaf) => new JsonFileView(leaf, this.settings),
     );
-    this.registerExtensions(["json"], JSON_VIEW_TYPE);
 
     this.registerMarkdownCodeBlockProcessor("json", (src, el, ctx) =>
       renderJsonCodeblock(src, el, ctx, this.settings),
@@ -61,6 +60,18 @@ export default class JsonEditorPlugin extends Plugin {
         return true;
       },
     });
+
+    // Claim the .json file extension LAST and guard it: registerExtensions
+    // throws hard if another plugin already handles .json. An uncaught throw
+    // would abort onload and take down everything registered above, so we
+    // degrade gracefully — the view + code-block rendering keep working.
+    try {
+      this.registerExtensions(["json"], JSON_VIEW_TYPE);
+    } catch {
+      new Notice(
+        "JSON Editor: another plugin already handles .json — file view disabled, code-block rendering still active.",
+      );
+    }
   }
 
   async saveSettings(): Promise<void> {
