@@ -113,6 +113,8 @@ This plugin registers itself as the editor for the `.json` file extension. Obsid
 
 **To use JSON Editor as your `.json` editor:** disable the other `.json` plugin and reload Obsidian. Load order is not user-controllable, so two `.json` editors enabled at once is unsupported by design.
 
+**Tree-edit limitation — object key order:** a tree edit re-serializes the whole document, and JavaScript reorders integer-like object keys (e.g. `"10"` before `"2"`). So editing an object whose keys are numeric strings may reorder them on save. Files with **big integers** (> 2^53) are already protected — they open read-only (edit them in source mode). For numeric-string *keys* where order matters, prefer source mode.
+
 ---
 
 ## Development

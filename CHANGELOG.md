@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to **Obsidian JSON Editor** are documented in this file.
+All notable changes to **JSON Editor** are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Versions follow Obsidian's plugin convention of no `v` prefix on git tags (e.g. `0.1.1`, not `v0.1.1`).
 
@@ -18,7 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `THIRD-PARTY-NOTICES.md` — full license texts for the bundled dependencies (ajv + transitive fast-uri **(BSD-3-Clause)** / fast-deep-equal / json-schema-traverse, plus @codemirror/lang-json and @lezer/json, all MIT). Attribution is also carried in the `main.js` banner.
 
 ### Documentation
-- README aligned to the actual 1.6.0 feature set (status, unified undo, tree-mode structural editing, schema validation, drag-drop, type-switching, large-file guard, all six settings, a *Known conflicts* section, shipped-vs-2.x roadmap) and the dependency-license note corrected.
+- README aligned to the actual 1.6.0 feature set (status, unified undo, tree-mode structural editing, schema validation, drag-drop, type-switching, large-file guard, all six settings, a *Known conflicts* section, shipped-vs-2.x roadmap), the dependency-license note corrected, and a documented tree-edit limitation (numeric-string object keys may reorder on save — audit 1.4).
 - SECURITY.md threat model updated — prototype-pollution fixed; ReDoS opt-in + heuristic guard + honest residual surface.
 - AGENTS.md submission path rewritten to the `community.obsidian.md` portal flow.
 
