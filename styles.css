@@ -781,3 +781,15 @@
     transition: none;
   }
 }
+
+/* ─── Copy button: reveal without hover (keyboard / touch-laptop, 4.3.1) ─── */
+.json-row:focus-within .json-copy-btn {
+  opacity: 0.7;
+}
+
+/* ─── Mobile: larger tap targets; hover-only affordances are not rendered ─── */
+body.is-mobile .json-collapse-toggle {
+  min-width: 44px;
+  min-height: 44px;
+  margin: -15px 0; /* grow only the hit area; keep the visual chevron size */
+}
