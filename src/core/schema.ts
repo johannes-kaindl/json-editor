@@ -14,12 +14,59 @@ export type SchemaCompileResult =
   | { ok: true; schema: CompiledSchema }
   | { ok: false; error: string };
 
+/** Reject schemas larger than this before parsing (cheap DoS guard). */
+const MAX_SCHEMA_BYTES = 1_000_000;
+
+/**
+ * Conservative nested-quantifier heuristic: a group containing a `+`/`*`
+ * quantifier that is itself quantified — e.g. `(a+)+`, `(x+)*`, `(.*)+` — the
+ * classic catastrophic-backtracking shape. This does NOT catch every possible
+ * ReDoS (e.g. alternation-based `(a|a)+`); the primary defense is that schema
+ * autoload is opt-in (validateAgainstSchema defaults to false). A truly hard
+ * timeout would require running validation in a Worker — out of scope for this
+ * minimal pre-submission fix, since a synchronous regex cannot be aborted on
+ * the main thread.
+ */
+const UNSAFE_PATTERN = /\([^)]*[+*][^)]*\)\s*(?:[+*]|\{)/;
+
+function collectPatterns(node: unknown, out: string[]): void {
+  if (node === null || typeof node !== "object") return;
+  if (Array.isArray(node)) {
+    for (const item of node) collectPatterns(item, out);
+    return;
+  }
+  for (const [key, val] of Object.entries(node as Record<string, unknown>)) {
+    if (key === "pattern" && typeof val === "string") out.push(val);
+    if (
+      key === "patternProperties" &&
+      val !== null &&
+      typeof val === "object" &&
+      !Array.isArray(val)
+    ) {
+      for (const patternKey of Object.keys(val as object)) out.push(patternKey);
+    }
+    collectPatterns(val, out);
+  }
+}
+
 export function compileSchema(text: string): SchemaCompileResult {
+  if (text.length > MAX_SCHEMA_BYTES) {
+    return { ok: false, error: "Schema is too large" };
+  }
+
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
   } catch (e) {
     return { ok: false, error: `Schema is not valid JSON: ${(e as Error).message}` };
+  }
+
+  const patterns: string[] = [];
+  collectPatterns(parsed, patterns);
+  for (const p of patterns) {
+    if (UNSAFE_PATTERN.test(p)) {
+      return { ok: false, error: `Schema contains a potentially unsafe regex pattern: ${p}` };
+    }
   }
 
   const ajv = new Ajv({ strict: false, allErrors: true, verbose: false });

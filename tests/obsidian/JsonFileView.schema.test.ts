@@ -5,6 +5,10 @@ import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
 
 const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as WorkspaceLeaf;
 
+// Schema validation is opt-in (blocker 1.3): autoload defaults to off, so
+// tests that exercise validation must enable it explicitly.
+const VALIDATING = { ...DEFAULT_SETTINGS, validateAgainstSchema: true };
+
 const PERSON_SCHEMA = `{
   "type": "object",
   "properties": {
@@ -20,7 +24,7 @@ describe("JsonFileView schema validation", () => {
   });
 
   it("setSchema accepts a valid schema text and stores it without errors banner", () => {
-    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    const v = new JsonFileView(fakeLeaf(), VALIDATING);
     document.body.appendChild(v.contentEl);
     v.setViewData('{"name":"Jay","age":35}', false);
     v.setSchema(PERSON_SCHEMA);
@@ -30,7 +34,7 @@ describe("JsonFileView schema validation", () => {
   });
 
   it("setSchema with invalid value triggers banner with error count", () => {
-    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    const v = new JsonFileView(fakeLeaf(), VALIDATING);
     document.body.appendChild(v.contentEl);
     v.setViewData('{"age":"old"}', false);
     v.setSchema(PERSON_SCHEMA);
@@ -40,7 +44,7 @@ describe("JsonFileView schema validation", () => {
   });
 
   it("setSchema marks the offending row with .json-row-error", () => {
-    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    const v = new JsonFileView(fakeLeaf(), VALIDATING);
     document.body.appendChild(v.contentEl);
     v.setViewData('{"name":"Jay","age":"old"}', false);
     v.setSchema(PERSON_SCHEMA);
@@ -50,7 +54,7 @@ describe("JsonFileView schema validation", () => {
   });
 
   it("editing a value to fix the error clears the banner", () => {
-    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    const v = new JsonFileView(fakeLeaf(), VALIDATING);
     document.body.appendChild(v.contentEl);
     v.setViewData('{"name":"Jay","age":"old"}', false);
     v.setSchema(PERSON_SCHEMA);
@@ -69,7 +73,7 @@ describe("JsonFileView schema validation", () => {
   });
 
   it("setSchema with malformed schema text shows parse-error variant", () => {
-    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    const v = new JsonFileView(fakeLeaf(), VALIDATING);
     document.body.appendChild(v.contentEl);
     v.setViewData('{"name":"Jay"}', false);
     v.setSchema("{not json}");
