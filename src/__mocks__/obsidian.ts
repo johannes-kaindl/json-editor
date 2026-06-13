@@ -220,3 +220,75 @@ export class ToggleComponent {
     return this;
   }
 }
+
+export const Platform = {
+  isMobile: false,
+  isPhone: false,
+  isTablet: false,
+  isDesktop: true,
+};
+
+export function setIcon(el: HTMLElement, iconId: string): void {
+  el.dataset.icon = iconId;
+}
+
+export class MenuItem {
+  titleText = "";
+  iconName = "";
+  disabled = false;
+  warning = false;
+  clickHandler: (() => void) | null = null;
+  submenu: Menu | null = null;
+  setTitle(t: string): this {
+    this.titleText = t;
+    return this;
+  }
+  setIcon(i: string): this {
+    this.iconName = i;
+    return this;
+  }
+  setDisabled(d: boolean): this {
+    this.disabled = d;
+    return this;
+  }
+  setWarning(w: boolean): this {
+    this.warning = w;
+    return this;
+  }
+  onClick(cb: () => void): this {
+    this.clickHandler = cb;
+    return this;
+  }
+  setSubmenu(): Menu {
+    this.submenu = new Menu();
+    return this.submenu;
+  }
+}
+
+export class Menu {
+  items: MenuItem[] = [];
+  separatorCount = 0;
+  shown = false;
+  addItem(cb: (item: MenuItem) => void): this {
+    const item = new MenuItem();
+    cb(item);
+    this.items.push(item);
+    return this;
+  }
+  addSeparator(): this {
+    this.separatorCount += 1;
+    return this;
+  }
+  showAtMouseEvent(_e: MouseEvent): this {
+    this.shown = true;
+    return this;
+  }
+  showAtPosition(_p: { x: number; y: number }): this {
+    this.shown = true;
+    return this;
+  }
+  hide(): this {
+    this.shown = false;
+    return this;
+  }
+}
