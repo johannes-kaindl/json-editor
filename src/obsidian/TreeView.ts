@@ -30,6 +30,16 @@ export interface TreeViewOptions {
   onMoveKey?: (parentPath: JsonPath, key: string, toPos: number) => void;
   onChangeType?: (path: JsonPath, newType: JsonType) => void;
   onError?: (err: Error) => void;
+  /**
+   * When true (Obsidian mobile), suppress hover/DnD affordances; actions come
+   * from a long-press menu instead. Injected from JsonFileView's Platform.isMobile.
+   */
+  touchMode?: boolean;
+  /**
+   * Touch-mode only: fired on long-press (contextmenu) of a row. The host opens
+   * the consolidated RowMenu. Receives the originating event and the row path.
+   */
+  onContextMenu?: (evt: MouseEvent, path: JsonPath) => void;
 }
 
 const FLASH_MS = 600;
@@ -238,6 +248,16 @@ export class TreeView {
       const path = this.parsePathStrSafe(pathStr);
       const lastSeg = path[path.length - 1];
       const canRename = typeof lastSeg === "string";
+
+      if (this.opts.touchMode) {
+        // Touch: no hover/DnD affordances — a long-press opens the RowMenu.
+        row.addEventListener("contextmenu", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.opts.onContextMenu?.(e as MouseEvent, path);
+        });
+        return;
+      }
 
       const handle = document.createElement("span");
       handle.className = "json-drag-handle";
@@ -665,6 +685,7 @@ export class TreeView {
   }
 
   private attachCopyButtons(treeRoot: HTMLElement): void {
+    if (this.opts.touchMode) return;
     const rows = treeRoot.querySelectorAll<HTMLElement>(".json-row");
     rows.forEach((row) => {
       const pathStr = row.getAttribute("data-path");
