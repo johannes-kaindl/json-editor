@@ -70,11 +70,24 @@ export class TextFileView {
   app: App;
   data = "";
   contentEl: HTMLElement;
+  actionsEl: HTMLElement;
+  scope: Scope | null = null;
   saveCount = 0;
   constructor(public leaf: WorkspaceLeaf) {
     this.app = (leaf as unknown as { app: App }).app;
     this.contentEl = document.createElement("div");
+    this.actionsEl = document.createElement("div");
   }
+  addAction(icon: string, title: string, callback: (evt: MouseEvent) => void): HTMLElement {
+    const btn = document.createElement("button");
+    btn.setAttribute("aria-label", title);
+    btn.dataset.icon = icon;
+    btn.addEventListener("click", (e) => callback(e as MouseEvent));
+    this.actionsEl.appendChild(btn);
+    return btn;
+  }
+  async onOpen(): Promise<void> {}
+  async onClose(): Promise<void> {}
   getViewData(): string {
     return this.data;
   }

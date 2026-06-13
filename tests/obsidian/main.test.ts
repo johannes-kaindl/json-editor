@@ -30,7 +30,7 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
 
     expect(plugin.postprocessors.json).toBeDefined(); // codeblock processor survived
     expect(plugin.settingTabs.length).toBe(1);
-    expect(plugin.commands.length).toBe(3);
+    expect(plugin.commands.length).toBe(4);
   });
 
   it("shows an explanatory Notice naming the .json conflict on collision", async () => {
@@ -80,5 +80,19 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
     expect(names).toContain("Focus search");
     expect(names).toContain("Undo edit");
     expect(names).toContain("Redo edit");
+  });
+
+  it("registers a toggle-tree-source command with no default hotkey (audit 3.1)", async () => {
+    class OkPlugin extends JsonEditorPlugin {
+      override registerExtensions(): void {}
+    }
+    const plugin = new OkPlugin(appStub(), MANIFEST);
+    await plugin.onload();
+    const toggle = (
+      plugin.commands as Array<{ id: string; name: string; hotkeys?: unknown }>
+    ).find((c) => c.id === "toggle-tree-source");
+    expect(toggle).toBeTruthy();
+    expect(toggle?.hotkeys).toBeUndefined();
+    expect(toggle?.name).toBe("Toggle tree/source view");
   });
 });

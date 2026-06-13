@@ -307,6 +307,19 @@ export class JsonFileView extends TextFileView {
     this.applyValidation();
   }
 
+  /**
+   * Public Tree↔Source toggle (audit 3.1) — the binding target for the
+   * toggle-tree-source command and the view-header action. A no-op when the
+   * target would be tree but the JSON is invalid (switchTo guards that).
+   */
+  toggleMode(): void {
+    this.switchTo(this.mode === "tree" ? "source" : "tree");
+  }
+
+  override async onOpen(): Promise<void> {
+    this.addAction("list-tree", "Toggle tree/source view", () => this.toggleMode());
+  }
+
   private refreshMode(): void {
     this.sourceView?.destroy();
     this.bodyEl.replaceChildren();

@@ -58,6 +58,20 @@ export default class JsonEditorPlugin extends Plugin {
       },
     });
 
+    this.addCommand({
+      id: "toggle-tree-source",
+      name: "Toggle tree/source view",
+      // No default hotkey: Cmd+E collides with the core "Toggle reading view".
+      // Users can bind it themselves; checkCallback lets the binding fall
+      // through to the core command in non-JSON views.
+      checkCallback: (checking: boolean) => {
+        const view = this.app.workspace.getActiveViewOfType(JsonFileView);
+        if (!view) return false;
+        if (!checking) view.toggleMode();
+        return true;
+      },
+    });
+
     // Claim the .json file extension LAST and guard it: registerExtensions
     // throws hard if another plugin already handles .json. An uncaught throw
     // would abort onload and take down everything registered above, so we
