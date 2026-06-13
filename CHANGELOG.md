@@ -17,7 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 - On mobile, the hover-revealed inline row actions, copy button and drag handle are no longer rendered (they were invisible-but-tappable — a stray tap could fire an unconfirmed delete) and rows are not marked `draggable` (which collided with touch scroll/long-press); all actions come from the long-press menu instead (audit §4.3, §4.4, §4.8).
-- The collapse toggle, toolbar icon buttons (undo/redo), search-clear and mode pills get ≥44px touch targets on mobile; the undo/redo buttons use Obsidian's native `clickable-icon` class for consistent sizing/theming (audit §4.4).
+- ≥44px touch targets on mobile across the UI (audit §4.4): the collapse toggle, toolbar icon buttons (undo/redo), search-clear, mode pills, and the value-editing controls (inline text/number/key-rename field, the boolean checkbox, and the "+ Add key/item" button). The undo/redo buttons use Obsidian's native `clickable-icon` class for consistent sizing/theming.
 
 ### Fixed
 - The copy button is now revealed on `:focus-within`, not just `:hover` (keyboard / touch-laptop access; audit §4.3.1).

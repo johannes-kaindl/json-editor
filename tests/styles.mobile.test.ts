@@ -22,4 +22,8 @@ describe("mobile styles", () => {
   it("gives toolbar icon buttons a >=44px touch target on mobile (4.4)", () => {
     expect(css).toMatch(/body\.is-mobile[\s\S]*\.json-toolbar-btn[\s\S]*min-width:\s*44px/);
   });
+
+  it("gives value-editing controls a >=44px touch target on mobile (4.4)", () => {
+    expect(css).toMatch(/body\.is-mobile[\s\S]*\.json-inline-edit[\s\S]*min-height:\s*44px/);
+  });
 });

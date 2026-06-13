@@ -814,3 +814,17 @@ body.is-mobile .json-search-clear {
 body.is-mobile .json-mode-pill {
   min-height: 44px;
 }
+
+/* Mobile value-editing controls: tapping a value opens an inline field (text /
+   number / key-rename) or a boolean checkbox, and "+ Add" adds a value — give
+   them comfortable tap/type targets too (audit §4.4). */
+body.is-mobile .json-inline-edit:not([type="checkbox"]),
+body.is-mobile .json-add-input,
+body.is-mobile .json-add-trigger {
+  min-height: 44px;
+  padding: var(--jv-space-2) var(--jv-space-3);
+}
+body.is-mobile .json-inline-edit[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+}
