@@ -123,23 +123,32 @@ export class JsonFileView extends TextFileView {
       this.applyValidation();
       return;
     }
-    const parsed = parse(data);
+    if (!this.recomputeFromData()) this.mode = "source";
+    this.updateLossyState();
+    this.refreshMode();
+    this.applyValidation();
+    void this.tryLoadCompanionSchema();
+  }
+
+  /**
+   * Re-parse this.data and refresh currentValue/invalid/parse-banner/tree-pill
+   * WITHOUT touching the mode or rebuilding any view. Returns whether the parse
+   * succeeded. Shared by setViewData and the source-mode undo/redo path (2.2).
+   */
+  private recomputeFromData(): boolean {
+    const parsed = parse(this.data);
     if (parsed.ok) {
       this.invalid = false;
       this.currentValue = parsed.value;
       this.clearBanner();
       this.treePillEl.disabled = false;
-    } else {
-      this.invalid = true;
-      this.currentValue = null;
-      this.mode = "source";
-      this.showBanner(`Invalid JSON at line ${parsed.line}, column ${parsed.col}: ${parsed.error}`);
-      this.treePillEl.disabled = true;
+      return true;
     }
-    this.updateLossyState();
-    this.refreshMode();
-    this.applyValidation();
-    void this.tryLoadCompanionSchema();
+    this.invalid = true;
+    this.currentValue = null;
+    this.showBanner(`Invalid JSON at line ${parsed.line}, column ${parsed.col}: ${parsed.error}`);
+    this.treePillEl.disabled = true;
+    return false;
   }
 
   /**
@@ -509,8 +518,20 @@ export class JsonFileView extends TextFileView {
   }
 
   private restoreText(text: string): void {
-    // Reuse setViewData's parse + refresh path so an undone state that is
-    // invalid JSON correctly snaps back to source mode with a banner.
+    // In source mode, patch the existing CodeMirror editor with a minimal
+    // change instead of rebuilding it via setViewData->refreshMode (audit
+    // 2.2) — preserves the editor instance, cursor, scroll, and focus.
+    if (this.mode === "source" && this.sourceView !== null) {
+      this.data = text;
+      this.recomputeFromData(); // source renders regardless of validity; don't change mode
+      this.sourceView.applyExternalEdit(text);
+      this.updateLossyState();
+      this.applyValidation();
+      this.requestSave();
+      return;
+    }
+    // Tree mode (or no live source view): reuse the full parse + refresh path
+    // so an undone state that is invalid JSON snaps back to source with a banner.
     this.setViewData(text, false);
     this.requestSave();
   }
