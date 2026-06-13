@@ -67,7 +67,7 @@ function makePrimitive(
       opts.onValueClick?.(path, value);
     });
   } else if (!opts.readonly && value === null) {
-    span.title = "Edit in Source to change type";
+    span.title = "Edit in source to change type";
   }
   if (opts.onValueHover) {
     span.addEventListener("mouseenter", () => {

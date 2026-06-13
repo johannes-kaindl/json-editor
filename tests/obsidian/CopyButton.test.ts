@@ -1,3 +1,4 @@
+import { Notice } from "obsidian";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createCopyButton } from "../../src/obsidian/CopyButton";
 
@@ -6,6 +7,7 @@ describe("createCopyButton", () => {
 
   beforeEach(() => {
     document.body.innerHTML = "";
+    Notice.instances = [];
     vi.useFakeTimers();
     writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", { clipboard: { writeText } });
@@ -52,15 +54,26 @@ describe("createCopyButton", () => {
     expect(btn.textContent).toBe("⧉");
   });
 
-  it("clipboard rejection does not throw and does not mark .copied", async () => {
+  it("clipboard rejection does not throw, does not mark .copied, and shows a Notice", async () => {
     writeText.mockRejectedValueOnce(new Error("clipboard unavailable"));
     const btn = createCopyButton("x", ["a"]);
     document.body.appendChild(btn);
     btn.click();
-    // Allow the rejected promise to settle
-    await Promise.resolve();
+    // Wait for the rejected writeText promise to settle, then flush the
+    // .then(onErr) microtask that creates the Notice.
+    await (writeText.mock.results[0]?.value as Promise<unknown>).catch(() => undefined);
     await Promise.resolve();
     expect(btn.classList.contains("copied")).toBe(false);
+    expect(btn.textContent).toBe("⧉");
+    expect(Notice.instances.some((n) => /copy failed/i.test(n.message))).toBe(true);
+  });
+
+  it("absent clipboard API does not throw and shows a Copy failed Notice (2.19)", () => {
+    vi.stubGlobal("navigator", {}); // no clipboard (older WebView / non-secure context)
+    const btn = createCopyButton("x", ["a"]);
+    document.body.appendChild(btn);
+    expect(() => btn.click()).not.toThrow();
+    expect(Notice.instances.some((n) => /copy failed/i.test(n.message))).toBe(true);
     expect(btn.textContent).toBe("⧉");
   });
 });

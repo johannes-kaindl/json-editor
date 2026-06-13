@@ -13,12 +13,13 @@ Deliberately small surface: vanilla TypeScript, one runtime dependency (`ajv`), 
 
 ## Current state
 
-- **Latest release:** `1.5.0` (Stability & data-integrity: Phase-1 blocker fixes from the 2026-06-12 gap audit — cross-file undo data loss, max-height clip, `.json` collision guard, re-render state/focus preservation, schema-autoload opt-in + ReDoS guards, lossy-number warn/read-only)
+- **Latest release:** `1.6.0` (Guideline+UX: default-hotkeys→view Scope, Tree/Source toggle command + header action, source-mode search + undo-via-CM-transaction, `__proto__` data-loss fix, popout/lifecycle, large-file guard, eslint-plugin-obsidianmd gate; `minAppVersion` raised to **1.5.7**)
+- **2026-06-13:** `1.6.0` — Phase-2 guideline+UX release (audit Sections 2+3+4.1); 10 commits, multi-agent review + fixes
 - **2026-06-13:** `1.5.0` — Phase-1 blocker release (audit Section 1 + 2.8); 8 commits, multi-agent review + 2 rounds of fixes
 - **2026-05-27:** `0.1.2` → `1.3.0` released in one autonomous run (entire 1.x feature roadmap)
 - **Unreleased on `main`:** nothing pending
-- **Roadmap (next):** **Phase 2 — Guideline+UX release** (default-hotkeys removal + view-scoped Scope, source-mode undo via CM transaction, `__proto__` rebuilds 2.3/2.16, popout/lifecycle 2.11/2.12, Tree↔Source toggle command 3.1, source-mode search 3.2, large-file guard 4.1, eslint-plugin-obsidianmd 2.14). **Phase 3 — Docs + ID-rename `json-editor` + Community-Hub submission.** See `docs/superpowers/specs/2026-06-12-gap-audit.md`. Older open questions: drag-drop **between** containers (currently same-parent-only), `$schema` URL fetching (currently companion-file-only).
-- **Tests:** 478 Vitest tests, all green; `npm test`
+- **Roadmap (next):** **Phase 3 — Docs + ID-rename + submission.** Doc pass (README 1.0→1.6 alignment + Known-conflicts, license attribution 2.4, SECURITY.md 2.7, AGENTS.md submission-path 2.15, numeric-key-reorder limitation note from audit 1.4), **then** ID-rename `obsidian-json-editor`→`json-editor` (audit 1.1, last step before release; first-come-first-served), version bump + release, **then** Community-Hub portal submission. See `docs/superpowers/specs/2026-06-12-gap-audit.md`. Deferred follow-ups: `prefer-active-doc` popout polish (69 lint warnings), mobile interaction model (audit §4.2–4.5), A11y (§5), 2.x feature ideas (§3.3–3.13, §6). Older open questions: cross-container drag-drop, `$schema` URL fetching.
+- **Tests:** 537 Vitest tests, all green; `npm test`
 - **Coverage:** 94.10% statements / 85.56% branches / 95.78% functions; `npm run test:coverage`
 - **Build:** `npm run build` clean. Bundle is ~163 KB (Ajv is the bulk; was ~37 KB pre-1.3.0).
 - **Predecessor:** `0.1.0` (v1.0 — core viewer/editor)
@@ -226,6 +227,12 @@ In priority order:
 ## Session history
 
 Append new entries at the top. Each entry = one working session.
+
+### 2026-06-13 — Phase 2: Guideline+UX-Release (`1.6.0`)
+
+Umsetzung der Audit-Sektionen 2+3+4.1, strikt TDD, inline. Plan: `docs/superpowers/plans/2026-06-13-phase2-guideline-ux.md`. 14 Items in 10 Commits: **2.3/2.16** `__proto__`-sichere `Object.fromEntries`-Rebuilds + `hasOwnProperty`-Guards; **2.19/2.20** Clipboard-Guard+Notice, `normalizePath`+Suffix-Validator; **2.11/2.12/2.21/2.22** Popout (`ownerDocument`), Lifecycle-Cleanup, kein inline-`position`, `window`-Timer; **2.1/2.23** Default-Hotkeys raus → view-lokaler `Scope` (In-Input-Undo-Guard, return `undefined`), Command-Namen; **3.1** public `toggleMode()` + `toggle-tree-source`-Command + `addAction` in `onOpen`; **2.2** Source-Undo via `diffReplaceSpan` + `SourceView.applyExternalEdit` (kein Editor-Rebuild; `recomputeFromData` aus `setViewData` extrahiert); **3.2** `@codemirror/search` + mode-aware `focusSearch`; **4.1** `src/core/render-budget.ts` + `LargeFileBanner` (Budget auch in `switchTo` neu geprüft); **2.14** `eslint-plugin-obsidianmd` flat-config (typecheckt gegen `tsconfig.build.json`, sonst no-unsafe-* aus dem Mock) + `lint:obsidian`-CI-Step.
+
+Mock erweitert: `Scope`, `TFile`, `normalizePath`, `TextFileView.addAction`/`actionsEl`/`onOpen`, `Notice.instances`-Registry. **`minAppVersion` 1.4.0→1.5.7** — vom eslint-`no-unsupported-api` aufgedeckt (`View.scope` braucht 1.5.7). Adversarialer 4-Dimensions-Review fand 2 echte Findings (Large-File-Guard-Bypass bei in-session-growth → `switchTo`-Recheck; Dropdown-Casing-Regression → „Two spaces"). Tests 478→537, build + biome + lint:obsidian clean. Deferred: 69 `prefer-active-doc`-Warnings (Popout-Polish, Folge-Item).
 
 ### 2026-06-13 — Phase 1: Blocker-/Stabilitäts-Release (`1.5.0`)
 

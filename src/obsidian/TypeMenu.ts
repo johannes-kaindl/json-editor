@@ -50,6 +50,9 @@ export function openTypeMenu(anchor: HTMLElement, opts: TypeMenuOptions): void {
   const row = anchor.closest<HTMLElement>(".json-row") ?? anchor;
   row.appendChild(menu);
 
+  // Bind close handlers to the anchor's own document so Escape / click-outside
+  // work in pop-out windows, not just the main window (audit 2.11).
+  const doc = anchor.ownerDocument;
   const onKeydown = (e: KeyboardEvent) => {
     if (e.key === "Escape") {
       e.preventDefault();
@@ -57,16 +60,16 @@ export function openTypeMenu(anchor: HTMLElement, opts: TypeMenuOptions): void {
     }
   };
   const onMousedown = (e: MouseEvent) => {
-    if (!(e.target instanceof Node)) return;
-    if (menu.contains(e.target)) return;
+    const t = e.target as Node | null;
+    if (t && menu.contains(t)) return;
     closeActiveMenu();
   };
-  document.addEventListener("keydown", onKeydown);
-  document.addEventListener("mousedown", onMousedown);
+  doc.addEventListener("keydown", onKeydown);
+  doc.addEventListener("mousedown", onMousedown);
 
   const close = () => {
-    document.removeEventListener("keydown", onKeydown);
-    document.removeEventListener("mousedown", onMousedown);
+    doc.removeEventListener("keydown", onKeydown);
+    doc.removeEventListener("mousedown", onMousedown);
     menu.remove();
     if (activeMenu?.el === menu) activeMenu = null;
   };
@@ -74,6 +77,7 @@ export function openTypeMenu(anchor: HTMLElement, opts: TypeMenuOptions): void {
   activeMenu = { el: menu, close };
 }
 
-function closeActiveMenu(): void {
+/** Close any open type menu (exported for view onunload cleanup, audit 2.12). */
+export function closeActiveMenu(): void {
   if (activeMenu) activeMenu.close();
 }

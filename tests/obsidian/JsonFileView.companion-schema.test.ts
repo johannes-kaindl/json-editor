@@ -61,6 +61,22 @@ describe("JsonFileView companion-schema autoload", () => {
     expect(spy).toHaveBeenCalledWith("data.schema.json");
   });
 
+  it("normalizes the assembled schema path before lookup (2.20)", async () => {
+    const spy = vi.fn((p: string) => new TFile(p));
+    const v = new JsonFileView(
+      leafWith({
+        getAbstractFileByPath: spy,
+        cachedRead: () => Promise.resolve('{"type":"object"}'),
+      }),
+      VALIDATING,
+    );
+    document.body.appendChild(v.contentEl);
+    setFile(v, "dir//data.json"); // a doubled slash that must be collapsed
+    v.setViewData('{"x":1}', true);
+    await flush();
+    expect(spy).toHaveBeenCalledWith("dir/data.schema.json");
+  });
+
   it("does not apply a schema loaded for a previous file after a fast switch", async () => {
     const reads: Array<{ path: string; resolve: (t: string) => void }> = [];
     const vault: FakeVault = {

@@ -1,4 +1,4 @@
-import { Notice, TFile, TextFileView, type WorkspaceLeaf } from "obsidian";
+import { Notice, Scope, TFile, TextFileView, type WorkspaceLeaf, normalizePath } from "obsidian";
 import {
   type JsonType,
   addArrayItem,
@@ -12,11 +12,13 @@ import {
 import { History } from "../core/history";
 import { parse } from "../core/parse";
 import { pathToString } from "../core/path";
+import { exceedsRenderBudget } from "../core/render-budget";
 import { hasNumberRoundtripLoss } from "../core/roundtrip";
 import { type CompiledSchema, type PathError, compileSchema } from "../core/schema";
 import { serialize } from "../core/serialize";
 import type { JsonPath, JsonValue } from "../core/types";
 import { Breadcrumb } from "./Breadcrumb";
+import { LargeFileBanner } from "./LargeFileBanner";
 import { LossBanner } from "./LossBanner";
 import { SchemaBanner } from "./SchemaBanner";
 import { SearchBar } from "./SearchBar";
@@ -24,6 +26,7 @@ import type { JsonEditorSettings } from "./SettingsTab";
 import { SourceView } from "./SourceView";
 import { Tooltip, tooltipContentForValue } from "./Tooltip";
 import { TreeView } from "./TreeView";
+import { closeActiveMenu } from "./TypeMenu";
 
 export const JSON_VIEW_TYPE = "json-editor-view";
 
@@ -49,6 +52,9 @@ export class JsonFileView extends TextFileView {
   private schemaBanner!: SchemaBanner;
   private lossBanner!: LossBanner;
   private lossyRoundtrip = false;
+  private largeFileBanner!: LargeFileBanner;
+  private largeFile = false;
+  private largeFileOverride = false;
   private currentSchema: CompiledSchema | null = null;
   // Bumped on every per-file reset so a fire-and-forget companion-schema load
   // can detect that the file changed while it was awaiting and bail out.
@@ -62,6 +68,39 @@ export class JsonFileView extends TextFileView {
     super(leaf);
     this.mode = settings.defaultMode;
     this.buildChrome();
+    this.registerKeymap();
+  }
+
+  /**
+   * View-local key bindings (audit 2.1). The commands carry NO default
+   * hotkeys (which violated the guideline and shadowed user bindings); instead
+   * a view Scope handles Mod+F/Mod+Z/Mod+Shift+Z only while this view is
+   * focused. Mod+Z/Mod+Shift+Z fall through (return undefined) when a text
+   * input or the CodeMirror editor is focused, so native input undo works.
+   */
+  private registerKeymap(): void {
+    this.scope = new Scope(this.app.scope);
+    this.scope.register(["Mod"], "f", () => {
+      this.focusSearch();
+      return false;
+    });
+    this.scope.register(["Mod"], "z", () => {
+      if (this.isTextInputFocused() || !this.canUndo()) return undefined;
+      this.undo();
+      return false;
+    });
+    this.scope.register(["Mod", "Shift"], "z", () => {
+      if (this.isTextInputFocused() || !this.canRedo()) return undefined;
+      this.redo();
+      return false;
+    });
+  }
+
+  private isTextInputFocused(): boolean {
+    const active = this.contentEl.ownerDocument.activeElement as HTMLElement | null;
+    if (!active) return false;
+    if (active.tagName === "INPUT" || active.tagName === "TEXTAREA") return true;
+    return active.closest(".cm-editor") !== null;
   }
 
   getViewType(): string {
@@ -84,28 +123,61 @@ export class JsonFileView extends TextFileView {
       this.currentValue = null;
       this.clearBanner();
       this.updateLossyState();
+      this.largeFile = false;
+      this.largeFileBanner.hide();
       this.treePillEl.disabled = false;
       this.renderEmptyState();
       this.applyValidation();
       return;
     }
-    const parsed = parse(data);
+    if (!this.recomputeFromData()) this.mode = "source";
+    this.largeFile =
+      this.currentValue !== null && exceedsRenderBudget(this.data, this.currentValue);
+    // Large files open in source mode to stay responsive; this takes
+    // precedence over the lossy read-only-tree behavior (audit 4.1).
+    if (this.largeFile && !this.largeFileOverride) this.mode = "source";
+    this.updateLargeFileBanner();
+    this.updateLossyState();
+    this.refreshMode();
+    this.applyValidation();
+    void this.tryLoadCompanionSchema();
+  }
+
+  private updateLargeFileBanner(): void {
+    if (this.largeFile && !this.largeFileOverride) {
+      this.largeFileBanner.show(
+        "Large file — opened in Source mode to stay responsive; tree rendering may freeze the UI.",
+      );
+    } else {
+      this.largeFileBanner.hide();
+    }
+  }
+
+  private handleLoadTreeAnyway(): void {
+    this.largeFileOverride = true;
+    this.largeFileBanner.hide();
+    this.switchTo("tree");
+  }
+
+  /**
+   * Re-parse this.data and refresh currentValue/invalid/parse-banner/tree-pill
+   * WITHOUT touching the mode or rebuilding any view. Returns whether the parse
+   * succeeded. Shared by setViewData and the source-mode undo/redo path (2.2).
+   */
+  private recomputeFromData(): boolean {
+    const parsed = parse(this.data);
     if (parsed.ok) {
       this.invalid = false;
       this.currentValue = parsed.value;
       this.clearBanner();
       this.treePillEl.disabled = false;
-    } else {
-      this.invalid = true;
-      this.currentValue = null;
-      this.mode = "source";
-      this.showBanner(`Invalid JSON at line ${parsed.line}, column ${parsed.col}: ${parsed.error}`);
-      this.treePillEl.disabled = true;
+      return true;
     }
-    this.updateLossyState();
-    this.refreshMode();
-    this.applyValidation();
-    void this.tryLoadCompanionSchema();
+    this.invalid = true;
+    this.currentValue = null;
+    this.showBanner(`Invalid JSON at line ${parsed.line}, column ${parsed.col}: ${parsed.error}`);
+    this.treePillEl.disabled = true;
+    return false;
   }
 
   /**
@@ -151,6 +223,9 @@ export class JsonFileView extends TextFileView {
     this.mode = this.settings.defaultMode;
     this.lossyRoundtrip = false;
     this.lossBanner.hide();
+    this.largeFile = false;
+    this.largeFileOverride = false;
+    this.largeFileBanner.hide();
   }
 
   private buildChrome(): void {
@@ -191,7 +266,10 @@ export class JsonFileView extends TextFileView {
     this.lossBanner = new LossBanner();
     this.contentEl.appendChild(this.lossBanner.getElement());
 
-    this.tooltip = new Tooltip();
+    this.largeFileBanner = new LargeFileBanner(() => this.handleLoadTreeAnyway());
+    this.contentEl.appendChild(this.largeFileBanner.getElement());
+
+    this.tooltip = new Tooltip(this.contentEl);
 
     this.contentEl.appendChild(this.bodyEl);
   }
@@ -231,7 +309,9 @@ export class JsonFileView extends TextFileView {
     if (!this.file || !this.app?.vault) return;
     const path = this.file.path;
     if (!path.endsWith(".json")) return;
-    const schemaPath = path.slice(0, -".json".length) + this.settings.companionSchemaSuffix;
+    const schemaPath = normalizePath(
+      path.slice(0, -".json".length) + this.settings.companionSchemaSuffix,
+    );
     const sibling = this.app.vault.getAbstractFileByPath(schemaPath);
     if (sibling instanceof TFile) {
       const generation = this.fileGeneration;
@@ -251,6 +331,17 @@ export class JsonFileView extends TextFileView {
   private switchTo(target: Mode): void {
     if (this.mode === target) return;
     if (target === "tree" && this.invalid) return;
+    // Re-evaluate the render budget at switch time, not only at load: content
+    // can grow past budget via in-session source edits / undo-redo (audit 4.1
+    // guard bypass). Recompute before entering tree.
+    if (target === "tree" && !this.largeFileOverride) {
+      this.largeFile =
+        this.currentValue !== null && exceedsRenderBudget(this.data, this.currentValue);
+      if (this.largeFile) {
+        this.updateLargeFileBanner();
+        return;
+      }
+    }
     if (this.mode === "source" && this.sourceView) {
       this.data = this.sourceView.getValue();
       const parsed = parse(this.data);
@@ -269,6 +360,19 @@ export class JsonFileView extends TextFileView {
     this.mode = target;
     this.refreshMode();
     this.applyValidation();
+  }
+
+  /**
+   * Public Tree↔Source toggle (audit 3.1) — the binding target for the
+   * toggle-tree-source command and the view-header action. A no-op when the
+   * target would be tree but the JSON is invalid (switchTo guards that).
+   */
+  toggleMode(): void {
+    this.switchTo(this.mode === "tree" ? "source" : "tree");
+  }
+
+  override async onOpen(): Promise<void> {
+    this.addAction("list-tree", "Toggle tree/source view", () => this.toggleMode());
   }
 
   private refreshMode(): void {
@@ -327,6 +431,13 @@ export class JsonFileView extends TextFileView {
   }
 
   focusSearch(): void {
+    // Mode-aware (audit 3.2): in source mode open CodeMirror's own search
+    // panel rather than force-switching to tree (which destroyed the editor)
+    // or focusing a hidden SearchBar on invalid JSON.
+    if (this.mode === "source" && this.sourceView) {
+      this.sourceView.openSearch();
+      return;
+    }
     if (this.mode !== "tree") {
       this.switchTo("tree");
     }
@@ -460,8 +571,20 @@ export class JsonFileView extends TextFileView {
   }
 
   private restoreText(text: string): void {
-    // Reuse setViewData's parse + refresh path so an undone state that is
-    // invalid JSON correctly snaps back to source mode with a banner.
+    // In source mode, patch the existing CodeMirror editor with a minimal
+    // change instead of rebuilding it via setViewData->refreshMode (audit
+    // 2.2) — preserves the editor instance, cursor, scroll, and focus.
+    if (this.mode === "source" && this.sourceView !== null) {
+      this.data = text;
+      this.recomputeFromData(); // source renders regardless of validity; don't change mode
+      this.sourceView.applyExternalEdit(text);
+      this.updateLossyState();
+      this.applyValidation();
+      this.requestSave();
+      return;
+    }
+    // Tree mode (or no live source view): reuse the full parse + refresh path
+    // so an undone state that is invalid JSON snaps back to source with a banner.
     this.setViewData(text, false);
     this.requestSave();
   }
@@ -515,6 +638,9 @@ export class JsonFileView extends TextFileView {
   onunload(): void {
     this.tooltip.destroy();
     this.searchBar.destroy();
+    this.sourceView?.destroy();
+    this.sourceView = null;
+    closeActiveMenu();
   }
 }
 

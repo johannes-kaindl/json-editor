@@ -60,7 +60,7 @@ export class SearchBar {
     }
     this.countEl.hidden = false;
     if (info.matchCount === 0) {
-      this.countEl.textContent = "no matches";
+      this.countEl.textContent = "No matches";
       this.countEl.classList.add("is-empty");
     } else {
       const noun = info.matchCount === 1 ? "match" : "matches";

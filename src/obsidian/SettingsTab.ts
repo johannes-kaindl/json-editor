@@ -10,6 +10,15 @@ export interface JsonEditorSettings {
   companionSchemaSuffix: string;
 }
 
+/**
+ * A companion-schema suffix must be a bare filename fragment, never a path:
+ * no separators and no parent-dir traversal (audit 2.20). Kept lenient enough
+ * to allow conventional forms like ".schema.json" and ".json-schema".
+ */
+export function isValidCompanionSuffix(suffix: string): boolean {
+  return suffix.length > 0 && !/[/\\]/.test(suffix) && !suffix.includes("..");
+}
+
 export const DEFAULT_SETTINGS: JsonEditorSettings = {
   defaultMode: "tree",
   indent: 2,
@@ -51,10 +60,10 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
 
     new Setting(this.containerEl)
       .setName("Indent")
-      .setDesc("Spaces or tab used when serializing JSON from Tree edits.")
+      .setDesc("Spaces or tab used when serializing JSON from tree edits.")
       .addDropdown((dd) => {
-        dd.addOption("2", "2 spaces");
-        dd.addOption("4", "4 spaces");
+        dd.addOption("2", "Two spaces");
+        dd.addOption("4", "Four spaces");
         dd.addOption("tab", "Tab");
         dd.setValue(s.indent === "\t" ? "tab" : String(s.indent));
         dd.onChange(async (v) => {
@@ -91,7 +100,7 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
       });
 
     new Setting(this.containerEl)
-      .setName("Validate against JSON Schema")
+      .setName("Validate against JSON schema")
       .setDesc(
         "Off by default. When enabled, the plugin automatically loads a sibling schema file next to the current .json file (e.g. data.json → data.schema.json) and highlights validation errors in real time. Enabling this auto-loads schema files from your vault — only turn it on if you trust those files.",
       )
@@ -112,7 +121,7 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
         text.setValue(s.companionSchemaSuffix);
         text.onChange(async (v) => {
           const trimmed = v.trim();
-          if (trimmed.length > 0) {
+          if (isValidCompanionSuffix(trimmed)) {
             s.companionSchemaSuffix = trimmed;
             await this.settingsPlugin.saveSettings();
           }

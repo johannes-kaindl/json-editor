@@ -1,7 +1,9 @@
 import { defaultKeymap } from "@codemirror/commands";
 import { json } from "@codemirror/lang-json";
+import { highlightSelectionMatches, openSearchPanel, searchKeymap } from "@codemirror/search";
 import { EditorState, Transaction } from "@codemirror/state";
 import { EditorView, keymap, lineNumbers } from "@codemirror/view";
+import { diffReplaceSpan } from "../core/textdiff";
 
 export interface SourceViewOptions {
   onChange?: (newText: string) => void;
@@ -23,10 +25,12 @@ export class SourceView {
       doc: initial,
       extensions: [
         lineNumbers(),
+        highlightSelectionMatches(),
         // History is intentionally NOT installed here — JsonFileView holds the
         // unified cross-mode history (1.2.0). The plugin's "undo-edit" command
-        // dispatches to that single source of truth.
-        keymap.of(defaultKeymap),
+        // dispatches to that single source of truth. searchKeymap comes first
+        // so the editor's own find (Mod+F) wins when focused (audit 3.2).
+        keymap.of([...searchKeymap, ...defaultKeymap]),
         json(),
         EditorView.updateListener.of((update) => {
           if (this.suppressChange) return;
@@ -49,6 +53,30 @@ export class SourceView {
     this.suppressChange = false;
   }
 
+  /**
+   * Apply an externally-computed new document text (e.g. an undo/redo restore)
+   * as a MINIMAL change rather than a full setValue (audit 2.2). CodeMirror
+   * maps the selection through the change, so the cursor is preserved when it
+   * lies outside the edited span — and the editor instance is not rebuilt.
+   */
+  applyExternalEdit(text: string): void {
+    if (!this.view) return;
+    const span = diffReplaceSpan(this.getValue(), text);
+    this.suppressChange = true;
+    this.view.dispatch({
+      changes: { from: span.from, to: span.to, insert: span.insert },
+      annotations: Transaction.addToHistory.of(false),
+    });
+    this.suppressChange = false;
+  }
+
+  /** Open the CodeMirror search panel and focus the editor (audit 3.2). */
+  openSearch(): void {
+    if (!this.view) return;
+    openSearchPanel(this.view);
+    this.view.focus();
+  }
+
   getValue(): string {
     return this.view ? this.view.state.doc.toString() : "";
   }
@@ -63,5 +91,15 @@ export class SourceView {
   _dispatchInsertForTest(from: number, text: string): void {
     if (!this.view) return;
     this.view.dispatch({ changes: { from, insert: text } });
+  }
+
+  /** Test-only: set the cursor/selection anchor. */
+  _setSelectionForTest(anchor: number): void {
+    this.view?.dispatch({ selection: { anchor } });
+  }
+
+  /** Test-only: read the selection head offset. */
+  _selectionHeadForTest(): number {
+    return this.view ? this.view.state.selection.main.head : -1;
   }
 }

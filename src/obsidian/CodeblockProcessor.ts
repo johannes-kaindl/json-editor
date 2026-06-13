@@ -1,4 +1,4 @@
-import type { MarkdownPostProcessorContext } from "obsidian";
+import { type MarkdownPostProcessorContext, Notice } from "obsidian";
 import { parse } from "../core/parse";
 import { renderTree } from "../core/render";
 import type { JsonEditorSettings } from "./SettingsTab";
@@ -43,18 +43,21 @@ function makeCopyButton(source: string): HTMLButtonElement {
   btn.type = "button";
   btn.textContent = "Copy";
   btn.addEventListener("click", () => {
-    navigator.clipboard?.writeText(source).then(
+    const clipboard = navigator.clipboard;
+    if (!clipboard) {
+      new Notice("Copy failed");
+      return;
+    }
+    clipboard.writeText(source).then(
       () => {
         btn.classList.add("copied");
         btn.textContent = "Copied";
-        setTimeout(() => {
+        window.setTimeout(() => {
           btn.classList.remove("copied");
           btn.textContent = "Copy";
         }, 800);
       },
-      () => {
-        /* clipboard unavailable — no UI */
-      },
+      () => new Notice("Copy failed"),
     );
   });
   return btn;
@@ -68,7 +71,7 @@ function renderFallback(_source: string, el: HTMLElement, errorMessage: string):
   head.className = "json-codeblock-head";
   const label = document.createElement("span");
   label.className = "json-codeblock-label";
-  label.textContent = "JSON · Error";
+  label.textContent = "JSON · error";
   head.appendChild(label);
   card.appendChild(head);
 

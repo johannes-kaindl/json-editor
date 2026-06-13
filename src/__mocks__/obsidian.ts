@@ -70,11 +70,24 @@ export class TextFileView {
   app: App;
   data = "";
   contentEl: HTMLElement;
+  actionsEl: HTMLElement;
+  scope: Scope | null = null;
   saveCount = 0;
   constructor(public leaf: WorkspaceLeaf) {
     this.app = (leaf as unknown as { app: App }).app;
     this.contentEl = document.createElement("div");
+    this.actionsEl = document.createElement("div");
   }
+  addAction(icon: string, title: string, callback: (evt: MouseEvent) => void): HTMLElement {
+    const btn = document.createElement("button");
+    btn.setAttribute("aria-label", title);
+    btn.dataset.icon = icon;
+    btn.addEventListener("click", (e) => callback(e as MouseEvent));
+    this.actionsEl.appendChild(btn);
+    return btn;
+  }
+  async onOpen(): Promise<void> {}
+  async onClose(): Promise<void> {}
   getViewData(): string {
     return this.data;
   }
@@ -94,6 +107,26 @@ export class TextFileView {
 
 export class TFile {
   constructor(public path: string) {}
+}
+
+type KeymapHandler = (...args: unknown[]) => unknown;
+export class Scope {
+  keys: Array<{ modifiers: string[] | null; key: string | null; handler: KeymapHandler }> = [];
+  constructor(public parent?: Scope) {}
+  register(modifiers: string[] | null, key: string | null, handler: KeymapHandler): KeymapHandler {
+    this.keys.push({ modifiers, key, handler });
+    return handler;
+  }
+  unregister(_handler: unknown): void {}
+}
+
+export function normalizePath(path: string): string {
+  return path
+    .replace(/\\/g, "/")
+    .replace(/\/{2,}/g, "/")
+    .replace(/^\.\//, "")
+    .replace(/\/$/, "")
+    .trim();
 }
 
 export class Notice {

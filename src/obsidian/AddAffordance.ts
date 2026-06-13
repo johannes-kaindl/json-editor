@@ -30,7 +30,7 @@ export function createAddAffordance(opts: AddAffordanceOptions): HTMLElement {
       const input = document.createElement("input");
       input.type = "text";
       input.className = "json-add-input";
-      input.placeholder = "key";
+      input.placeholder = "Key";
       let resolved = false;
       const commit = () => {
         if (resolved) return;

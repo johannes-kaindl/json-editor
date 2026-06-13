@@ -84,7 +84,7 @@ export class TreeView {
     if (!row) return;
     row.scrollIntoView({ block: "center", behavior: "smooth" });
     row.classList.add("json-row-flash");
-    setTimeout(() => row.classList.remove("json-row-flash"), FLASH_MS);
+    window.setTimeout(() => row.classList.remove("json-row-flash"), FLASH_MS);
   }
 
   applyFilter(query: string): { matchCount: number } {

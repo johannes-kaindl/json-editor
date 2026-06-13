@@ -11,14 +11,14 @@ describe("Tooltip", () => {
   });
 
   it("constructor mounts a hidden .json-tooltip to document.body", () => {
-    new Tooltip();
+    new Tooltip(document.body);
     const tt = document.body.querySelector(".json-tooltip") as HTMLElement;
     expect(tt).not.toBeNull();
     expect(tt.hidden).toBe(true);
   });
 
   it("show() reveals the tooltip after 500ms with the given content", () => {
-    const t = new Tooltip();
+    const t = new Tooltip(document.body);
     const target = document.createElement("span");
     document.body.appendChild(target);
     t.show(target, { typeLabel: "string", pathStr: "root.name", preview: '"jay"' });
@@ -34,7 +34,7 @@ describe("Tooltip", () => {
   });
 
   it("hide() cancels a pending show", () => {
-    const t = new Tooltip();
+    const t = new Tooltip(document.body);
     const target = document.createElement("span");
     document.body.appendChild(target);
     t.show(target, { typeLabel: "string", pathStr: "n", preview: "x" });
@@ -46,7 +46,7 @@ describe("Tooltip", () => {
   });
 
   it("hide() hides a visible tooltip immediately", () => {
-    const t = new Tooltip();
+    const t = new Tooltip(document.body);
     const target = document.createElement("span");
     document.body.appendChild(target);
     t.show(target, { typeLabel: "string", pathStr: "n", preview: "x" });
@@ -58,7 +58,7 @@ describe("Tooltip", () => {
   });
 
   it("show() called twice supersedes the previous schedule", () => {
-    const t = new Tooltip();
+    const t = new Tooltip(document.body);
     const target = document.createElement("span");
     document.body.appendChild(target);
     t.show(target, { typeLabel: "string", pathStr: "first", preview: "a" });
@@ -71,8 +71,19 @@ describe("Tooltip", () => {
     expect(tt.querySelector(".tt-path")?.textContent).toBe("second");
   });
 
+  it("does not set an inline position style — CSS owns it (2.21)", () => {
+    const t = new Tooltip(document.body);
+    const target = document.createElement("span");
+    document.body.appendChild(target);
+    t.show(target, { typeLabel: "string", pathStr: "n", preview: "x" });
+    vi.advanceTimersByTime(500);
+    const tt = document.body.querySelector(".json-tooltip") as HTMLElement;
+    expect(tt.style.position).toBe(""); // not inline 'absolute'
+    expect(tt.style.left).not.toBe(""); // dynamic left/top still applied
+  });
+
   it("destroy() removes the tooltip from document.body", () => {
-    const t = new Tooltip();
+    const t = new Tooltip(document.body);
     t.destroy();
     expect(document.body.querySelector(".json-tooltip")).toBeNull();
   });

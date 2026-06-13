@@ -51,6 +51,38 @@ describe("SourceView", () => {
     expect(changes).toEqual([]);
   });
 
+  it("applyExternalEdit updates the value without firing onChange (2.2)", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const changes: string[] = [];
+    const view = new SourceView(container, { onChange: (text) => changes.push(text) });
+    view.setValue('{"a":1}');
+    expect(changes).toEqual([]);
+    view.applyExternalEdit('{"a":2}');
+    expect(view.getValue()).toBe('{"a":2}');
+    expect(changes).toEqual([]);
+  });
+
+  it("applyExternalEdit preserves a selection outside the changed span (2.2)", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const view = new SourceView(container, {});
+    view.setValue('{"name":"a","x":1}');
+    view._setSelectionForTest(3); // cursor inside "name", before the change
+    view.applyExternalEdit('{"name":"a","x":2}'); // only the trailing 1 -> 2 changes
+    expect(view._selectionHeadForTest()).toBe(3);
+  });
+
+  it("openSearch opens a CodeMirror search panel (3.2)", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const view = new SourceView(container, {});
+    view.setValue('{"a":1}');
+    view.openSearch();
+    const panel = container.querySelector(".cm-search") ?? container.querySelector(".cm-panel");
+    expect(panel).not.toBeNull();
+  });
+
   it("destroy unmounts the editor", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);

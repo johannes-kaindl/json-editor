@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.6.0] — 2026-06-13
+
+**Guideline & UX release.** Aligns with the Obsidian plugin guidelines and ships the high-value editing/UX gaps from the pre-submission audit.
+
+> **Heads-up:** `minAppVersion` is now **1.5.7** (the new view-scoped keymap needs it).
+
+### Added
+- **Tree/Source toggle command** (`Toggle tree/source view`) plus a view-header icon — the mode toggle is now keyboard- and command-bindable (bind your own hotkey; no default is set to avoid clashing with the core *Toggle reading view*).
+- **Search in Source mode** — `Cmd/Ctrl+F` (focus-search) now opens CodeMirror's find panel when you're in source mode instead of yanking you to tree; tree mode still focuses the tree search bar.
+- **Large-file guard** — files above a render budget (~1 MB or ~15k nodes) open in Source mode with a *Load tree anyway* banner, so a multi-MB file no longer freezes the UI on open.
+
+### Changed
+- **No more default hotkeys on commands.** `Focus search`, `Undo edit`, `Redo edit` (renamed, sentence-case) carry no default hotkey, per the guidelines; a view-local keymap still handles `Mod+F/Mod+Z/Mod+Shift+Z` while the JSON view is focused — and now correctly falls through to native input undo while you're typing in an inline editor.
+- `minAppVersion` raised to **1.5.7** for the view-scoped keymap and view-header action APIs.
+- Various UI strings corrected to sentence case.
+
+### Fixed
+- **Source-mode undo/redo** no longer destroys and rebuilds the CodeMirror editor on every step — it dispatches a minimal change, preserving cursor, scroll, and focus.
+- **Silent data loss / prototype reassignment** when an object had a `__proto__` (or other prototype-name) key and you deleted/renamed/reordered another key. Such keys are now preserved (and addable).
+- **Pop-out windows**: tooltips and the type-switch menu now resolve their document/window correctly instead of binding to the main window.
+- **Lifecycle leaks**: the Source editor and the type menu are now torn down on view unload.
+- Clipboard copy no longer throws (and now reports failure) on platforms without `navigator.clipboard`; companion-schema paths are normalized; window-bound timers; no hard-coded inline styles.
+
+### Internal
+- Added the official `eslint-plugin-obsidianmd` as a CI guideline gate (`npm run lint:obsidian`); Biome stays the formatter. Test count 478 → 537.
+
 ## [1.5.0] — 2026-06-13
 
 **Stability & data-integrity release.** Fixes the data-loss and crash blockers found in a pre-submission audit. No new user-facing features — every change here protects your files.
