@@ -4,7 +4,7 @@ Orientation for AI agents (Claude Code, Codex, …) and contributors working on 
 
 ## Project character
 
-**Project:** `obsidian-json-editor` — Obsidian plugin for viewing/editing `.json` files with Tree↔Source toggle, plus read-only tree rendering for ```` ```json ```` code blocks in Markdown notes.
+**Project:** `json-editor` (plugin id; renamed from `obsidian-json-editor` in Phase 3 per audit 1.1) — Obsidian plugin for viewing/editing `.json` files with Tree↔Source toggle, plus read-only tree rendering for ```` ```json ```` code blocks in Markdown notes.
 
 **Author:** Johannes Kaindl (`jkaindl` on Codeberg, `johannes-kaindl` on GitHub).
 Deliberately small surface: vanilla TypeScript, one runtime dependency (`ajv`), strict TDD, no telemetry or remote resources.
@@ -159,11 +159,11 @@ A local Obsidian vault (production-ish) for manual E2E. Install path:
 
 ```bash
 # Deploy to a vault (npm run deploy — PROF-OBS-02):
-OBSIDIAN_PLUGIN_DIR=<your-test-vault>/.obsidian/plugins/obsidian-json-editor npm run deploy
+OBSIDIAN_PLUGIN_DIR=<your-test-vault>/.obsidian/plugins/json-editor npm run deploy
 
 # Equivalent manual copy:
 cp main.js manifest.json styles.css \
-   <your-test-vault>/.obsidian/plugins/obsidian-json-editor/
+   <your-test-vault>/.obsidian/plugins/json-editor/
 # Then Cmd+R in Obsidian to reload the plugin.
 ```
 
@@ -173,27 +173,34 @@ E2E checklist: `docs/superpowers/plans/2026-05-20-manual-e2e.md`.
 
 The 1.x roadmap is shipped. Remaining items are external/manual or future-version ideas.
 
-> **⚠ Stand 2026-06-12:** Submission ist **blockiert**, bis die 8 Blocker aus dem Gap-Audit gefixt sind (`docs/superpowers/specs/2026-06-12-gap-audit.md`, Sektion 1 + empfohlene Reihenfolge im Kopf). Der unten dokumentierte PR-Weg über `obsidianmd/obsidian-releases` wurde im Mai 2026 eingestellt — die Submission läuft jetzt über das Community-Hub-Portal (community.obsidian.md). Die Plugin-ID muss vorher auf `json-editor` umbenannt werden (Audit 1.1; ID ist first-come-first-served, „JSON Viewer" ist seit 2026-06 gelistet — Zeitfenster beachten).
+> **⚠ Stand 2026-06-13:** Die 8 Blocker aus dem Gap-Audit sind in `1.5.0`/`1.6.0` gefixt (`docs/superpowers/specs/2026-06-12-gap-audit.md`). Offen vor der Submission: das Doku-Paket (Phase 3, in Arbeit auf `feat/docs-id-rename`) + ID-Rename auf `json-editor` (Audit 1.1, im Branch erledigt) + ein Release, das die neue ID trägt. Der früher übliche PR-Weg über `obsidianmd/obsidian-releases` wurde im Mai 2026 eingestellt — die Submission läuft jetzt über das **Community-Hub-Developer-Dashboard (community.obsidian.md)** mit automatischem Installierbarkeits-Scan als Gate. ID ist first-come-first-served; „JSON Viewer" ist seit 2026-06 gelistet — Zeitfenster beachten.
 
 In priority order:
 
-1. **Obsidian Community Plugin Submission** — open a PR on `obsidianmd/obsidian-releases` with this entry in `community-plugins.json`:
-   ```json
-   {
-     "id": "obsidian-json-editor",
-     "name": "JSON Editor",
-     "author": "Johannes Kaindl",
-     "description": "View and edit JSON files in Obsidian with a Tree/Source toggle. Renders JSON code blocks in Markdown notes.",
-     "repo": "johannes-kaindl/json-editor"
-   }
-   ```
-   Pre-checks already done: GitHub repo public ✓, LICENSE ✓, README ✓, Release with asset ✓, manifest valid ✓, CHANGELOG ✓, SECURITY ✓, CONTRIBUTING ✓, issue + PR templates for both forges ✓.
+1. **Obsidian Community Plugin Submission (Community-Hub portal).** The legacy PR-against-`obsidianmd/obsidian-releases` flow was retired May 2026 ("New pull request creation is restricted"). Submit via the **Developer Dashboard** at **community.obsidian.md**:
+   1. Sign in with the GitHub account that owns the release repo (`johannes-kaindl/json-editor`).
+   2. Developer Dashboard → **Submit a plugin** → enter the repo. The portal reads `manifest.json` from the repo root + the latest GitHub Release.
+   3. The portal runs an **automatic install-gate scan** (the old PR install-validator): valid/consistent `id`/`name`/`version`/`minAppVersion`, release tag == `manifest.json.version` with **no `v` prefix**, `main.js`+`manifest.json`(+`styles.css`) attached as release assets, `versions.json` covers the version, and the guideline checks (no `innerHTML`, no default hotkeys, sentence-case UI, `id` not starting with `obsidian-`, …). A green scan is the gate to listing.
+   4. There is **no hand-edited `community-plugins.json`** anymore — the portal manages the registry from `manifest.json`:
+      ```json
+      {
+        "id": "json-editor",
+        "name": "JSON Editor",
+        "minAppVersion": "1.5.7",
+        "description": "View and edit JSON files with a Tree/Source toggle. Renders JSON code blocks in Markdown notes.",
+        "author": "Johannes Kaindl",
+        "authorUrl": "https://github.com/johannes-kaindl",
+        "isDesktopOnly": false
+      }
+      ```
+   Pre-checks done: repo public ✓, LICENSE ✓, README ✓, Release w/ asset ✓, manifest valid ✓, CHANGELOG ✓, SECURITY ✓, CONTRIBUTING ✓, templates ✓, ID-rename to `json-editor` ✓ (branch), THIRD-PARTY-NOTICES ✓. **Still required:** merge + a release that ships the renamed `id`, then a visual + mobile smoke test.
 
-2. **Visual smoke test in real Obsidian** — verify the 1.1–1.3 surfaces work:
-   - 1.1.0: hover row → drag-handle reveal, drag to reorder, T-button → type-menu, Cmd+Z undoes both
+2. **Visual + mobile smoke test in real Obsidian** — deploy via `npm run deploy` and verify the 1.1–1.6 surfaces:
+   - 1.1.0: hover row → drag-handle, drag to reorder, T-button → type-menu, Cmd+Z undoes both
    - 1.2.0: edit in source, switch to tree, Cmd+Z restores source state (and vice versa)
-   - 1.3.0: drop a `<file>.schema.json` next to a `.json`, see red rows + banner; fix the data, banner clears
-   - Test vault `10_Pallas` has 1.3.0 deployed; Cmd+R to reload.
+   - 1.3.0/1.5.0: enable schema validation (now opt-in!), drop a `<file>.schema.json` next to a `.json`, see red rows + banner; fix the data, banner clears
+   - 1.6.0: Tree/Source toggle via the view-header icon + a self-bound hotkey; Cmd+F find in source mode; open a multi-MB file → large-file banner; bind no default hotkeys
+   - Mobile (audit §4.2/4.3): drag-drop is desktop-only — confirm the touch story before relying on it.
 
 3. **Marketing assets** (~1h with running plugin)
    - 5 screenshots for the Community Directory listing per spec §7

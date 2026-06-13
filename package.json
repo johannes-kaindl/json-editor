@@ -1,7 +1,7 @@
 {
-  "name": "obsidian-json-editor",
+  "name": "json-editor",
   "version": "1.6.0",
-  "description": "View and edit JSON files in Obsidian with a Tree/Source toggle. Renders json code blocks in Markdown notes as collapsible theme-aware trees.",
+  "description": "View and edit JSON files with a Tree/Source toggle. Renders JSON code blocks in Markdown notes.",
   "main": "main.js",
   "author": {
     "name": "Johannes Kaindl",
@@ -25,7 +25,7 @@
     "lint": "biome check .",
     "lint:obsidian": "eslint src",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
-    "deploy": "npm run build && cp main.js manifest.json styles.css \"${OBSIDIAN_PLUGIN_DIR:?Set OBSIDIAN_PLUGIN_DIR to <vault>/.obsidian/plugins/obsidian-json-editor}\"/"
+    "deploy": "npm run build && cp main.js manifest.json styles.css \"${OBSIDIAN_PLUGIN_DIR:?Set OBSIDIAN_PLUGIN_DIR to <vault>/.obsidian/plugins/json-editor}\"/"
   },
   "keywords": [
     "obsidian",

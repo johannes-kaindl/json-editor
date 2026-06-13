@@ -1,9 +1,9 @@
 {
-  "id": "obsidian-json-editor",
+  "id": "json-editor",
   "name": "JSON Editor",
   "version": "1.6.0",
   "minAppVersion": "1.5.7",
-  "description": "View and edit JSON files in Obsidian with a Tree/Source toggle. Renders json code blocks in Markdown notes.",
+  "description": "View and edit JSON files with a Tree/Source toggle. Renders JSON code blocks in Markdown notes.",
   "author": "Johannes Kaindl",
   "authorUrl": "https://github.com/johannes-kaindl",
   "isDesktopOnly": false

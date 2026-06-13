@@ -220,7 +220,10 @@ The original 1.0.0 roadmap conflated all five into one release. Scope-decomposed
 - **Settings tab** — default open mode, indent style (2 / 4 / tab), tree marker style (modern / classic), auto-collapse depth.
 - **GitHub Actions release workflow** — tag push triggers build, test, and GitHub release with `main.js`, `manifest.json`, and `styles.css` as assets.
 
-[Unreleased]: https://codeberg.org/jkaindl/json-editor/compare/1.3.0...HEAD
+[Unreleased]: https://codeberg.org/jkaindl/json-editor/compare/1.6.0...HEAD
+[1.6.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.6.0
+[1.5.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.5.0
+[1.4.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.4.0
 [1.3.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.3.0
 [1.2.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.2.0
 [1.1.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.1.0
