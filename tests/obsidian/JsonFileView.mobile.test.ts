@@ -93,6 +93,8 @@ describe("JsonFileView mobile", () => {
     const undoBtn = v.contentEl.querySelector<HTMLButtonElement>(".json-undo-btn")!;
     const redoBtn = v.contentEl.querySelector<HTMLButtonElement>(".json-redo-btn")!;
     expect(undoBtn).not.toBeNull();
+    // native Obsidian icon-button class (consistent sizing/theming, audit 4.4)
+    expect(undoBtn.classList.contains("clickable-icon")).toBe(true);
     expect(undoBtn.disabled).toBe(true);
     expect(redoBtn.disabled).toBe(true);
     v.setViewData("[10,20]", false);

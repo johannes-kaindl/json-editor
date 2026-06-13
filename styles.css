@@ -793,3 +793,24 @@ body.is-mobile .json-collapse-toggle {
   min-height: 44px;
   margin: -15px 0; /* grow only the hit area; keep the visual chevron size */
 }
+
+/* Toolbar icon buttons (undo/redo): centered icon; square via .clickable-icon. */
+.json-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Touch targets — Apple HIG 44pt / Material 48dp (audit §4.4). Keeps the
+   toolbar's interactive controls tappable on mobile. */
+body.is-mobile .json-toolbar-btn,
+body.is-mobile .json-search-clear {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+body.is-mobile .json-mode-pill {
+  min-height: 44px;
+}

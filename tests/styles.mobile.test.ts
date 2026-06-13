@@ -18,4 +18,8 @@ describe("mobile styles", () => {
   it("has a body.is-mobile rule enlarging the collapse toggle tap target (4.4)", () => {
     expect(css).toMatch(/body\.is-mobile[\s\S]{0,200}\.json-collapse-toggle/);
   });
+
+  it("gives toolbar icon buttons a >=44px touch target on mobile (4.4)", () => {
+    expect(css).toMatch(/body\.is-mobile[\s\S]*\.json-toolbar-btn[\s\S]*min-width:\s*44px/);
+  });
 });

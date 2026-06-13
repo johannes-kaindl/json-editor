@@ -308,7 +308,9 @@ export class JsonFileView extends TextFileView {
     onClick: () => void,
   ): HTMLButtonElement {
     const btn = document.createElement("button");
-    btn.className = `json-toolbar-btn ${cls}`;
+    // `clickable-icon` is Obsidian's native icon-button class — consistent
+    // sizing/hover/theming, and enlarged on mobile for touch.
+    btn.className = `clickable-icon json-toolbar-btn ${cls}`;
     btn.type = "button";
     btn.setAttribute("aria-label", label);
     btn.title = label;
