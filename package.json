@@ -45,6 +45,7 @@
     "@biomejs/biome": "^1.9.4",
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-json": "^6.0.1",
+    "@codemirror/search": "^6.7.0",
     "@codemirror/state": "^6.4.1",
     "@codemirror/view": "^6.26.3",
     "@types/node": "^20.12.0",

@@ -385,6 +385,13 @@ export class JsonFileView extends TextFileView {
   }
 
   focusSearch(): void {
+    // Mode-aware (audit 3.2): in source mode open CodeMirror's own search
+    // panel rather than force-switching to tree (which destroyed the editor)
+    // or focusing a hidden SearchBar on invalid JSON.
+    if (this.mode === "source" && this.sourceView) {
+      this.sourceView.openSearch();
+      return;
+    }
     if (this.mode !== "tree") {
       this.switchTo("tree");
     }

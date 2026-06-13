@@ -73,6 +73,16 @@ describe("SourceView", () => {
     expect(view._selectionHeadForTest()).toBe(3);
   });
 
+  it("openSearch opens a CodeMirror search panel (3.2)", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const view = new SourceView(container, {});
+    view.setValue('{"a":1}');
+    view.openSearch();
+    const panel = container.querySelector(".cm-search") ?? container.querySelector(".cm-panel");
+    expect(panel).not.toBeNull();
+  });
+
   it("destroy unmounts the editor", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);

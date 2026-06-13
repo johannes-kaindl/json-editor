@@ -1,5 +1,6 @@
 import { defaultKeymap } from "@codemirror/commands";
 import { json } from "@codemirror/lang-json";
+import { highlightSelectionMatches, openSearchPanel, searchKeymap } from "@codemirror/search";
 import { EditorState, Transaction } from "@codemirror/state";
 import { EditorView, keymap, lineNumbers } from "@codemirror/view";
 import { diffReplaceSpan } from "../core/textdiff";
@@ -24,10 +25,12 @@ export class SourceView {
       doc: initial,
       extensions: [
         lineNumbers(),
+        highlightSelectionMatches(),
         // History is intentionally NOT installed here — JsonFileView holds the
         // unified cross-mode history (1.2.0). The plugin's "undo-edit" command
-        // dispatches to that single source of truth.
-        keymap.of(defaultKeymap),
+        // dispatches to that single source of truth. searchKeymap comes first
+        // so the editor's own find (Mod+F) wins when focused (audit 3.2).
+        keymap.of([...searchKeymap, ...defaultKeymap]),
         json(),
         EditorView.updateListener.of((update) => {
           if (this.suppressChange) return;
@@ -65,6 +68,13 @@ export class SourceView {
       annotations: Transaction.addToHistory.of(false),
     });
     this.suppressChange = false;
+  }
+
+  /** Open the CodeMirror search panel and focus the editor (audit 3.2). */
+  openSearch(): void {
+    if (!this.view) return;
+    openSearchPanel(this.view);
+    this.view.focus();
   }
 
   getValue(): string {

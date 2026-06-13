@@ -262,8 +262,11 @@ describe("JsonFileView SearchBar integration", () => {
     expect(sb.hidden).toBe(true);
   });
 
-  it("focusSearch() switches to tree mode and focuses the input", () => {
-    const v = new JsonFileView(fakeLeaf(), { ...DEFAULT_SETTINGS, defaultMode: "source" });
+  it("focusSearch() in tree mode focuses the tree search input", () => {
+    // 3.2 revised the old behavior: focusSearch no longer force-switches a
+    // source-mode view to tree (it opens the CM search panel instead — see
+    // JsonFileView.source-search.test.ts). In tree mode it focuses the SearchBar.
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS); // tree default
     document.body.appendChild(v.contentEl);
     v.setViewData('{"a":1}', false);
     v.focusSearch();
