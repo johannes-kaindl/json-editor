@@ -13,12 +13,13 @@ Deliberately small surface: vanilla TypeScript, one runtime dependency (`ajv`), 
 
 ## Current state
 
-- **Latest release:** `1.6.0`. **`1.7.0` (rename + docs) is prepared on `feat/docs-id-rename`, PENDING push + portal submission** — the working tree carries the ID rename `obsidian-json-editor`→`json-editor`, the full doc pass, and the bump; not yet merged/tagged/pushed (awaiting go-ahead + a smoke test).
+- **Latest release:** `1.7.0` (Rename & submission-prep: plugin id `obsidian-json-editor`→`json-editor`, full pre-submission doc/license-attribution pass; no editor functional changes. `minAppVersion` 1.5.7). The release asset carries the renamed `id` (verified).
+- **2026-06-13:** `1.7.0` — Phase-3 rename + docs (audit 1.1, 2.4–2.7, 2.15, 6.9); 3 commits, submission-readiness review + fixes
 - **2026-06-13:** `1.6.0` — Phase-2 guideline+UX release (audit Sections 2+3+4.1); 10 commits, multi-agent review + fixes
 - **2026-06-13:** `1.5.0` — Phase-1 blocker release (audit Section 1 + 2.8); 8 commits, multi-agent review + 2 rounds of fixes
 - **2026-05-27:** `0.1.2` → `1.3.0` released in one autonomous run (entire 1.x feature roadmap)
-- **Unreleased on `main`:** nothing pending; `1.7.0` waiting on `feat/docs-id-rename`.
-- **Roadmap (next, to finish Phase 3):** (1) **GATE — visual + mobile smoke test** of `1.6.0`/`1.7.0` in a real vault (`npm run deploy`; rename the test-vault plugin folder to `json-editor`). (2) **GATE — merge `feat/docs-id-rename` + tag/push `1.7.0`** to both remotes (the release asset must carry the renamed `id`). (3) **GATE — submit via the `community.obsidian.md` Developer Dashboard** (portal scan is the install gate; the legacy obsidianmd/obsidian-releases PR path is retired). Deferred follow-ups: `prefer-active-doc` popout polish (69 lint warnings), mobile interaction model (audit §4.2–4.5), A11y (§5), numeric-key-reorder README note (audit 1.4), 2.x feature ideas (§3.3–3.13, §6). Older open: cross-container drag-drop, `$schema` URL fetching.
+- **Unreleased on `main`:** nothing pending. Deployed to test-vault `10_Pallas` (folder `json-editor`).
+- **Roadmap (next — only the submission remains):** **GATE — Community Plugin submission** via the `community.obsidian.md` Developer Dashboard (repo `johannes-kaindl/json-editor`; the portal scan is the install gate; the legacy obsidianmd/obsidian-releases PR path is retired). ID is first-come-first-served — do it promptly. Pre-submission smoke test (visual + mobile) recommended first; drag-drop is desktop-only. Deferred follow-ups: `prefer-active-doc` popout polish (69 lint warnings), mobile interaction model (audit §4.2–4.5), A11y (§5), 2.x feature ideas (§3.3–3.13, §6). Older open: cross-container drag-drop, `$schema` URL fetching.
 - **Tests:** 537 Vitest tests, all green; `npm test`
 - **Coverage:** 94.10% statements / 85.56% branches / 95.78% functions; `npm run test:coverage`
 - **Build:** `npm run build` clean. Bundle is ~163 KB (Ajv is the bulk; was ~37 KB pre-1.3.0).
