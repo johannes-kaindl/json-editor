@@ -33,7 +33,7 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
   }
 
   display(): void {
-    this.containerEl.innerHTML = "";
+    this.containerEl.replaceChildren();
     const s = this.settingsPlugin.settings;
 
     new Setting(this.containerEl)

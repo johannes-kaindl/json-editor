@@ -18,7 +18,7 @@ export class Breadcrumb {
   }
 
   setPath(path: JsonPath): void {
-    this.el.innerHTML = "";
+    this.el.replaceChildren();
     const segments: Array<{ label: string; subPath: JsonPath }> = [{ label: "root", subPath: [] }];
     path.forEach((seg, i) => {
       const subPath = path.slice(0, i + 1);

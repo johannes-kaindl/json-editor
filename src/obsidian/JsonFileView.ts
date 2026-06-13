@@ -99,7 +99,7 @@ export class JsonFileView extends TextFileView {
     this.currentValue = null;
     this.invalid = false;
     this.clearBanner();
-    this.bodyEl.innerHTML = "";
+    this.bodyEl.replaceChildren();
     this.breadcrumb.setPath([]);
   }
 
@@ -215,7 +215,7 @@ export class JsonFileView extends TextFileView {
 
   private refreshMode(): void {
     this.sourceView?.destroy();
-    this.bodyEl.innerHTML = "";
+    this.bodyEl.replaceChildren();
     this.treeView = null;
     this.sourceView = null;
 
@@ -276,7 +276,7 @@ export class JsonFileView extends TextFileView {
 
   private renderEmptyState(): void {
     this.sourceView?.destroy();
-    this.bodyEl.innerHTML = "";
+    this.bodyEl.replaceChildren();
     this.treeView = null;
     this.sourceView = null;
     this.searchBar.getElement().hidden = true;

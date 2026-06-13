@@ -135,7 +135,7 @@ export class TreeView {
   private render(): void {
     this.opts.onBeforeRender?.();
     const previousPathStr = this.activeRow?.getAttribute("data-path") ?? null;
-    this.container.innerHTML = "";
+    this.container.replaceChildren();
     this.activeRow = null;
     const el = renderTree(this.current, {
       readonly: this.opts.readonly,
