@@ -209,7 +209,6 @@ In priority order:
 
 - **`parse.ts`:** `lastIndexOf` heuristic for V8 error position can misidentify when the unexpected-token char also appears earlier in valid content (e.g. inside a string). Acceptable for v1.0/v1.1; rewrite-parser deferred.
 - **`Tooltip.ts`:** `ttHeight = 60` hardcoded for above/below position-flip; long previews can overflow. v1.2 candidate to measure dynamically.
-- **`styles.css`:** `.json-content { max-height: 5000px }` clips trees taller than ~5000px during expand. v1.2 candidate to apply `max-height: unset` after `transitionend`.
 - **`render.ts`:** `renderObject` / `renderArray` share ~65 LOC of identical scaffolding. Refactor scheduled for v1.3.
 - **`onPathClick`:** fires N times for nested clicks (once per ancestor row via capture-phase listener); callers must be idempotent. Current callers (`Breadcrumb.setPath`) are.
 

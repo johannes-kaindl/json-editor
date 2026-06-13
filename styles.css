@@ -225,11 +225,13 @@
   padding-left: var(--jv-space-5);
   border-left: 2px solid var(--jv-border);
   margin-left: var(--jv-space-3);
-  max-height: 5000px;
   opacity: 1;
   overflow: hidden;
-  transition: max-height var(--jv-dur-base) var(--jv-ease), opacity var(--jv-dur-fast)
-    var(--jv-ease);
+  /* No max-height cap on the expanded state: a finite cap (was 5000px) hard-
+     clipped large trees with no scrollbar. The collapsed state still uses
+     max-height: 0 to hide children; the open direction snaps rather than
+     animating (accepted trade-off — see blocker 1.7). */
+  transition: opacity var(--jv-dur-fast) var(--jv-ease);
 }
 .json-content.collapsed {
   max-height: 0;
