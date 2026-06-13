@@ -1,4 +1,4 @@
-import { type JsonType, computeInsertionIndex, editValue } from "../core/edit";
+import { type JsonType, computeInsertionIndex, editValue, jsonTypeOf } from "../core/edit";
 import { pathToString } from "../core/path";
 import { renderTree } from "../core/render";
 import { findMatches } from "../core/search";
@@ -302,7 +302,7 @@ export class TreeView {
 
   private openTypeMenuFor(row: HTMLElement, path: JsonPath, value: JsonValue): void {
     if (!this.opts.onChangeType) return;
-    const current = typeOfJsonValue(value);
+    const current = jsonTypeOf(value);
     openTypeMenu(row, {
       currentType: current,
       onPick: (newType) => this.opts.onChangeType?.(path, newType),
@@ -440,6 +440,20 @@ export class TreeView {
 
   private parsePathStrSafe(pathStr: string): JsonPath {
     return parsePathStr(pathStr);
+  }
+
+  /**
+   * Public seam: start inline rename for the row at `path` (used by the touch
+   * RowMenu's "Rename key"). No-op for array indices or missing rows.
+   */
+  startRenameAt(path: JsonPath): void {
+    const lastSeg = path[path.length - 1];
+    if (typeof lastSeg !== "string") return;
+    const pathStr = pathToString(path);
+    const row = this.container.querySelector<HTMLElement>(
+      `.json-row[data-path="${cssEscapeAttr(pathStr)}"]`,
+    );
+    if (row) this.startRename(row, path, lastSeg);
   }
 
   private startRename(row: HTMLElement, path: JsonPath, currentKey: string): void {
@@ -808,21 +822,6 @@ function locateChildForSegment(parent: HTMLElement, segment: string | number): H
     return null;
   }
   return rows[segment] ?? null;
-}
-
-function typeOfJsonValue(value: JsonValue): JsonType {
-  if (value === null) return "null";
-  if (Array.isArray(value)) return "array";
-  switch (typeof value) {
-    case "string":
-      return "string";
-    case "number":
-      return "number";
-    case "boolean":
-      return "boolean";
-    default:
-      return "object";
-  }
 }
 
 function locateValueByPathStr(root: JsonValue, pathStr: string): JsonValue {

@@ -1,10 +1,20 @@
-import { Notice, Scope, TFile, TextFileView, type WorkspaceLeaf, normalizePath } from "obsidian";
+import {
+  Notice,
+  Platform,
+  Scope,
+  TFile,
+  TextFileView,
+  type WorkspaceLeaf,
+  normalizePath,
+  setIcon,
+} from "obsidian";
 import {
   type JsonType,
   addArrayItem,
   addObjectKey,
   changeType,
   deleteAt,
+  jsonTypeOf,
   moveArrayItem,
   moveObjectKey,
   renameKey,
@@ -27,6 +37,8 @@ import { SourceView } from "./SourceView";
 import { Tooltip, tooltipContentForValue } from "./Tooltip";
 import { TreeView } from "./TreeView";
 import { closeActiveMenu } from "./TypeMenu";
+import { openRowMenu } from "./RowMenu";
+import { copyJsonPath, copyJsonValue } from "./clipboard";
 
 export const JSON_VIEW_TYPE = "json-editor-view";
 
@@ -387,9 +399,11 @@ export class JsonFileView extends TextFileView {
     if (this.mode === "tree" && this.currentValue !== null) {
       this.treeView = new TreeView(this.bodyEl, {
         readonly: this.lossyRoundtrip,
+        touchMode: Platform.isMobile,
         markerStyle: this.settings.markerStyle,
         autoCollapseDepth: this.settings.autoCollapseDepth,
         onChange: (newValue) => this.handleTreeChange(newValue),
+        onContextMenu: (evt, path) => this.openRowMenuFor(evt, path),
         onPathClick: (path) => this.breadcrumb.setPath(path),
         onBeforeRender: () => this.tooltip.hide(),
         onValueHover: (target, path, value) => {
@@ -540,6 +554,77 @@ export class JsonFileView extends TextFileView {
     } catch (e) {
       new Notice((e as Error).message);
     }
+  }
+
+  /**
+   * Reorder the value at `path` within its parent by dir (-1 up / +1 down).
+   * Shared seam for the touch RowMenu's Move up/down. No-op at the bounds.
+   */
+  moveRow(path: JsonPath, dir: -1 | 1): void {
+    const lastSeg = path[path.length - 1];
+    const parentPath = path.slice(0, -1);
+    const parent = this.valueAt(parentPath);
+    if (typeof lastSeg === "number" && Array.isArray(parent)) {
+      const toIdx = lastSeg + dir;
+      if (toIdx < 0 || toIdx >= parent.length) return;
+      this.handleMoveItem(parentPath, lastSeg, toIdx);
+    } else if (typeof lastSeg === "string" && parent !== null && typeof parent === "object") {
+      const keys = Object.keys(parent as Record<string, JsonValue>);
+      const pos = keys.indexOf(lastSeg);
+      const toPos = pos + dir;
+      if (pos === -1 || toPos < 0 || toPos >= keys.length) return;
+      this.handleMoveKey(parentPath, lastSeg, toPos);
+    }
+  }
+
+  private valueAt(path: JsonPath): JsonValue {
+    let cur: JsonValue = this.currentValue;
+    for (const seg of path) {
+      if (Array.isArray(cur) && typeof seg === "number") cur = cur[seg];
+      else if (cur !== null && typeof cur === "object" && typeof seg === "string")
+        cur = (cur as { [k: string]: JsonValue })[seg];
+      else return null;
+    }
+    return cur;
+  }
+
+  private openRowMenuFor(evt: MouseEvent, path: JsonPath): void {
+    const value = this.valueAt(path);
+    const lastSeg = path[path.length - 1];
+    const parentPath = path.slice(0, -1);
+    const parent = this.valueAt(parentPath);
+    let pos = -1;
+    let siblingCount = 0;
+    if (typeof lastSeg === "number" && Array.isArray(parent)) {
+      pos = lastSeg;
+      siblingCount = parent.length;
+    } else if (typeof lastSeg === "string" && parent !== null && typeof parent === "object") {
+      const keys = Object.keys(parent as Record<string, JsonValue>);
+      pos = keys.indexOf(lastSeg);
+      siblingCount = keys.length;
+    }
+    const errMap =
+      this.settings.validateAgainstSchema && this.currentSchema && this.currentValue !== null
+        ? pathErrorsToMap(this.currentSchema.validate(this.currentValue))
+        : new Map<string, string>();
+    const key = path.length === 0 ? "root" : pathToString(path);
+    openRowMenu(evt, {
+      value,
+      path,
+      canRename: typeof lastSeg === "string",
+      currentType: jsonTypeOf(value),
+      readonly: this.lossyRoundtrip,
+      validationError: errMap.get(key),
+      moveUpEnabled: pos > 0,
+      moveDownEnabled: pos >= 0 && pos < siblingCount - 1,
+      onCopyValue: () => copyJsonValue(value),
+      onCopyPath: () => copyJsonPath(path),
+      onRename: () => this.treeView?.startRenameAt(path),
+      onChangeType: (t) => this.handleChangeType(path, t),
+      onMoveUp: () => this.moveRow(path, -1),
+      onMoveDown: () => this.moveRow(path, +1),
+      onDelete: () => this.handleDelete(path),
+    });
   }
 
   private applyMutation(newValue: JsonValue, _description: string): void {

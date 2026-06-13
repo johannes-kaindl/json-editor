@@ -266,9 +266,13 @@ export class MenuItem {
 }
 
 export class Menu {
+  static instances: Menu[] = [];
   items: MenuItem[] = [];
   separatorCount = 0;
   shown = false;
+  constructor() {
+    Menu.instances.push(this);
+  }
   addItem(cb: (item: MenuItem) => void): this {
     const item = new MenuItem();
     cb(item);
