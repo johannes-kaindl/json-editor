@@ -12,11 +12,13 @@ import {
 import { History } from "../core/history";
 import { parse } from "../core/parse";
 import { pathToString } from "../core/path";
+import { exceedsRenderBudget } from "../core/render-budget";
 import { hasNumberRoundtripLoss } from "../core/roundtrip";
 import { type CompiledSchema, type PathError, compileSchema } from "../core/schema";
 import { serialize } from "../core/serialize";
 import type { JsonPath, JsonValue } from "../core/types";
 import { Breadcrumb } from "./Breadcrumb";
+import { LargeFileBanner } from "./LargeFileBanner";
 import { LossBanner } from "./LossBanner";
 import { SchemaBanner } from "./SchemaBanner";
 import { SearchBar } from "./SearchBar";
@@ -50,6 +52,9 @@ export class JsonFileView extends TextFileView {
   private schemaBanner!: SchemaBanner;
   private lossBanner!: LossBanner;
   private lossyRoundtrip = false;
+  private largeFileBanner!: LargeFileBanner;
+  private largeFile = false;
+  private largeFileOverride = false;
   private currentSchema: CompiledSchema | null = null;
   // Bumped on every per-file reset so a fire-and-forget companion-schema load
   // can detect that the file changed while it was awaiting and bail out.
@@ -118,16 +123,40 @@ export class JsonFileView extends TextFileView {
       this.currentValue = null;
       this.clearBanner();
       this.updateLossyState();
+      this.largeFile = false;
+      this.largeFileBanner.hide();
       this.treePillEl.disabled = false;
       this.renderEmptyState();
       this.applyValidation();
       return;
     }
     if (!this.recomputeFromData()) this.mode = "source";
+    this.largeFile =
+      this.currentValue !== null && exceedsRenderBudget(this.data, this.currentValue);
+    // Large files open in source mode to stay responsive; this takes
+    // precedence over the lossy read-only-tree behavior (audit 4.1).
+    if (this.largeFile && !this.largeFileOverride) this.mode = "source";
+    this.updateLargeFileBanner();
     this.updateLossyState();
     this.refreshMode();
     this.applyValidation();
     void this.tryLoadCompanionSchema();
+  }
+
+  private updateLargeFileBanner(): void {
+    if (this.largeFile && !this.largeFileOverride) {
+      this.largeFileBanner.show(
+        "Large file — opened in Source mode to stay responsive; tree rendering may freeze the UI.",
+      );
+    } else {
+      this.largeFileBanner.hide();
+    }
+  }
+
+  private handleLoadTreeAnyway(): void {
+    this.largeFileOverride = true;
+    this.largeFileBanner.hide();
+    this.switchTo("tree");
   }
 
   /**
@@ -194,6 +223,9 @@ export class JsonFileView extends TextFileView {
     this.mode = this.settings.defaultMode;
     this.lossyRoundtrip = false;
     this.lossBanner.hide();
+    this.largeFile = false;
+    this.largeFileOverride = false;
+    this.largeFileBanner.hide();
   }
 
   private buildChrome(): void {
@@ -233,6 +265,9 @@ export class JsonFileView extends TextFileView {
 
     this.lossBanner = new LossBanner();
     this.contentEl.appendChild(this.lossBanner.getElement());
+
+    this.largeFileBanner = new LargeFileBanner(() => this.handleLoadTreeAnyway());
+    this.contentEl.appendChild(this.largeFileBanner.getElement());
 
     this.tooltip = new Tooltip(this.contentEl);
 
@@ -296,6 +331,7 @@ export class JsonFileView extends TextFileView {
   private switchTo(target: Mode): void {
     if (this.mode === target) return;
     if (target === "tree" && this.invalid) return;
+    if (target === "tree" && this.largeFile && !this.largeFileOverride) return;
     if (this.mode === "source" && this.sourceView) {
       this.data = this.sourceView.getValue();
       const parsed = parse(this.data);

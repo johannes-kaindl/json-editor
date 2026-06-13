@@ -660,6 +660,34 @@
   margin-right: var(--jv-space-3);
 }
 
+/* ─── Large-file warn banner (blocker 4.1) ───────────────────────── */
+.json-large-file-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--jv-space-3);
+  margin: 0;
+  padding: var(--jv-space-3) var(--jv-space-5);
+  font-family: var(--font-interface);
+  font-size: 0.9em;
+  color: var(--text-warning, #c8862e);
+  background: color-mix(in srgb, var(--text-warning, #c8862e) 8%, var(--jv-bg-inset));
+  border-bottom: 1px solid var(--jv-border);
+}
+.json-large-file-message::before {
+  content: "⚠";
+  margin-right: var(--jv-space-3);
+}
+.json-large-file-load {
+  margin-left: auto;
+  padding: var(--jv-space-1) var(--jv-space-3);
+  border: 1px solid var(--jv-border);
+  border-radius: var(--jv-radius-md);
+  background: var(--jv-bg-panel);
+  color: var(--jv-fg);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
 /* ─── Row error marker ───────────────────────────────────────────── */
 .json-row.json-row-error {
   outline: 1px solid var(--text-error, #d32f2f);
