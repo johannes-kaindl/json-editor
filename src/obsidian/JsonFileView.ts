@@ -1,4 +1,4 @@
-import { Notice, TFile, TextFileView, type WorkspaceLeaf } from "obsidian";
+import { Notice, TFile, TextFileView, type WorkspaceLeaf, normalizePath } from "obsidian";
 import {
   type JsonType,
   addArrayItem,
@@ -231,7 +231,9 @@ export class JsonFileView extends TextFileView {
     if (!this.file || !this.app?.vault) return;
     const path = this.file.path;
     if (!path.endsWith(".json")) return;
-    const schemaPath = path.slice(0, -".json".length) + this.settings.companionSchemaSuffix;
+    const schemaPath = normalizePath(
+      path.slice(0, -".json".length) + this.settings.companionSchemaSuffix,
+    );
     const sibling = this.app.vault.getAbstractFileByPath(schemaPath);
     if (sibling instanceof TFile) {
       const generation = this.fileGeneration;

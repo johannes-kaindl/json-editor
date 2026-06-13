@@ -1,6 +1,10 @@
 import { type App, Plugin } from "obsidian";
 import { beforeEach, describe, expect, it } from "vitest";
-import { DEFAULT_SETTINGS, JsonEditorSettingsTab } from "../../src/obsidian/SettingsTab";
+import {
+  DEFAULT_SETTINGS,
+  JsonEditorSettingsTab,
+  isValidCompanionSuffix,
+} from "../../src/obsidian/SettingsTab";
 
 class FakePlugin extends Plugin {
   settings = { ...DEFAULT_SETTINGS };
@@ -35,6 +39,15 @@ describe("JsonEditorSettingsTab", () => {
     tab.display();
     const rows = tab.containerEl.children;
     expect(rows.length).toBe(6);
+  });
+
+  it("isValidCompanionSuffix accepts conventional suffixes, rejects path-bearing ones (2.20)", () => {
+    expect(isValidCompanionSuffix(".schema.json")).toBe(true);
+    expect(isValidCompanionSuffix(".json-schema")).toBe(true);
+    expect(isValidCompanionSuffix("")).toBe(false);
+    expect(isValidCompanionSuffix("/etc/passwd")).toBe(false);
+    expect(isValidCompanionSuffix("..\\evil.json")).toBe(false);
+    expect(isValidCompanionSuffix("../x.json")).toBe(false);
   });
 
   it("display() pre-fills current settings into controls", () => {

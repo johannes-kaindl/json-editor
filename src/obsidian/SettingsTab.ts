@@ -10,6 +10,15 @@ export interface JsonEditorSettings {
   companionSchemaSuffix: string;
 }
 
+/**
+ * A companion-schema suffix must be a bare filename fragment, never a path:
+ * no separators and no parent-dir traversal (audit 2.20). Kept lenient enough
+ * to allow conventional forms like ".schema.json" and ".json-schema".
+ */
+export function isValidCompanionSuffix(suffix: string): boolean {
+  return suffix.length > 0 && !/[/\\]/.test(suffix) && !suffix.includes("..");
+}
+
 export const DEFAULT_SETTINGS: JsonEditorSettings = {
   defaultMode: "tree",
   indent: 2,
@@ -112,7 +121,7 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
         text.setValue(s.companionSchemaSuffix);
         text.onChange(async (v) => {
           const trimmed = v.trim();
-          if (trimmed.length > 0) {
+          if (isValidCompanionSuffix(trimmed)) {
             s.companionSchemaSuffix = trimmed;
             await this.settingsPlugin.saveSettings();
           }

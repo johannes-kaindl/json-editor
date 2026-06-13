@@ -96,6 +96,15 @@ export class TFile {
   constructor(public path: string) {}
 }
 
+export function normalizePath(path: string): string {
+  return path
+    .replace(/\\/g, "/")
+    .replace(/\/{2,}/g, "/")
+    .replace(/^\.\//, "")
+    .replace(/\/$/, "")
+    .trim();
+}
+
 export class Notice {
   static instances: Notice[] = [];
   constructor(
