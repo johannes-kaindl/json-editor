@@ -1,10 +1,26 @@
 # Changelog
 
-All notable changes to **Obsidian JSON Editor** are documented in this file.
+All notable changes to **JSON Editor** are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Versions follow Obsidian's plugin convention of no `v` prefix on git tags (e.g. `0.1.1`, not `v0.1.1`).
 
 ## [Unreleased]
+
+## [1.7.0] — 2026-06-13
+
+**Rename & submission-prep release.** No functional changes to the editor — this renames the plugin for the Community Plugin Directory and completes the documentation/attribution pass.
+
+### Changed
+- **Plugin ID renamed `obsidian-json-editor` → `json-editor`.** The Obsidian guidelines disallow an `obsidian-`-prefixed plugin id; the manifest `id` and the on-disk plugin folder change accordingly. The internal view type is unchanged, so existing layouts are unaffected. **After updating, move/rename your plugin folder to `.obsidian/plugins/json-editor/`.**
+- Manifest/package description tightened to *"View and edit JSON files with a Tree/Source toggle. Renders JSON code blocks in Markdown notes."*
+
+### Added
+- `THIRD-PARTY-NOTICES.md` — full license texts for the bundled dependencies (ajv + transitive fast-uri **(BSD-3-Clause)** / fast-deep-equal / json-schema-traverse, plus @codemirror/lang-json and @lezer/json, all MIT). Attribution is also carried in the `main.js` banner.
+
+### Documentation
+- README aligned to the actual 1.6.0 feature set (status, unified undo, tree-mode structural editing, schema validation, drag-drop, type-switching, large-file guard, all six settings, a *Known conflicts* section, shipped-vs-2.x roadmap), the dependency-license note corrected, and a documented tree-edit limitation (numeric-string object keys may reorder on save — audit 1.4).
+- SECURITY.md threat model updated — prototype-pollution fixed; ReDoS opt-in + heuristic guard + honest residual surface.
+- AGENTS.md submission path rewritten to the `community.obsidian.md` portal flow.
 
 ## [1.6.0] — 2026-06-13
 
@@ -220,7 +236,11 @@ The original 1.0.0 roadmap conflated all five into one release. Scope-decomposed
 - **Settings tab** — default open mode, indent style (2 / 4 / tab), tree marker style (modern / classic), auto-collapse depth.
 - **GitHub Actions release workflow** — tag push triggers build, test, and GitHub release with `main.js`, `manifest.json`, and `styles.css` as assets.
 
-[Unreleased]: https://codeberg.org/jkaindl/json-editor/compare/1.3.0...HEAD
+[Unreleased]: https://codeberg.org/jkaindl/json-editor/compare/1.7.0...HEAD
+[1.7.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.7.0
+[1.6.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.6.0
+[1.5.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.5.0
+[1.4.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.4.0
 [1.3.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.3.0
 [1.2.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.2.0
 [1.1.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.1.0

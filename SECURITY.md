@@ -6,8 +6,8 @@ Only the latest published release is supported with security fixes. Older versio
 
 | Version | Supported |
 |---|---|
-| Latest release (`0.1.x`) | ✅ |
-| Earlier versions | ❌ |
+| `1.x` (latest: `1.6.0`) | ✅ |
+| `0.x` and earlier | ❌ |
 
 ## Reporting a vulnerability
 
@@ -24,10 +24,15 @@ I aim to acknowledge reports within **7 days** and to ship a fix or coordinated 
 
 ## Threat model
 
-This plugin runs entirely inside Obsidian, with no network access, no telemetry, no remote resources, and no privileged file-system access beyond what Obsidian itself grants. The realistic threat surface is:
+This plugin runs entirely inside Obsidian, with no network access, no telemetry, no remote resources, and no privileged file-system access beyond what Obsidian itself grants. The realistic threat surface, and how it is handled:
 
-- **Malicious JSON content** crashing or hanging the plugin (parser DoS, prototype-pollution-style payloads).
-- **DOM injection** through a misrendered value (the tree renderer uses `setText`/`textContent`, never `innerHTML` with untrusted strings).
+- **Malicious JSON content** crashing or poisoning the plugin. Parsing uses the platform `JSON.parse`; structural tree edits rebuild objects with `Object.fromEntries` (`[[DefineOwnProperty]]` semantics), so a `__proto__` (or other prototype-name) key in untrusted data is preserved as an own data property and can **not** poison the object prototype (prototype-pollution-style payloads — fixed in 1.6.0).
+- **Companion JSON Schema as a ReDoS vector.** A `*.schema.json` dropped next to a data file is compiled with Ajv; a schema author controls regex `pattern` / `patternProperties` values, and a catastrophic-backtracking regex against attacker-influenced data can hang the UI thread. Mitigations (1.5.0):
+  - **Schema validation is opt-in.** `validateAgainstSchema` defaults to `false`; with the default settings no companion schema is ever loaded, compiled, or run. This is the primary defense in a shared or synced vault.
+  - **Cheap pre-checks** before Ajv compiles: oversized schemas (> ~1 MB) are rejected, and a nested-quantifier heuristic rejects the classic catastrophic shapes (`(a+)+`, `(x+)*`, `(.*)+`, `(a{1,}){1,}`, …).
+  - **Residual surface (stated honestly):** the heuristic is conservative and does not catch every ReDoS class (e.g. alternation-based `(a|a)+`). Validation runs **synchronously on the main thread**, and a synchronous regex cannot be aborted — so a sufficiently crafted schema that you have explicitly opted into trusting could still stall the UI. Only enable validation for schema files you trust. A hard guarantee (validation in a Worker with a timeout) is future work.
+- **DOM injection** through a misrendered value. The renderer uses `textContent` / `replaceChildren()`, never `innerHTML` with untrusted strings (a regression test enforces no `innerHTML` across the source tree, 1.5.0).
+- **Lossy number handling** is a data-integrity (not security) concern: integers beyond 2^53 are detected and the tree opens read-only so a tree edit can't silently rewrite them (1.5.0).
 - **Path-disclosure** through error messages.
 
-Issues outside this surface (e.g. supply-chain attacks on upstream `@codemirror/*` packages) should be reported to the upstream maintainers; I will pull in fixes as they land.
+Issues outside this surface (e.g. supply-chain attacks on the bundled `ajv` or the Obsidian-provided `@codemirror/*` packages) should be reported to the upstream maintainers; I will pull in fixes as they land.
