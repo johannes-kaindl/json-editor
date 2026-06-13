@@ -92,6 +92,10 @@ export class TextFileView {
   }
 }
 
+export class TFile {
+  constructor(public path: string) {}
+}
+
 export class Notice {
   static instances: Notice[] = [];
   constructor(

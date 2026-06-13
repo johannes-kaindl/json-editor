@@ -23,7 +23,7 @@ describe("hasNumberRoundtripLoss", () => {
   });
 
   it("flags an integer literal that overflows to Infinity", () => {
-    expect(hasNumberRoundtripLoss('{"n":1' + "0".repeat(400) + "}")).toBe(true);
+    expect(hasNumberRoundtripLoss(`{"n":1${"0".repeat(400)}}`)).toBe(true);
   });
 
   it("does NOT flag value-preserving format normalization (1.0 -> 1)", () => {

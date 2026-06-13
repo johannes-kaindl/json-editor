@@ -50,6 +50,9 @@ export class JsonFileView extends TextFileView {
   private lossBanner!: LossBanner;
   private lossyRoundtrip = false;
   private currentSchema: CompiledSchema | null = null;
+  // Bumped on every per-file reset so a fire-and-forget companion-schema load
+  // can detect that the file changed while it was awaiting and bail out.
+  private fileGeneration = 0;
   private history = new History<string>();
 
   constructor(
@@ -140,6 +143,7 @@ export class JsonFileView extends TextFileView {
    * the schema/query/mode reset (blocker 2.8) in one place.
    */
   private resetPerFileState(): void {
+    this.fileGeneration++;
     this.history.clear();
     this.currentSchema = null;
     this.currentQuery = "";
@@ -230,8 +234,13 @@ export class JsonFileView extends TextFileView {
     const schemaPath = path.slice(0, -".json".length) + this.settings.companionSchemaSuffix;
     const sibling = this.app.vault.getAbstractFileByPath(schemaPath);
     if (sibling instanceof TFile) {
+      const generation = this.fileGeneration;
       try {
         const schemaText = await this.app.vault.cachedRead(sibling);
+        // The view may have switched files while the read was in flight —
+        // applying this schema now would validate the new file against the old
+        // file's schema (review findings #5/#13).
+        if (generation !== this.fileGeneration) return;
         this.setSchema(schemaText);
       } catch {
         // best-effort — ignore vault read errors silently

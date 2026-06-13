@@ -140,7 +140,8 @@ export class TreeView {
     const previousPathStr = this.activeRow?.getAttribute("data-path") ?? null;
     const fallbackPathStr = this.siblingFallbackPathStr(this.activeRow);
     const hadFocus = this.container.contains(document.activeElement);
-    const prevScroll = this.container.scrollTop;
+    const scroller = this.scrollParent();
+    const prevScroll = scroller.scrollTop;
     const prevCollapsed = this.collectCollapseState();
     this.container.replaceChildren();
     this.activeRow = null;
@@ -162,8 +163,27 @@ export class TreeView {
     this.container.appendChild(el);
     this.applyValidationMarkers(el);
     this.reapplyCollapseState(el, prevCollapsed);
-    this.container.scrollTop = prevScroll;
+    scroller.scrollTop = prevScroll;
     this.setupKeyboardNav(el, previousPathStr, fallbackPathStr, hadFocus);
+  }
+
+  /**
+   * The element that actually scrolls. In Obsidian the tree's own container is
+   * not the scroller — an ancestor (e.g. .view-content) is — so restoring
+   * scrollTop on this.container would be a no-op in production. Walk up to the
+   * nearest scrollable ancestor; fall back to the container (also the happy-dom
+   * test case, where layout has no scroll height).
+   */
+  private scrollParent(): HTMLElement {
+    let el: HTMLElement | null = this.container;
+    while (el) {
+      const oy = el.ownerDocument?.defaultView?.getComputedStyle(el).overflowY;
+      if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight) {
+        return el;
+      }
+      el = el.parentElement;
+    }
+    return this.container;
   }
 
   /** Snapshot each container's collapsed flag keyed by its data-path. */
@@ -681,7 +701,19 @@ export class TreeView {
       replaceWithInput(valueEl, "number", String(value), (raw, committed) => {
         if (!committed) return finish(undefined);
         const n = Number(raw);
-        finish(Number.isFinite(n) ? n : undefined);
+        if (!Number.isFinite(n)) return finish(undefined);
+        // Reject integers JS can't hold exactly rather than silently
+        // truncating (e.g. 9007199254740993 -> ...992). Source mode handles
+        // big integers losslessly.
+        if (Number.isInteger(n) && !Number.isSafeInteger(n)) {
+          this.opts.onError?.(
+            new Error(
+              "Number too large to edit in tree mode without losing precision — use Source mode.",
+            ),
+          );
+          return finish(undefined);
+        }
+        finish(n);
       });
     } else if (typeof value === "boolean") {
       replaceWithCheckbox(valueEl, value, (newVal, committed) => {

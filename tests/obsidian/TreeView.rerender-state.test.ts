@@ -71,6 +71,16 @@ describe("TreeView re-render state preservation (blocker 1.8)", () => {
     expect(container.contains(document.activeElement)).toBe(false);
   });
 
+  it("preserves scroll position across a re-render", () => {
+    // happy-dom has no layout, so scrollParent() resolves to the container
+    // here; this guards the restore code path (real scroller is an ancestor).
+    tv = new TreeView(container, {});
+    tv.setValue({ a: 1, b: 2, c: 3 });
+    container.scrollTop = 40;
+    tv.setValue({ a: 1, b: 2, c: 4 });
+    expect(container.scrollTop).toBe(40);
+  });
+
   it("moves focus to the next sibling after deleting the focused row", () => {
     const current: Record<string, number> = { a: 1, b: 2, c: 3 };
     tv = new TreeView(container, {
