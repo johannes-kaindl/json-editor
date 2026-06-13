@@ -643,6 +643,21 @@
   color: var(--text-warning, #c8862e);
 }
 
+/* ─── Lossy-roundtrip warn banner (blocker 1.4) ──────────────────── */
+.json-lossy-banner {
+  margin: 0;
+  padding: var(--jv-space-3) var(--jv-space-5);
+  font-family: var(--font-interface);
+  font-size: 0.9em;
+  color: var(--text-warning, #c8862e);
+  background: color-mix(in srgb, var(--text-warning, #c8862e) 8%, var(--jv-bg-inset));
+  border-bottom: 1px solid var(--jv-border);
+}
+.json-lossy-banner::before {
+  content: "⚠";
+  margin-right: var(--jv-space-3);
+}
+
 /* ─── Row error marker ───────────────────────────────────────────── */
 .json-row.json-row-error {
   outline: 1px solid var(--text-error, #d32f2f);

@@ -12,10 +12,12 @@ import {
 import { History } from "../core/history";
 import { parse } from "../core/parse";
 import { pathToString } from "../core/path";
+import { hasNumberRoundtripLoss } from "../core/roundtrip";
 import { type CompiledSchema, type PathError, compileSchema } from "../core/schema";
 import { serialize } from "../core/serialize";
 import type { JsonPath, JsonValue } from "../core/types";
 import { Breadcrumb } from "./Breadcrumb";
+import { LossBanner } from "./LossBanner";
 import { SchemaBanner } from "./SchemaBanner";
 import { SearchBar } from "./SearchBar";
 import type { JsonEditorSettings } from "./SettingsTab";
@@ -45,6 +47,8 @@ export class JsonFileView extends TextFileView {
   private currentQuery = "";
   private tooltip!: Tooltip;
   private schemaBanner!: SchemaBanner;
+  private lossBanner!: LossBanner;
+  private lossyRoundtrip = false;
   private currentSchema: CompiledSchema | null = null;
   private history = new History<string>();
 
@@ -76,6 +80,7 @@ export class JsonFileView extends TextFileView {
       this.invalid = false;
       this.currentValue = null;
       this.clearBanner();
+      this.updateLossyState();
       this.treePillEl.disabled = false;
       this.renderEmptyState();
       this.applyValidation();
@@ -94,9 +99,28 @@ export class JsonFileView extends TextFileView {
       this.showBanner(`Invalid JSON at line ${parsed.line}, column ${parsed.col}: ${parsed.error}`);
       this.treePillEl.disabled = true;
     }
+    this.updateLossyState();
     this.refreshMode();
     this.applyValidation();
     void this.tryLoadCompanionSchema();
+  }
+
+  /**
+   * Recompute whether the current document holds numbers JSON cannot
+   * round-trip (blocker 1.4) and drive the warn banner. Reads this.data /
+   * this.currentValue, so call it after both are set. When lossy, the tree is
+   * rendered read-only (see refreshMode) so a tree edit cannot silently
+   * rewrite the untouched numbers; source mode stays editable.
+   */
+  private updateLossyState(): void {
+    this.lossyRoundtrip = this.currentValue !== null && hasNumberRoundtripLoss(this.data);
+    if (this.lossyRoundtrip) {
+      this.lossBanner.show(
+        "This file contains numbers JSON can't represent exactly (e.g. integers larger than 2^53). Tree editing is disabled to avoid silently rewriting them — switch to Source mode to edit.",
+      );
+    } else {
+      this.lossBanner.hide();
+    }
   }
 
   override clear(): void {
@@ -121,6 +145,8 @@ export class JsonFileView extends TextFileView {
     this.currentQuery = "";
     this.searchBar.clear();
     this.mode = this.settings.defaultMode;
+    this.lossyRoundtrip = false;
+    this.lossBanner.hide();
   }
 
   private buildChrome(): void {
@@ -157,6 +183,9 @@ export class JsonFileView extends TextFileView {
 
     this.schemaBanner = new SchemaBanner();
     this.contentEl.appendChild(this.schemaBanner.getElement());
+
+    this.lossBanner = new LossBanner();
+    this.contentEl.appendChild(this.lossBanner.getElement());
 
     this.tooltip = new Tooltip();
 
@@ -244,6 +273,7 @@ export class JsonFileView extends TextFileView {
 
     if (this.mode === "tree" && this.currentValue !== null) {
       this.treeView = new TreeView(this.bodyEl, {
+        readonly: this.lossyRoundtrip,
         markerStyle: this.settings.markerStyle,
         autoCollapseDepth: this.settings.autoCollapseDepth,
         onChange: (newValue) => this.handleTreeChange(newValue),
@@ -454,6 +484,7 @@ export class JsonFileView extends TextFileView {
       this.showBanner(`Invalid JSON at line ${parsed.line}, column ${parsed.col}: ${parsed.error}`);
       this.treePillEl.disabled = true;
     }
+    this.updateLossyState();
     this.requestSave();
     this.applyValidation();
   }
