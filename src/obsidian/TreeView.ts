@@ -595,6 +595,32 @@ export class TreeView {
     }
   }
 
+  /**
+   * Reorder the active row within its parent by `dir` (-1 up / +1 down). Shared
+   * by Alt+Arrow keyboard reorder (and conceptually mirrors the touch RowMenu's
+   * Move up/down). No-op at the bounds or in read-only mode.
+   */
+  private moveActive(row: HTMLElement, dir: -1 | 1): void {
+    if (this.opts.readonly) return;
+    const pathStr = row.getAttribute("data-path");
+    if (!pathStr) return;
+    const path = this.parsePathStrSafe(pathStr);
+    const lastSeg = path[path.length - 1];
+    const parentPath = path.slice(0, -1);
+    const parent = this.getValueAt(parentPath);
+    if (typeof lastSeg === "number" && Array.isArray(parent)) {
+      const toIdx = lastSeg + dir;
+      if (toIdx < 0 || toIdx >= parent.length) return;
+      this.opts.onMoveItem?.(parentPath, lastSeg, toIdx);
+    } else if (typeof lastSeg === "string" && parent !== null && typeof parent === "object") {
+      const keys = Object.keys(parent as Record<string, unknown>);
+      const pos = keys.indexOf(lastSeg);
+      const toPos = pos + dir;
+      if (pos === -1 || toPos < 0 || toPos >= keys.length) return;
+      this.opts.onMoveKey?.(parentPath, lastSeg, toPos);
+    }
+  }
+
   private handleKeydown(e: KeyboardEvent): void {
     if (this.editing) return;
     const active = this.activeRow;
@@ -611,6 +637,11 @@ export class TreeView {
 
     switch (e.key) {
       case "ArrowDown": {
+        if (e.altKey) {
+          e.preventDefault();
+          this.moveActive(active, +1);
+          return;
+        }
         const next = rows[idx + 1];
         if (next) {
           e.preventDefault();
@@ -619,6 +650,11 @@ export class TreeView {
         return;
       }
       case "ArrowUp": {
+        if (e.altKey) {
+          e.preventDefault();
+          this.moveActive(active, -1);
+          return;
+        }
         const prev = rows[idx - 1];
         if (prev) {
           e.preventDefault();

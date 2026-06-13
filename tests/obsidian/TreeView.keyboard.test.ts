@@ -154,4 +154,57 @@ describe("TreeView keyboard navigation", () => {
     dispatchKey(treeRoot, "ArrowDown");
     expect(rowAt(container, "port").getAttribute("tabindex")).toBe("0");
   });
+
+  const dispatchAltKey = (target: HTMLElement, key: string): boolean => {
+    const ev = new KeyboardEvent("keydown", {
+      key,
+      altKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    return target.dispatchEvent(ev);
+  };
+
+  it("Alt+ArrowDown on an array item calls onMoveItem(parent, from, from+1)", () => {
+    const moves: { fromIdx: number; toIdx: number }[] = [];
+    tv = new TreeView(container, {
+      onMoveItem: (_p, fromIdx, toIdx) => moves.push({ fromIdx, toIdx }),
+    });
+    tv.setValue([10, 20, 30]);
+    const treeRoot = container.querySelector(".json-tree-root") as HTMLElement;
+    rowAt(container, "[0]").focus();
+    dispatchAltKey(treeRoot, "ArrowDown");
+    expect(moves).toEqual([{ fromIdx: 0, toIdx: 1 }]);
+  });
+
+  it("Alt+ArrowUp on the first array item is a no-op", () => {
+    const moves: unknown[] = [];
+    tv = new TreeView(container, { onMoveItem: () => moves.push(1) });
+    tv.setValue([10, 20, 30]);
+    const treeRoot = container.querySelector(".json-tree-root") as HTMLElement;
+    rowAt(container, "[0]").focus();
+    dispatchAltKey(treeRoot, "ArrowUp");
+    expect(moves).toEqual([]);
+  });
+
+  it("Alt+ArrowUp on an object key calls onMoveKey(parent, key, pos-1)", () => {
+    const moves: { key: string; toPos: number }[] = [];
+    tv = new TreeView(container, { onMoveKey: (_p, key, toPos) => moves.push({ key, toPos }) });
+    tv.setValue({ a: 1, b: 2, c: 3 });
+    const treeRoot = container.querySelector(".json-tree-root") as HTMLElement;
+    dispatchKey(treeRoot, "ArrowDown"); // a → b is now active
+    dispatchAltKey(treeRoot, "ArrowUp");
+    expect(moves).toEqual([{ key: "b", toPos: 0 }]);
+  });
+
+  it("Alt+ArrowDown on the last object key is a no-op", () => {
+    const moves: unknown[] = [];
+    tv = new TreeView(container, { onMoveKey: () => moves.push(1) });
+    tv.setValue({ a: 1, b: 2, c: 3 });
+    const treeRoot = container.querySelector(".json-tree-root") as HTMLElement;
+    dispatchKey(treeRoot, "ArrowDown"); // a → b
+    dispatchKey(treeRoot, "ArrowDown"); // b → c (last) is now active
+    dispatchAltKey(treeRoot, "ArrowDown");
+    expect(moves).toEqual([]);
+  });
 });
