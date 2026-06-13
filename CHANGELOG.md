@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-06-13
+
+**Stability & data-integrity release.** Fixes the data-loss and crash blockers found in a pre-submission audit. No new user-facing features — every change here protects your files.
+
+### Fixed
+- **Cross-file undo data loss (critical).** The undo history was not reset when you switched files in the same pane, so `Cmd/Ctrl+Z` in file B could restore — and save — file A's content over it. The same path silently reverted external/sync changes. History (and the schema, search query, and forced source mode) is now reset per file.
+- **Large trees were clipped.** A `.json-content { max-height: 5000px }` cap hid everything past roughly 200–250 expanded rows with no scrollbar. Removed.
+- **Plugin death on `.json` conflict.** If another plugin already handled `.json`, `registerExtensions` threw and the whole plugin failed to load (losing code-block rendering, settings, and commands). The claim is now guarded; on conflict you get a notice and code-block rendering keeps working.
+- **Lost place after every edit.** Re-rendering the tree reset manual expand/collapse, scroll position, and keyboard focus. These are now preserved across edits; after a delete, focus moves to the next sibling.
+- **Big-integer corruption.** Editing a number to a value beyond 2^53 silently truncated it; the tree editor now rejects such input (use source mode for big integers).
+
+### Changed
+- **Schema validation is now opt-in** (`validateAgainstSchema` defaults to `false`). A companion `*.schema.json` was previously auto-loaded and compiled on every file open; a malicious schema in a shared/synced vault could freeze Obsidian via a catastrophic-backtracking regex (ReDoS). Enable it explicitly if you trust your schema files. `compileSchema` now also rejects oversized schemas and obvious nested-quantifier patterns, and a stale companion-schema load can no longer apply to the wrong file.
+
+### Added
+- **Lossy-number warning.** When a file contains integers JSON can't represent exactly (e.g. 64-bit IDs > 2^53), a banner appears and the tree opens read-only so a tree edit can't silently rewrite them; source mode stays editable.
+
+### Internal
+- All `innerHTML = ""` DOM clears replaced with `replaceChildren()` (Community-Hub submission-gate requirement); a regression test enforces it across the source tree.
+- Test count 402 → 478 (+76), all green; build and Biome lint clean.
+
 ## [1.4.0] — 2026-06-07
 
 ### Changed

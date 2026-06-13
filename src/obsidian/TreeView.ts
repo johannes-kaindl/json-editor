@@ -134,8 +134,16 @@ export class TreeView {
 
   private render(): void {
     this.opts.onBeforeRender?.();
+    // Capture state that the full re-render would otherwise drop (blocker 1.8):
+    // the active row, a delete fallback, whether focus was inside the tree,
+    // scroll position, and which containers diverge from the depth default.
     const previousPathStr = this.activeRow?.getAttribute("data-path") ?? null;
-    this.container.innerHTML = "";
+    const fallbackPathStr = this.siblingFallbackPathStr(this.activeRow);
+    const hadFocus = this.container.contains(document.activeElement);
+    const scroller = this.scrollParent();
+    const prevScroll = scroller.scrollTop;
+    const prevCollapsed = this.collectCollapseState();
+    this.container.replaceChildren();
     this.activeRow = null;
     const el = renderTree(this.current, {
       readonly: this.opts.readonly,
@@ -154,7 +162,71 @@ export class TreeView {
     }
     this.container.appendChild(el);
     this.applyValidationMarkers(el);
-    this.setupKeyboardNav(el, previousPathStr);
+    this.reapplyCollapseState(el, prevCollapsed);
+    scroller.scrollTop = prevScroll;
+    this.setupKeyboardNav(el, previousPathStr, fallbackPathStr, hadFocus);
+  }
+
+  /**
+   * The element that actually scrolls. In Obsidian the tree's own container is
+   * not the scroller — an ancestor (e.g. .view-content) is — so restoring
+   * scrollTop on this.container would be a no-op in production. Walk up to the
+   * nearest scrollable ancestor; fall back to the container (also the happy-dom
+   * test case, where layout has no scroll height).
+   */
+  private scrollParent(): HTMLElement {
+    let el: HTMLElement | null = this.container;
+    while (el) {
+      const oy = el.ownerDocument?.defaultView?.getComputedStyle(el).overflowY;
+      if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight) {
+        return el;
+      }
+      el = el.parentElement;
+    }
+    return this.container;
+  }
+
+  /** Snapshot each container's collapsed flag keyed by its data-path. */
+  private collectCollapseState(): Map<string, boolean> {
+    const map = new Map<string, boolean>();
+    const treeRoot = this.container.querySelector<HTMLElement>(".json-tree-root");
+    if (!treeRoot) return map;
+    treeRoot.querySelectorAll<HTMLElement>(".json-container").forEach((c) => {
+      const key = pathToString(this.detectContainerPath(c, treeRoot));
+      map.set(key, c.classList.contains("is-collapsed"));
+    });
+    return map;
+  }
+
+  /** Re-apply a snapshot, flipping only containers that diverge from it. */
+  private reapplyCollapseState(treeRoot: HTMLElement, prev: Map<string, boolean>): void {
+    treeRoot.querySelectorAll<HTMLElement>(".json-container").forEach((c) => {
+      const key = pathToString(this.detectContainerPath(c, treeRoot));
+      const wanted = prev.get(key);
+      if (wanted === undefined) return; // newly-added container — keep render default
+      if (wanted !== c.classList.contains("is-collapsed")) {
+        this.toggleContainer(c, !wanted); // expand = not collapsed
+      }
+    });
+  }
+
+  /**
+   * The path of the row to focus when the active row no longer exists after a
+   * re-render (e.g. it was deleted): next sibling, else previous sibling, else
+   * the parent row.
+   */
+  private siblingFallbackPathStr(row: HTMLElement | null): string | null {
+    if (!row) return null;
+    const content = row.parentElement;
+    if (content) {
+      const sibs = Array.from(content.children).filter(
+        (c): c is HTMLElement => c instanceof HTMLElement && c.classList.contains("json-row"),
+      );
+      const idx = sibs.indexOf(row);
+      const sibling = sibs[idx + 1] ?? sibs[idx - 1] ?? null;
+      if (sibling) return sibling.getAttribute("data-path");
+    }
+    return this.parentRowOf(row)?.getAttribute("data-path") ?? null;
   }
 
   private attachStructuralActions(treeRoot: HTMLElement): void {
@@ -387,19 +459,31 @@ export class TreeView {
     input.addEventListener("blur", () => finish(input.value.trim()));
   }
 
-  private setupKeyboardNav(treeRoot: HTMLElement, previousPathStr: string | null): void {
+  private setupKeyboardNav(
+    treeRoot: HTMLElement,
+    previousPathStr: string | null,
+    fallbackPathStr: string | null,
+    hadFocus: boolean,
+  ): void {
     const rows = Array.from(treeRoot.querySelectorAll<HTMLElement>('.json-row[role="treeitem"]'));
     rows.forEach((r) => r.setAttribute("tabindex", "-1"));
 
-    // Restore focus to the same data-path if possible; otherwise first row.
+    // Restore the active row by path; if it's gone (deleted), use the sibling
+    // fallback; otherwise the first row.
     let restored: HTMLElement | null = null;
     if (previousPathStr) {
       restored = rows.find((r) => r.getAttribute("data-path") === previousPathStr) ?? null;
+    }
+    if (!restored && fallbackPathStr) {
+      restored = rows.find((r) => r.getAttribute("data-path") === fallbackPathStr) ?? null;
     }
     const initial = restored ?? rows[0] ?? null;
     if (initial) {
       initial.setAttribute("tabindex", "0");
       this.activeRow = initial;
+      // Only pull focus back into the tree if it was there before the
+      // re-render — otherwise we'd steal focus from elsewhere in the app.
+      if (hadFocus) initial.focus();
     }
 
     treeRoot.addEventListener("keydown", (e) => this.handleKeydown(e as KeyboardEvent));
@@ -617,7 +701,19 @@ export class TreeView {
       replaceWithInput(valueEl, "number", String(value), (raw, committed) => {
         if (!committed) return finish(undefined);
         const n = Number(raw);
-        finish(Number.isFinite(n) ? n : undefined);
+        if (!Number.isFinite(n)) return finish(undefined);
+        // Reject integers JS can't hold exactly rather than silently
+        // truncating (e.g. 9007199254740993 -> ...992). Source mode handles
+        // big integers losslessly.
+        if (Number.isInteger(n) && !Number.isSafeInteger(n)) {
+          this.opts.onError?.(
+            new Error(
+              "Number too large to edit in tree mode without losing precision — use Source mode.",
+            ),
+          );
+          return finish(undefined);
+        }
+        finish(n);
       });
     } else if (typeof value === "boolean") {
       replaceWithCheckbox(valueEl, value, (newVal, committed) => {

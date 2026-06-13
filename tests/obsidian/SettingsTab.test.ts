@@ -26,7 +26,7 @@ describe("JsonEditorSettingsTab", () => {
       indent: 2,
       markerStyle: "modern",
       autoCollapseDepth: 2,
-      validateAgainstSchema: true,
+      validateAgainstSchema: false,
       companionSchemaSuffix: ".schema.json",
     });
   });

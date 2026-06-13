@@ -22,6 +22,7 @@ export class Plugin {
   views: Record<string, (leaf: WorkspaceLeaf) => unknown> = {};
   postprocessors: Record<string, (...args: unknown[]) => unknown> = {};
   settingTabs: PluginSettingTab[] = [];
+  commands: unknown[] = [];
   storedData: unknown = null;
   constructor(app: App, manifest: PluginManifest) {
     this.app = app;
@@ -39,6 +40,9 @@ export class Plugin {
   }
   addSettingTab(tab: PluginSettingTab) {
     this.settingTabs.push(tab);
+  }
+  addCommand(cmd: unknown) {
+    this.commands.push(cmd);
   }
   loadData(): Promise<unknown> {
     return Promise.resolve(this.storedData);
@@ -88,11 +92,18 @@ export class TextFileView {
   }
 }
 
+export class TFile {
+  constructor(public path: string) {}
+}
+
 export class Notice {
+  static instances: Notice[] = [];
   constructor(
     public message: string,
     public timeout?: number,
-  ) {}
+  ) {
+    Notice.instances.push(this);
+  }
 }
 
 export class Setting {

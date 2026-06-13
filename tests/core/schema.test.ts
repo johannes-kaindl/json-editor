@@ -35,6 +35,49 @@ describe("compileSchema", () => {
     const result = compileSchema(text);
     expect(result.ok).toBe(true);
   });
+
+  // Blocker 1.3: a companion schema is attacker-controlled in shared/synced
+  // vaults. Reject catastrophic-backtracking regex patterns and oversized
+  // schemas BEFORE Ajv compiles/validates them (a synchronous regex cannot be
+  // aborted by a timeout on the main thread).
+  it("rejects a schema with a catastrophic-backtracking pattern (nested quantifier)", () => {
+    const result = compileSchema('{"type":"string","pattern":"^(a+)+$"}');
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/unsafe|pattern|complex/i);
+  });
+
+  it("rejects an unsafe pattern hidden in patternProperties", () => {
+    const result = compileSchema('{"type":"object","patternProperties":{"(x+)*y":{}}}');
+    expect(result.ok).toBe(false);
+  });
+
+  it("rejects brace-based nested quantifiers (catastrophic backtracking)", () => {
+    expect(compileSchema('{"type":"string","pattern":"^(a{1,}){1,}$"}').ok).toBe(false);
+    expect(compileSchema('{"type":"string","pattern":"^(\\\\w{2,}){2,}$"}').ok).toBe(false);
+  });
+
+  it("does NOT over-reject legitimate brace-quantified patterns", () => {
+    // No nested quantifier — these are linear-time and must compile.
+    expect(compileSchema('{"type":"string","pattern":"^[a-z]{3,8}$"}').ok).toBe(true);
+    expect(compileSchema('{"type":"string","pattern":"^\\\\d{4}-\\\\d{2}-\\\\d{2}$"}').ok).toBe(
+      true,
+    );
+    expect(compileSchema('{"type":"string","pattern":"^(abc){2,}$"}').ok).toBe(true);
+  });
+
+  it("rejects a schema text larger than the size cap", () => {
+    const huge = `{"type":"string","description":"${"x".repeat(1_000_001)}"}`;
+    const result = compileSchema(huge);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/large|size/i);
+  });
+
+  it("does NOT over-reject a benign anchored pattern", () => {
+    const result = compileSchema('{"type":"string","pattern":"^[a-z]+$"}');
+    expect(result.ok).toBe(true);
+  });
 });
 
 describe("compiled schema validate", () => {

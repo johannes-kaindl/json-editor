@@ -15,7 +15,7 @@ export const DEFAULT_SETTINGS: JsonEditorSettings = {
   indent: 2,
   markerStyle: "modern",
   autoCollapseDepth: 2,
-  validateAgainstSchema: true,
+  validateAgainstSchema: false,
   companionSchemaSuffix: ".schema.json",
 };
 
@@ -33,7 +33,7 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
   }
 
   display(): void {
-    this.containerEl.innerHTML = "";
+    this.containerEl.replaceChildren();
     const s = this.settingsPlugin.settings;
 
     new Setting(this.containerEl)
@@ -93,7 +93,7 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
     new Setting(this.containerEl)
       .setName("Validate against JSON Schema")
       .setDesc(
-        "When enabled, the plugin looks for a sibling schema file next to the current .json file (e.g. data.json → data.schema.json) and highlights validation errors in real time.",
+        "Off by default. When enabled, the plugin automatically loads a sibling schema file next to the current .json file (e.g. data.json → data.schema.json) and highlights validation errors in real time. Enabling this auto-loads schema files from your vault — only turn it on if you trust those files.",
       )
       .addToggle((toggle) => {
         toggle.setValue(s.validateAgainstSchema);

@@ -12,10 +12,12 @@ import {
 import { History } from "../core/history";
 import { parse } from "../core/parse";
 import { pathToString } from "../core/path";
+import { hasNumberRoundtripLoss } from "../core/roundtrip";
 import { type CompiledSchema, type PathError, compileSchema } from "../core/schema";
 import { serialize } from "../core/serialize";
 import type { JsonPath, JsonValue } from "../core/types";
 import { Breadcrumb } from "./Breadcrumb";
+import { LossBanner } from "./LossBanner";
 import { SchemaBanner } from "./SchemaBanner";
 import { SearchBar } from "./SearchBar";
 import type { JsonEditorSettings } from "./SettingsTab";
@@ -45,7 +47,12 @@ export class JsonFileView extends TextFileView {
   private currentQuery = "";
   private tooltip!: Tooltip;
   private schemaBanner!: SchemaBanner;
+  private lossBanner!: LossBanner;
+  private lossyRoundtrip = false;
   private currentSchema: CompiledSchema | null = null;
+  // Bumped on every per-file reset so a fire-and-forget companion-schema load
+  // can detect that the file changed while it was awaiting and bail out.
+  private fileGeneration = 0;
   private history = new History<string>();
 
   constructor(
@@ -65,12 +72,18 @@ export class JsonFileView extends TextFileView {
     return this.data;
   }
 
-  override setViewData(data: string, _clear: boolean): void {
+  override setViewData(data: string, clear: boolean): void {
+    // A truthy `clear` flag means Obsidian is loading a *different* file into
+    // this reused view (file switch or external reload) — per the TextFileView
+    // contract, drop all per-file state. Internal undo/redo restores pass
+    // clear=false so the unified history survives those.
+    if (clear) this.resetPerFileState();
     this.data = data;
     if (data.trim() === "") {
       this.invalid = false;
       this.currentValue = null;
       this.clearBanner();
+      this.updateLossyState();
       this.treePillEl.disabled = false;
       this.renderEmptyState();
       this.applyValidation();
@@ -89,18 +102,55 @@ export class JsonFileView extends TextFileView {
       this.showBanner(`Invalid JSON at line ${parsed.line}, column ${parsed.col}: ${parsed.error}`);
       this.treePillEl.disabled = true;
     }
+    this.updateLossyState();
     this.refreshMode();
     this.applyValidation();
     void this.tryLoadCompanionSchema();
   }
 
+  /**
+   * Recompute whether the current document holds numbers JSON cannot
+   * round-trip (blocker 1.4) and drive the warn banner. Reads this.data /
+   * this.currentValue, so call it after both are set. When lossy, the tree is
+   * rendered read-only (see refreshMode) so a tree edit cannot silently
+   * rewrite the untouched numbers; source mode stays editable.
+   */
+  private updateLossyState(): void {
+    this.lossyRoundtrip = this.currentValue !== null && hasNumberRoundtripLoss(this.data);
+    if (this.lossyRoundtrip) {
+      this.lossBanner.show(
+        "This file contains numbers JSON can't represent exactly (e.g. integers larger than 2^53). Tree editing is disabled to avoid silently rewriting them — switch to Source mode to edit.",
+      );
+    } else {
+      this.lossBanner.hide();
+    }
+  }
+
   override clear(): void {
+    this.resetPerFileState();
     this.data = "";
     this.currentValue = null;
     this.invalid = false;
     this.clearBanner();
-    this.bodyEl.innerHTML = "";
+    this.bodyEl.replaceChildren();
     this.breadcrumb.setPath([]);
+  }
+
+  /**
+   * Drop all state that belongs to the previously-open file. Called from
+   * clear() (file unload) and from setViewData() when Obsidian flags a
+   * different file (clear=true). Bundles the history reset (blocker 1.2) with
+   * the schema/query/mode reset (blocker 2.8) in one place.
+   */
+  private resetPerFileState(): void {
+    this.fileGeneration++;
+    this.history.clear();
+    this.currentSchema = null;
+    this.currentQuery = "";
+    this.searchBar.clear();
+    this.mode = this.settings.defaultMode;
+    this.lossyRoundtrip = false;
+    this.lossBanner.hide();
   }
 
   private buildChrome(): void {
@@ -137,6 +187,9 @@ export class JsonFileView extends TextFileView {
 
     this.schemaBanner = new SchemaBanner();
     this.contentEl.appendChild(this.schemaBanner.getElement());
+
+    this.lossBanner = new LossBanner();
+    this.contentEl.appendChild(this.lossBanner.getElement());
 
     this.tooltip = new Tooltip();
 
@@ -181,8 +234,13 @@ export class JsonFileView extends TextFileView {
     const schemaPath = path.slice(0, -".json".length) + this.settings.companionSchemaSuffix;
     const sibling = this.app.vault.getAbstractFileByPath(schemaPath);
     if (sibling instanceof TFile) {
+      const generation = this.fileGeneration;
       try {
         const schemaText = await this.app.vault.cachedRead(sibling);
+        // The view may have switched files while the read was in flight —
+        // applying this schema now would validate the new file against the old
+        // file's schema (review findings #5/#13).
+        if (generation !== this.fileGeneration) return;
         this.setSchema(schemaText);
       } catch {
         // best-effort — ignore vault read errors silently
@@ -215,7 +273,7 @@ export class JsonFileView extends TextFileView {
 
   private refreshMode(): void {
     this.sourceView?.destroy();
-    this.bodyEl.innerHTML = "";
+    this.bodyEl.replaceChildren();
     this.treeView = null;
     this.sourceView = null;
 
@@ -224,6 +282,7 @@ export class JsonFileView extends TextFileView {
 
     if (this.mode === "tree" && this.currentValue !== null) {
       this.treeView = new TreeView(this.bodyEl, {
+        readonly: this.lossyRoundtrip,
         markerStyle: this.settings.markerStyle,
         autoCollapseDepth: this.settings.autoCollapseDepth,
         onChange: (newValue) => this.handleTreeChange(newValue),
@@ -276,7 +335,7 @@ export class JsonFileView extends TextFileView {
 
   private renderEmptyState(): void {
     this.sourceView?.destroy();
-    this.bodyEl.innerHTML = "";
+    this.bodyEl.replaceChildren();
     this.treeView = null;
     this.sourceView = null;
     this.searchBar.getElement().hidden = true;
@@ -434,6 +493,7 @@ export class JsonFileView extends TextFileView {
       this.showBanner(`Invalid JSON at line ${parsed.line}, column ${parsed.col}: ${parsed.error}`);
       this.treePillEl.disabled = true;
     }
+    this.updateLossyState();
     this.requestSave();
     this.applyValidation();
   }
