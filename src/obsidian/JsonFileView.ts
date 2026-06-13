@@ -331,7 +331,17 @@ export class JsonFileView extends TextFileView {
   private switchTo(target: Mode): void {
     if (this.mode === target) return;
     if (target === "tree" && this.invalid) return;
-    if (target === "tree" && this.largeFile && !this.largeFileOverride) return;
+    // Re-evaluate the render budget at switch time, not only at load: content
+    // can grow past budget via in-session source edits / undo-redo (audit 4.1
+    // guard bypass). Recompute before entering tree.
+    if (target === "tree" && !this.largeFileOverride) {
+      this.largeFile =
+        this.currentValue !== null && exceedsRenderBudget(this.data, this.currentValue);
+      if (this.largeFile) {
+        this.updateLargeFileBanner();
+        return;
+      }
+    }
     if (this.mode === "source" && this.sourceView) {
       this.data = this.sourceView.getValue();
       const parsed = parse(this.data);

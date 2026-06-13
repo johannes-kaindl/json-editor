@@ -62,8 +62,8 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
       .setName("Indent")
       .setDesc("Spaces or tab used when serializing JSON from tree edits.")
       .addDropdown((dd) => {
-        dd.addOption("2", "2 Spaces");
-        dd.addOption("4", "4 Spaces");
+        dd.addOption("2", "Two spaces");
+        dd.addOption("4", "Four spaces");
         dd.addOption("tab", "Tab");
         dd.setValue(s.indent === "\t" ? "tab" : String(s.indent));
         dd.onChange(async (v) => {
