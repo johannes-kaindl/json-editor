@@ -1,6 +1,6 @@
 {
   "name": "obsidian-json-editor",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "View and edit JSON files in Obsidian with a Tree/Source toggle. Renders json code blocks in Markdown notes as collapsible theme-aware trees.",
   "main": "main.js",
   "author": {
