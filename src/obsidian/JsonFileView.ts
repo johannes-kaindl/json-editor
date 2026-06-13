@@ -53,6 +53,8 @@ export class JsonFileView extends TextFileView {
 
   private toolbarEl!: HTMLDivElement;
   private toggleEl!: HTMLDivElement;
+  private undoBtn: HTMLButtonElement | null = null;
+  private redoBtn: HTMLButtonElement | null = null;
   private treePillEl!: HTMLButtonElement;
   private sourcePillEl!: HTMLButtonElement;
   private bodyEl!: HTMLDivElement;
@@ -140,6 +142,7 @@ export class JsonFileView extends TextFileView {
       this.treePillEl.disabled = false;
       this.renderEmptyState();
       this.applyValidation();
+      this.refreshUndoButtons();
       return;
     }
     if (!this.recomputeFromData()) this.mode = "source";
@@ -152,6 +155,7 @@ export class JsonFileView extends TextFileView {
     this.updateLossyState();
     this.refreshMode();
     this.applyValidation();
+    this.refreshUndoButtons();
     void this.tryLoadCompanionSchema();
   }
 
@@ -270,6 +274,17 @@ export class JsonFileView extends TextFileView {
     this.toolbarEl.appendChild(this.breadcrumb.getElement());
     this.toolbarEl.appendChild(this.searchBar.getElement());
     this.toolbarEl.appendChild(this.toggleEl);
+    // Mobile has no hardware Mod+Z (audit 4.5): expose undo/redo in the toolbar.
+    if (Platform.isMobile) {
+      this.undoBtn = this.makeToolbarIconButton("json-undo-btn", "rotate-ccw", "Undo", () =>
+        this.undo(),
+      );
+      this.redoBtn = this.makeToolbarIconButton("json-redo-btn", "rotate-cw", "Redo", () =>
+        this.redo(),
+      );
+      this.toolbarEl.appendChild(this.undoBtn);
+      this.toolbarEl.appendChild(this.redoBtn);
+    }
     this.contentEl.appendChild(this.toolbarEl);
 
     this.schemaBanner = new SchemaBanner();
@@ -284,6 +299,27 @@ export class JsonFileView extends TextFileView {
     this.tooltip = new Tooltip(this.contentEl);
 
     this.contentEl.appendChild(this.bodyEl);
+  }
+
+  private makeToolbarIconButton(
+    cls: string,
+    icon: string,
+    label: string,
+    onClick: () => void,
+  ): HTMLButtonElement {
+    const btn = document.createElement("button");
+    btn.className = `json-toolbar-btn ${cls}`;
+    btn.type = "button";
+    btn.setAttribute("aria-label", label);
+    btn.title = label;
+    setIcon(btn, icon);
+    btn.addEventListener("click", () => onClick());
+    return btn;
+  }
+
+  private refreshUndoButtons(): void {
+    if (this.undoBtn) this.undoBtn.disabled = !this.canUndo();
+    if (this.redoBtn) this.redoBtn.disabled = !this.canRedo();
   }
 
   setSchema(schemaText: string): void {
@@ -641,18 +677,21 @@ export class JsonFileView extends TextFileView {
       }
     }
     this.applyValidation();
+    this.refreshUndoButtons();
   }
 
   undo(): void {
     const prev = this.history.undo(this.data);
     if (prev === null) return;
     this.restoreText(prev);
+    this.refreshUndoButtons();
   }
 
   redo(): void {
     const next = this.history.redo(this.data);
     if (next === null) return;
     this.restoreText(next);
+    this.refreshUndoButtons();
   }
 
   private restoreText(text: string): void {

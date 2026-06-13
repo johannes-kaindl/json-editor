@@ -71,4 +71,36 @@ describe("JsonFileView mobile", () => {
     moveDown.clickHandler!();
     expect(JSON.parse(v.getViewData())).toEqual([20, 10, 30]);
   });
+
+  it("shows undo/redo buttons, disabled initially, undo enabled after an edit", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"a":1}', false);
+    const undoBtn = v.contentEl.querySelector<HTMLButtonElement>(".json-undo-btn")!;
+    const redoBtn = v.contentEl.querySelector<HTMLButtonElement>(".json-redo-btn")!;
+    expect(undoBtn).not.toBeNull();
+    expect(undoBtn.disabled).toBe(true);
+    expect(redoBtn.disabled).toBe(true);
+    v.setViewData("[10,20]", false);
+    v.moveRow([0], +1);
+    expect(v.contentEl.querySelector<HTMLButtonElement>(".json-undo-btn")!.disabled).toBe(false);
+  });
+
+  it("clicking the undo button reverts the last edit", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData("[10,20]", false);
+    v.moveRow([0], +1);
+    expect(JSON.parse(v.getViewData())).toEqual([20, 10]);
+    v.contentEl.querySelector<HTMLButtonElement>(".json-undo-btn")!.click();
+    expect(JSON.parse(v.getViewData())).toEqual([10, 20]);
+  });
+
+  it("does NOT render undo/redo buttons on desktop", () => {
+    Platform.isMobile = false;
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"a":1}', false);
+    expect(v.contentEl.querySelector(".json-undo-btn")).toBeNull();
+  });
 });
