@@ -24,6 +24,7 @@ import type { JsonEditorSettings } from "./SettingsTab";
 import { SourceView } from "./SourceView";
 import { Tooltip, tooltipContentForValue } from "./Tooltip";
 import { TreeView } from "./TreeView";
+import { closeActiveMenu } from "./TypeMenu";
 
 export const JSON_VIEW_TYPE = "json-editor-view";
 
@@ -191,7 +192,7 @@ export class JsonFileView extends TextFileView {
     this.lossBanner = new LossBanner();
     this.contentEl.appendChild(this.lossBanner.getElement());
 
-    this.tooltip = new Tooltip();
+    this.tooltip = new Tooltip(this.contentEl);
 
     this.contentEl.appendChild(this.bodyEl);
   }
@@ -517,6 +518,9 @@ export class JsonFileView extends TextFileView {
   onunload(): void {
     this.tooltip.destroy();
     this.searchBar.destroy();
+    this.sourceView?.destroy();
+    this.sourceView = null;
+    closeActiveMenu();
   }
 }
 

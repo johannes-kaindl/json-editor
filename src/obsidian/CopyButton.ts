@@ -32,7 +32,7 @@ export function createCopyButton(value: JsonValue, path: JsonPath): HTMLButtonEl
 function markCopied(btn: HTMLButtonElement): void {
   btn.classList.add("copied");
   btn.textContent = "✓";
-  setTimeout(() => {
+  window.setTimeout(() => {
     btn.classList.remove("copied");
     btn.textContent = "⧉";
   }, 800);

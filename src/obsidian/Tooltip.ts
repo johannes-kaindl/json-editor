@@ -14,10 +14,15 @@ export class Tooltip {
   private typeEl: HTMLElement;
   private pathEl: HTMLElement;
   private previewEl: HTMLElement;
-  private pendingTimer: ReturnType<typeof setTimeout> | null = null;
+  private pendingTimer: number | null = null;
+  private win: Window;
 
-  constructor() {
-    this.el = document.createElement("div");
+  // host ties the tooltip to the view's window so it works in pop-out windows
+  // (audit 2.11): element, timers, and viewport metrics all come from there.
+  constructor(host: HTMLElement) {
+    const doc = host.ownerDocument;
+    this.win = doc.defaultView ?? window;
+    this.el = doc.createElement("div");
     this.el.className = "json-tooltip";
     this.el.hidden = true;
 
@@ -38,12 +43,12 @@ export class Tooltip {
 
     this.el.appendChild(meta);
     this.el.appendChild(this.previewEl);
-    document.body.appendChild(this.el);
+    doc.body.appendChild(this.el);
   }
 
   show(target: HTMLElement, content: TooltipContent): void {
     this.cancelPending();
-    this.pendingTimer = setTimeout(() => {
+    this.pendingTimer = this.win.setTimeout(() => {
       this.typeEl.textContent = content.typeLabel;
       this.pathEl.textContent = content.pathStr;
       this.previewEl.textContent = content.preview ?? "";
@@ -65,21 +70,23 @@ export class Tooltip {
 
   private cancelPending(): void {
     if (this.pendingTimer !== null) {
-      clearTimeout(this.pendingTimer);
+      this.win.clearTimeout(this.pendingTimer);
       this.pendingTimer = null;
     }
   }
 
   private position(target: HTMLElement): void {
     const rect = target.getBoundingClientRect();
-    this.el.style.position = "absolute";
-    this.el.style.left = `${rect.left + window.scrollX}px`;
+    // position: absolute lives in styles.css (.json-tooltip); only the dynamic
+    // left/top are set inline (audit 2.21). Window metrics come from the host
+    // window so positioning is correct in pop-outs (2.11).
+    this.el.style.left = `${rect.left + this.win.scrollX}px`;
     const ttHeight = 60; // approximation; flip if not enough room below
-    const willFitBelow = rect.bottom + ttHeight < window.innerHeight;
+    const willFitBelow = rect.bottom + ttHeight < this.win.innerHeight;
     if (willFitBelow) {
-      this.el.style.top = `${rect.bottom + 4 + window.scrollY}px`;
+      this.el.style.top = `${rect.bottom + 4 + this.win.scrollY}px`;
     } else {
-      this.el.style.top = `${rect.top - ttHeight - 4 + window.scrollY}px`;
+      this.el.style.top = `${rect.top - ttHeight - 4 + this.win.scrollY}px`;
     }
   }
 }
