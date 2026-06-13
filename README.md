@@ -87,6 +87,15 @@ Submission to the official Obsidian Community Plugin Directory is pending — se
   { "feature": "tree-rendered", "collapsible": true }
   ```
   ````
+- **Reorder** a row with <kbd>Alt</kbd>+<kbd>↑</kbd> / <kbd>Alt</kbd>+<kbd>↓</kbd> (keyboard), or drag the `⋮⋮` handle (mouse).
+
+### On mobile
+
+Hover and drag-and-drop don't exist on touch, so the row actions are consolidated into a menu:
+
+- **Long-press a tree row** to open its action menu: *Copy value · Copy path · Rename key · Change type · Move up / Move down · Delete*.
+- **Single-tap** a value to edit it; tap the chevron to collapse/expand.
+- **Undo / Redo** buttons appear in the toolbar (no hardware <kbd>Cmd/Ctrl+Z</kbd> on touch).
 
 ---
 

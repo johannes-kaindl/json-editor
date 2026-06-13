@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.8.0] — 2026-06-13
+
+**Mobile interaction model.** Tree-mode editing is now fully usable on touch devices, with no dead or invisible affordances. No desktop behavior changes beyond two additive improvements (keyboard reorder, focus-revealed copy button).
+
+### Added
+- **Long-press action menu (mobile).** On Obsidian mobile, long-pressing a tree row opens a consolidated menu with *Copy value · Copy path · Rename key · Change type · Move up/down · Delete* — replacing the hover-only inline buttons and drag-and-drop, which don't work on touch (audit §4.2, §4.3, §6.10).
+- **`Alt+ArrowUp` / `Alt+ArrowDown` reorder** the focused row within its parent — a keyboard path for reordering on every platform (previously only mouse drag-and-drop; audit §4.2).
+- **Undo/Redo toolbar buttons on mobile**, with a live disabled state, since there is no hardware `Mod+Z` on touch (audit §4.5).
+
+### Changed
+- On mobile, the hover-revealed inline row actions, copy button and drag handle are no longer rendered (they were invisible-but-tappable — a stray tap could fire an unconfirmed delete) and rows are not marked `draggable` (which collided with touch scroll/long-press); all actions come from the long-press menu instead (audit §4.3, §4.4, §4.8).
+- The collapse toggle gets a ≥44px tap target on mobile (audit §4.4).
+
+### Fixed
+- The copy button is now revealed on `:focus-within`, not just `:hover` (keyboard / touch-laptop access; audit §4.3.1).
+- The type-change menu now also closes on `pointerdown` outside, not only `mousedown`, so it can't get stuck open on touch.
+
+### Notes
+- `isDesktopOnly` stays `false` (the plugin uses no Node/Electron APIs). Real pointer-events touch-drag and the broader mobile/perf items (virtualization, source-mode debounce) remain deferred to a later release.
+
 ## [1.7.0] — 2026-06-13
 
 **Rename & submission-prep release.** No functional changes to the editor — this renames the plugin for the Community Plugin Directory and completes the documentation/attribution pass.
