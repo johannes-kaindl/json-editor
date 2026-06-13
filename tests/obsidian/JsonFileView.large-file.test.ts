@@ -60,10 +60,11 @@ describe("JsonFileView large-file guard (audit 4.1)", () => {
   });
 
   it("a large AND lossy file opens in source (large precedence over lossy read-only tree)", () => {
-    const arr = [9007199254740993, ...Array.from({ length: 15001 }, (_, i) => i)];
+    // Built as text to avoid a precision-losing numeric literal in source.
+    const json = `[9007199254740993,${Array.from({ length: 15001 }, (_, i) => i).join(",")}]`;
     const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
     document.body.appendChild(v.contentEl);
-    v.setViewData(JSON.stringify(arr), true); // node-budget exceeded + lossy int
+    v.setViewData(json, true); // node-budget exceeded + lossy int
     expect(cmEditor(v)).not.toBeNull();
     expect(treeRoot(v)).toBeNull();
   });

@@ -29,5 +29,8 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Lint (Obsidian guidelines)
+        run: npm run lint:obsidian
+
       - name: Build production bundle
         run: npm run build

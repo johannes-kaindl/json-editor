@@ -88,9 +88,9 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
     }
     const plugin = new OkPlugin(appStub(), MANIFEST);
     await plugin.onload();
-    const toggle = (
-      plugin.commands as Array<{ id: string; name: string; hotkeys?: unknown }>
-    ).find((c) => c.id === "toggle-tree-source");
+    const toggle = (plugin.commands as Array<{ id: string; name: string; hotkeys?: unknown }>).find(
+      (c) => c.id === "toggle-tree-source",
+    );
     expect(toggle).toBeTruthy();
     expect(toggle?.hotkeys).toBeUndefined();
     expect(toggle?.name).toBe("Toggle tree/source view");

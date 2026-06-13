@@ -15,8 +15,7 @@ interface ScopeKey {
   key: string | null;
   handler: () => unknown;
 }
-const scopeOf = (v: JsonFileView) =>
-  (v as unknown as { scope: { keys: ScopeKey[] } }).scope;
+const scopeOf = (v: JsonFileView) => (v as unknown as { scope: { keys: ScopeKey[] } }).scope;
 const binding = (k: ScopeKey) => `${(k.modifiers ?? []).join("+")}:${k.key}`;
 
 describe("JsonFileView keymap Scope (audit 2.1)", () => {

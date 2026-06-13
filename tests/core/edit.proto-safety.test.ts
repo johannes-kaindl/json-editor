@@ -9,8 +9,7 @@ import { addObjectKey, deleteAt, moveObjectKey, renameKey } from "../../src/core
 // serialize round-trip — NOT toEqual, which can compare a prototype __proto__.
 
 const hasOwn = (o: object, k: string) => Object.prototype.hasOwnProperty.call(o, k);
-const roundTrips = (o: unknown, k: string) =>
-  hasOwn(JSON.parse(JSON.stringify(o)) as object, k);
+const roundTrips = (o: unknown, k: string) => hasOwn(JSON.parse(JSON.stringify(o)) as object, k);
 
 describe("edit.ts — __proto__ own-key data-loss safety (2.3)", () => {
   it("deleteAt preserves a sibling own __proto__ key", () => {

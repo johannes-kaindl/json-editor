@@ -60,10 +60,10 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
 
     new Setting(this.containerEl)
       .setName("Indent")
-      .setDesc("Spaces or tab used when serializing JSON from Tree edits.")
+      .setDesc("Spaces or tab used when serializing JSON from tree edits.")
       .addDropdown((dd) => {
-        dd.addOption("2", "2 spaces");
-        dd.addOption("4", "4 spaces");
+        dd.addOption("2", "2 Spaces");
+        dd.addOption("4", "4 Spaces");
         dd.addOption("tab", "Tab");
         dd.setValue(s.indent === "\t" ? "tab" : String(s.indent));
         dd.onChange(async (v) => {
@@ -100,7 +100,7 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
       });
 
     new Setting(this.containerEl)
-      .setName("Validate against JSON Schema")
+      .setName("Validate against JSON schema")
       .setDesc(
         "Off by default. When enabled, the plugin automatically loads a sibling schema file next to the current .json file (e.g. data.json → data.schema.json) and highlights validation errors in real time. Enabling this auto-loads schema files from your vault — only turn it on if you trust those files.",
       )

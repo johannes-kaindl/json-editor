@@ -24,8 +24,7 @@ describe("JsonFileView mode-aware search (audit 3.2)", () => {
     v.focusSearch();
 
     expect(v.contentEl.querySelector(".cm-editor")).toBe(editorBefore); // still source, same editor
-    const panel =
-      v.contentEl.querySelector(".cm-search") ?? v.contentEl.querySelector(".cm-panel");
+    const panel = v.contentEl.querySelector(".cm-search") ?? v.contentEl.querySelector(".cm-panel");
     expect(panel).not.toBeNull();
     expect(v.contentEl.querySelector(".json-tree-root")).toBeNull();
   });
@@ -46,8 +45,7 @@ describe("JsonFileView mode-aware search (audit 3.2)", () => {
     document.body.appendChild(v.contentEl);
     v.setViewData("{not valid}", true); // forced source
     v.focusSearch();
-    const panel =
-      v.contentEl.querySelector(".cm-search") ?? v.contentEl.querySelector(".cm-panel");
+    const panel = v.contentEl.querySelector(".cm-search") ?? v.contentEl.querySelector(".cm-panel");
     expect(panel).not.toBeNull();
   });
 });

@@ -8,8 +8,7 @@ import { JsonFileView } from "../../src/obsidian/JsonFileView";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
 
 const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as WorkspaceLeaf;
-const actionsOf = (v: JsonFileView) =>
-  (v as unknown as { actionsEl: HTMLElement }).actionsEl;
+const actionsOf = (v: JsonFileView) => (v as unknown as { actionsEl: HTMLElement }).actionsEl;
 
 describe("JsonFileView Tree↔Source toggle (audit 3.1)", () => {
   beforeEach(() => {

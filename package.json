@@ -23,6 +23,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "biome check .",
+    "lint:obsidian": "eslint src",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
     "deploy": "npm run build && cp main.js manifest.json styles.css \"${OBSIDIAN_PLUGIN_DIR:?Set OBSIDIAN_PLUGIN_DIR to <vault>/.obsidian/plugins/obsidian-json-editor}\"/"
   },
@@ -52,6 +53,8 @@
     "@vitest/coverage-v8": "^1.6.1",
     "builtin-modules": "^4.0.0",
     "esbuild": "^0.21.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-obsidianmd": "^0.3.0",
     "happy-dom": "^14.10.0",
     "obsidian": "^1.4.16",
     "typescript": "^5.4.5",

@@ -71,7 +71,7 @@ function renderFallback(_source: string, el: HTMLElement, errorMessage: string):
   head.className = "json-codeblock-head";
   const label = document.createElement("span");
   label.className = "json-codeblock-label";
-  label.textContent = "JSON · Error";
+  label.textContent = "JSON · error";
   head.appendChild(label);
   card.appendChild(head);
 

@@ -64,7 +64,10 @@ describe("JsonFileView companion-schema autoload", () => {
   it("normalizes the assembled schema path before lookup (2.20)", async () => {
     const spy = vi.fn((p: string) => new TFile(p));
     const v = new JsonFileView(
-      leafWith({ getAbstractFileByPath: spy, cachedRead: () => Promise.resolve('{"type":"object"}') }),
+      leafWith({
+        getAbstractFileByPath: spy,
+        cachedRead: () => Promise.resolve('{"type":"object"}'),
+      }),
       VALIDATING,
     );
     document.body.appendChild(v.contentEl);

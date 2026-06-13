@@ -91,11 +91,11 @@ describe("SearchBar", () => {
     expect(count.textContent).toBe("1 match");
   });
 
-  it("setMatchInfo({matchCount:0}) shows 'no matches' and adds is-empty class", () => {
+  it("setMatchInfo({matchCount:0}) shows 'No matches' and adds is-empty class", () => {
     const sb = new SearchBar({ onQueryChange: () => {} });
     const count = sb.getElement().querySelector<HTMLElement>(".json-search-count")!;
     sb.setMatchInfo({ matchCount: 0 });
-    expect(count.textContent).toBe("no matches");
+    expect(count.textContent).toBe("No matches");
     expect(count.classList.contains("is-empty")).toBe(true);
   });
 
