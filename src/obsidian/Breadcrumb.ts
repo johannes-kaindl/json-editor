@@ -30,10 +30,14 @@ export class Breadcrumb {
       if (idx > 0) {
         const sep = document.createElement("span");
         sep.className = "bc-sep";
+        sep.setAttribute("aria-hidden", "true");
         sep.textContent = "›";
         this.el.appendChild(sep);
       }
-      const segEl = document.createElement("span");
+      // A real <button> so the segment is Tab-focusable and Enter/Space-operable
+      // (WCAG 2.1.1) — matches every other interactive control in the plugin.
+      const segEl = document.createElement("button");
+      segEl.type = "button";
       segEl.className = "bc-seg";
       if (idx === segments.length - 1) segEl.classList.add("bc-seg-terminal");
       if (idx === 0) segEl.classList.add("bc-seg-root");

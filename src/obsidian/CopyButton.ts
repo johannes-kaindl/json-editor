@@ -8,6 +8,7 @@ export function createCopyButton(value: JsonValue, path: JsonPath): HTMLButtonEl
   btn.type = "button";
   btn.textContent = "⧉";
   btn.title = "Copy value (alt-click: copy path)";
+  btn.setAttribute("aria-label", "Copy value");
 
   btn.addEventListener("click", (e) => {
     e.stopPropagation();

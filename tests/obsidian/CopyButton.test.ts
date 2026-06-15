@@ -20,6 +20,11 @@ describe("createCopyButton", () => {
     expect(btn.textContent).toBe("⧉");
   });
 
+  it("has an aria-label for screen readers (icon-only button)", () => {
+    const btn = createCopyButton("x", ["a"]);
+    expect(btn.getAttribute("aria-label")).toBe("Copy value");
+  });
+
   it("plain click writes value as JSON to clipboard", async () => {
     const btn = createCopyButton({ a: 1, b: [true, null] }, ["x"]);
     document.body.appendChild(btn);

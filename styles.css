@@ -75,6 +75,10 @@
   color: var(--jv-fg-muted);
 }
 .bc-seg {
+  /* Reset native <button> chrome — these render as inline breadcrumb text. */
+  background: none;
+  border: none;
+  font: inherit;
   padding: var(--jv-space-1) var(--jv-space-3);
   border-radius: var(--jv-radius-sm);
   color: var(--jv-fg-muted);
@@ -83,6 +87,11 @@
 }
 .bc-seg:hover {
   background: var(--jv-hover);
+  color: var(--jv-fg);
+}
+.bc-seg:focus-visible {
+  outline: 2px solid var(--jv-accent);
+  outline-offset: -1px;
   color: var(--jv-fg);
 }
 /* Current location: emphasized by weight, not a filled accent chip — a filled
@@ -355,6 +364,7 @@
 .json-copy-btn {
   margin-left: auto;
   padding: 0 var(--jv-space-3);
+  font-family: var(--font-interface);
   font-size: 0.85em;
   background: transparent;
   color: var(--jv-fg-muted);
@@ -550,6 +560,7 @@
   color: var(--jv-fg-muted);
   cursor: pointer;
   padding: 0 var(--jv-space-2);
+  font-family: var(--font-interface);
   font-size: 0.85em;
   line-height: 1.4;
   transition: color var(--jv-dur-fast) var(--jv-ease), background var(--jv-dur-fast) var(--jv-ease),
