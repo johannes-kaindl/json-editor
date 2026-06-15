@@ -1,8 +1,9 @@
+import { activeDoc } from "./dom";
 export class SchemaBanner {
   private el: HTMLDivElement;
 
   constructor() {
-    this.el = activeDocument.createElement("div");
+    this.el = activeDoc().createElement("div");
     this.el.className = "json-schema-banner";
     this.el.hidden = true;
   }

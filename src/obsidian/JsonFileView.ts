@@ -39,6 +39,7 @@ import { Tooltip, tooltipContentForValue } from "./Tooltip";
 import { TreeView } from "./TreeView";
 import { closeActiveMenu } from "./TypeMenu";
 import { copyJsonPath, copyJsonValue } from "./clipboard";
+import { activeDoc } from "./dom";
 
 export const JSON_VIEW_TYPE = "json-editor-view";
 
@@ -252,20 +253,20 @@ export class JsonFileView extends TextFileView {
   }
 
   private buildChrome(): void {
-    this.toggleEl = activeDocument.createElement("div");
+    this.toggleEl = activeDoc().createElement("div");
     this.toggleEl.className = "json-mode-toggle";
-    this.treePillEl = activeDocument.createElement("button");
+    this.treePillEl = activeDoc().createElement("button");
     this.treePillEl.className = "json-mode-pill";
     this.treePillEl.textContent = "Tree";
     this.treePillEl.addEventListener("click", () => this.switchTo("tree"));
-    this.sourcePillEl = activeDocument.createElement("button");
+    this.sourcePillEl = activeDoc().createElement("button");
     this.sourcePillEl.className = "json-mode-pill";
     this.sourcePillEl.textContent = "Source";
     this.sourcePillEl.addEventListener("click", () => this.switchTo("source"));
     this.toggleEl.appendChild(this.treePillEl);
     this.toggleEl.appendChild(this.sourcePillEl);
 
-    this.bodyEl = activeDocument.createElement("div");
+    this.bodyEl = activeDoc().createElement("div");
     this.bodyEl.className = "json-editor-body";
 
     this.breadcrumb = new Breadcrumb({
@@ -276,7 +277,7 @@ export class JsonFileView extends TextFileView {
       onQueryChange: (q) => this.onQueryChange(q),
     });
 
-    this.toolbarEl = activeDocument.createElement("div");
+    this.toolbarEl = activeDoc().createElement("div");
     this.toolbarEl.className = "json-toolbar";
     this.toolbarEl.appendChild(this.breadcrumb.getElement());
     this.toolbarEl.appendChild(this.searchBar.getElement());
@@ -314,7 +315,7 @@ export class JsonFileView extends TextFileView {
     label: string,
     onClick: () => void,
   ): HTMLButtonElement {
-    const btn = activeDocument.createElement("button");
+    const btn = activeDoc().createElement("button");
     // `clickable-icon` is Obsidian's native icon-button class — consistent
     // sizing/hover/theming, and enlarged on mobile for touch.
     btn.className = `clickable-icon json-toolbar-btn ${cls}`;
@@ -507,15 +508,15 @@ export class JsonFileView extends TextFileView {
     this.sourceView = null;
     this.searchBar.getElement().hidden = true;
     this.searchBar.setMatchInfo(null);
-    const wrap = activeDocument.createElement("div");
+    const wrap = activeDoc().createElement("div");
     wrap.className = "json-empty-state";
-    const title = activeDocument.createElement("div");
+    const title = activeDoc().createElement("div");
     title.className = "json-empty-state-title";
     title.textContent = "This file is empty";
-    const hint = activeDocument.createElement("div");
+    const hint = activeDoc().createElement("div");
     hint.className = "json-empty-state-hint";
     hint.textContent = "Create an empty object to get started.";
-    const btn = activeDocument.createElement("button");
+    const btn = activeDoc().createElement("button");
     btn.className = "json-empty-state-init";
     btn.textContent = "Create empty object";
     btn.addEventListener("click", () => {
@@ -756,7 +757,7 @@ export class JsonFileView extends TextFileView {
 
   private showBanner(message: string): void {
     if (!this.bannerEl) {
-      this.bannerEl = activeDocument.createElement("div");
+      this.bannerEl = activeDoc().createElement("div");
       this.bannerEl.className = "json-error-banner";
       this.contentEl.insertBefore(this.bannerEl, this.bodyEl);
     }

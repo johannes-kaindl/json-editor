@@ -1,5 +1,6 @@
 import { pathToString } from "../core/path";
 import type { JsonPath, JsonValue } from "../core/types";
+import { activeDoc } from "./dom";
 
 export interface TooltipContent {
   typeLabel: string;
@@ -26,19 +27,19 @@ export class Tooltip {
     this.el.className = "json-tooltip";
     this.el.hidden = true;
 
-    const meta = activeDocument.createElement("div");
+    const meta = activeDoc().createElement("div");
     meta.className = "tt-meta";
-    this.typeEl = activeDocument.createElement("span");
+    this.typeEl = activeDoc().createElement("span");
     this.typeEl.className = "tt-type";
-    const sep = activeDocument.createElement("span");
+    const sep = activeDoc().createElement("span");
     sep.textContent = " · ";
-    this.pathEl = activeDocument.createElement("span");
+    this.pathEl = activeDoc().createElement("span");
     this.pathEl.className = "tt-path";
     meta.appendChild(this.typeEl);
     meta.appendChild(sep);
     meta.appendChild(this.pathEl);
 
-    this.previewEl = activeDocument.createElement("div");
+    this.previewEl = activeDoc().createElement("div");
     this.previewEl.className = "tt-preview";
 
     this.el.appendChild(meta);

@@ -1,3 +1,4 @@
+import { activeDoc } from "./dom";
 /**
  * Warn banner shown when a file is too large to render as a tree responsively
  * (audit 4.1). Carries a "Load tree anyway" button so the user can opt in.
@@ -8,15 +9,15 @@ export class LargeFileBanner {
   private msgEl: HTMLSpanElement;
 
   constructor(onLoadAnyway: () => void) {
-    this.el = activeDocument.createElement("div");
+    this.el = activeDoc().createElement("div");
     this.el.className = "json-large-file-banner";
     this.el.hidden = true;
 
-    this.msgEl = activeDocument.createElement("span");
+    this.msgEl = activeDoc().createElement("span");
     this.msgEl.className = "json-large-file-message";
     this.el.appendChild(this.msgEl);
 
-    const btn = activeDocument.createElement("button");
+    const btn = activeDoc().createElement("button");
     btn.type = "button";
     btn.className = "json-large-file-load";
     btn.textContent = "Load tree anyway";

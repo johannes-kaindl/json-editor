@@ -1,9 +1,10 @@
 import { pathToString } from "../core/path";
 import type { JsonPath, JsonValue } from "../core/types";
 import { copyToClipboard } from "./clipboard";
+import { activeDoc } from "./dom";
 
 export function createCopyButton(value: JsonValue, path: JsonPath): HTMLButtonElement {
-  const btn = activeDocument.createElement("button");
+  const btn = activeDoc().createElement("button");
   btn.className = "json-copy-btn";
   btn.type = "button";
   btn.textContent = "⧉";
