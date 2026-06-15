@@ -297,10 +297,12 @@
   background: color-mix(in srgb, var(--jv-accent) 8%, transparent);
   box-shadow: inset 2px 0 0 0 var(--jv-accent);
 }
-.json-row-flash {
-  background: var(--jv-accent) !important;
-  color: var(--jv-accent-text) !important;
-  box-shadow: none !important;
+/* Higher specificity instead of !important so the scroll-flash wins over the
+   :hover / .json-match / .json-on-path row backgrounds. */
+.json-tree-root .json-row.json-row-flash {
+  background: var(--jv-accent);
+  color: var(--jv-accent-text);
+  box-shadow: none;
 }
 
 .json-key {
@@ -378,14 +380,16 @@
 .json-row:hover .json-copy-btn {
   opacity: 0.7;
 }
-.json-copy-btn:hover {
-  opacity: 1 !important;
+/* Scoped (0,4,0) so opacity:1 wins over the :hover / :focus-within reveal rules
+   (which set 0.7) without !important. */
+.json-tree-root .json-row .json-copy-btn:hover {
+  opacity: 1;
   color: var(--jv-fg);
   background: var(--jv-hover);
 }
-.json-copy-btn.copied {
+.json-tree-root .json-row .json-copy-btn.copied {
   color: var(--text-success, var(--jv-syntax-string));
-  opacity: 1 !important;
+  opacity: 1;
 }
 
 /* ─── Error banner ────────────────────────────────────────────────── */
