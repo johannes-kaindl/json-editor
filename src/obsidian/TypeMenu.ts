@@ -21,12 +21,12 @@ let activeMenu: { el: HTMLElement; close: () => void } | null = null;
 export function openTypeMenu(anchor: HTMLElement, opts: TypeMenuOptions): void {
   closeActiveMenu();
 
-  const menu = document.createElement("div");
+  const menu = activeDocument.createElement("div");
   menu.className = "json-type-menu";
   menu.setAttribute("role", "menu");
 
   for (const t of TYPES) {
-    const opt = document.createElement("button");
+    const opt = activeDocument.createElement("button");
     opt.type = "button";
     opt.className = "json-type-option";
     opt.dataset.type = t;

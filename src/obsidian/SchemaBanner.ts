@@ -2,7 +2,7 @@ export class SchemaBanner {
   private el: HTMLDivElement;
 
   constructor() {
-    this.el = document.createElement("div");
+    this.el = activeDocument.createElement("div");
     this.el.className = "json-schema-banner";
     this.el.hidden = true;
   }

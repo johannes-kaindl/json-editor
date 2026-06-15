@@ -26,19 +26,19 @@ export class Tooltip {
     this.el.className = "json-tooltip";
     this.el.hidden = true;
 
-    const meta = document.createElement("div");
+    const meta = activeDocument.createElement("div");
     meta.className = "tt-meta";
-    this.typeEl = document.createElement("span");
+    this.typeEl = activeDocument.createElement("span");
     this.typeEl.className = "tt-type";
-    const sep = document.createElement("span");
+    const sep = activeDocument.createElement("span");
     sep.textContent = " · ";
-    this.pathEl = document.createElement("span");
+    this.pathEl = activeDocument.createElement("span");
     this.pathEl.className = "tt-path";
     meta.appendChild(this.typeEl);
     meta.appendChild(sep);
     meta.appendChild(this.pathEl);
 
-    this.previewEl = document.createElement("div");
+    this.previewEl = activeDocument.createElement("div");
     this.previewEl.className = "tt-preview";
 
     this.el.appendChild(meta);

@@ -15,6 +15,12 @@ export type ParseResult =
 export type MarkerStyle = "modern" | "classic";
 
 export interface RenderOptions {
+  /**
+   * The Document to create elements in. Injected by the caller (the adapter
+   * passes `container.ownerDocument`) so core/render stays Obsidian-free and
+   * works correctly in pop-out windows. Tests pass the happy-dom `document`.
+   */
+  doc: Document;
   readonly?: boolean;
   markerStyle?: MarkerStyle;
   autoCollapseDepth?: number;

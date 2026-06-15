@@ -3,7 +3,7 @@ import type { JsonPath, JsonValue } from "../core/types";
 import { copyToClipboard } from "./clipboard";
 
 export function createCopyButton(value: JsonValue, path: JsonPath): HTMLButtonElement {
-  const btn = document.createElement("button");
+  const btn = activeDocument.createElement("button");
   btn.className = "json-copy-btn";
   btn.type = "button";
   btn.textContent = "⧉";

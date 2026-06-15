@@ -149,13 +149,14 @@ export class TreeView {
     // scroll position, and which containers diverge from the depth default.
     const previousPathStr = this.activeRow?.getAttribute("data-path") ?? null;
     const fallbackPathStr = this.siblingFallbackPathStr(this.activeRow);
-    const hadFocus = this.container.contains(document.activeElement);
+    const hadFocus = this.container.contains(activeDocument.activeElement);
     const scroller = this.scrollParent();
     const prevScroll = scroller.scrollTop;
     const prevCollapsed = this.collectCollapseState();
     this.container.replaceChildren();
     this.activeRow = null;
     const el = renderTree(this.current, {
+      doc: this.container.ownerDocument,
       readonly: this.opts.readonly,
       markerStyle: this.opts.markerStyle ?? "modern",
       autoCollapseDepth: this.opts.autoCollapseDepth,
@@ -259,7 +260,7 @@ export class TreeView {
         return;
       }
 
-      const handle = document.createElement("span");
+      const handle = activeDocument.createElement("span");
       handle.className = "json-drag-handle";
       handle.setAttribute("aria-hidden", "true");
       handle.textContent = "⋮⋮";
@@ -461,7 +462,7 @@ export class TreeView {
     if (!keyEl) return;
     this.editing = true;
 
-    const input = document.createElement("input");
+    const input = activeDocument.createElement("input");
     input.type = "text";
     input.className = "json-inline-edit json-key-rename";
     input.value = currentKey;
@@ -902,7 +903,7 @@ function replaceWithInput(
   initial: string,
   onDone: (rawValue: string, committed: boolean) => void,
 ): void {
-  const input = document.createElement("input");
+  const input = activeDocument.createElement("input");
   input.type = type;
   input.value = initial;
   input.className = "json-inline-edit";
@@ -937,7 +938,7 @@ function replaceWithCheckbox(
   initial: boolean,
   onDone: (newValue: boolean, committed: boolean) => void,
 ): void {
-  const input = document.createElement("input");
+  const input = activeDocument.createElement("input");
   input.type = "checkbox";
   input.checked = initial;
   input.className = "json-inline-edit";

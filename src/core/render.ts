@@ -9,7 +9,7 @@ interface ContainerItem {
 }
 
 export function renderTree(value: JsonValue, opts: RenderOptions): HTMLElement {
-  const root = document.createElement("div");
+  const root = opts.doc.createElement("div");
   root.className = "json-tree-root";
   root.setAttribute("role", "tree");
   root.setAttribute("aria-label", "JSON content");
@@ -57,7 +57,7 @@ function makePrimitive(
   value: JsonValue,
   opts: RenderOptions,
 ): HTMLElement {
-  const span = document.createElement("span");
+  const span = opts.doc.createElement("span");
   span.className = cls;
   span.textContent = text;
   if (!opts.readonly && opts.onValueClick && value !== null) {
@@ -87,7 +87,7 @@ function renderContainer(
 ): void {
   const { open, close } = bracketsFor(kind);
 
-  const container = document.createElement("div");
+  const container = opts.doc.createElement("div");
   container.className = "json-container";
   if (items.length === 0) container.classList.add("is-empty");
   container.dataset.depth = String(depth);
@@ -96,22 +96,22 @@ function renderContainer(
   // toggle is a direct child of container so toggle.parentElement === container,
   // which also contains json-content as a direct child — this is what the toggle
   // test (and the keyboard-nav toggleContainer helper) expects.
-  const toggle = document.createElement("span");
+  const toggle = opts.doc.createElement("span");
   toggle.className = "json-collapse-toggle";
-  toggle.appendChild(makeChevron());
+  toggle.appendChild(makeChevron(opts.doc));
   container.appendChild(toggle);
 
-  const openBracket = document.createElement("span");
+  const openBracket = opts.doc.createElement("span");
   openBracket.className = "json-bracket";
   openBracket.textContent = open;
   container.appendChild(openBracket);
 
-  const chip = document.createElement("span");
+  const chip = opts.doc.createElement("span");
   chip.className = "json-collapse-chip";
   chip.textContent = collapseChipLabel(items.length, kind);
   container.appendChild(chip);
 
-  const content = document.createElement("div");
+  const content = opts.doc.createElement("div");
   content.className = "json-content";
   content.setAttribute("role", "group");
   const shouldCollapse = opts.autoCollapseDepth !== undefined && depth > opts.autoCollapseDepth;
@@ -134,7 +134,7 @@ function renderContainer(
   });
 
   items.forEach((item, i) => {
-    const row = document.createElement("div");
+    const row = opts.doc.createElement("div");
     row.className = "json-row";
     row.setAttribute("role", "treeitem");
     const itemPath = [...path, item.segment];
@@ -143,20 +143,20 @@ function renderContainer(
       row.addEventListener("click", () => opts.onPathClick?.(itemPath), true);
     }
     if (opts.markerStyle === "classic") {
-      const marker = document.createElement("span");
+      const marker = opts.doc.createElement("span");
       marker.className = "json-marker";
       marker.textContent = markerFor(i, items.length);
       row.appendChild(marker);
     }
-    row.appendChild(keyOrIndexElement(item.segment, kind));
-    row.appendChild(document.createTextNode(": "));
+    row.appendChild(keyOrIndexElement(opts.doc, item.segment, kind));
+    row.appendChild(opts.doc.createTextNode(": "));
     renderValue(row, item.value, itemPath, depth + 1, opts);
-    if (i < items.length - 1) row.appendChild(document.createTextNode(","));
+    if (i < items.length - 1) row.appendChild(opts.doc.createTextNode(","));
     content.appendChild(row);
   });
 
   container.appendChild(content);
-  const closeBracket = document.createElement("span");
+  const closeBracket = opts.doc.createElement("span");
   closeBracket.className = "json-bracket";
   closeBracket.textContent = close;
   container.appendChild(closeBracket);
@@ -167,14 +167,18 @@ function bracketsFor(kind: ContainerKind): { open: string; close: string } {
   return kind === "object" ? { open: "{", close: "}" } : { open: "[", close: "]" };
 }
 
-function keyOrIndexElement(segment: string | number, kind: ContainerKind): HTMLElement {
+function keyOrIndexElement(
+  doc: Document,
+  segment: string | number,
+  kind: ContainerKind,
+): HTMLElement {
   if (kind === "object") {
-    const keyEl = document.createElement("span");
+    const keyEl = doc.createElement("span");
     keyEl.className = "json-key";
     keyEl.textContent = `"${segment}"`;
     return keyEl;
   }
-  const idx = document.createElement("span");
+  const idx = doc.createElement("span");
   idx.className = "json-index";
   idx.textContent = String(segment);
   return idx;
@@ -186,13 +190,13 @@ function collapseChipLabel(count: number, kind: ContainerKind): string {
   return kind === "object" ? `{ ${text} }` : `[ ${text} ]`;
 }
 
-function makeChevron(): SVGElement {
+function makeChevron(doc: Document): SVGElement {
   const NS = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(NS, "svg");
+  const svg = doc.createElementNS(NS, "svg");
   svg.setAttribute("viewBox", "0 0 10 10");
   svg.setAttribute("width", "9");
   svg.setAttribute("height", "9");
-  const path = document.createElementNS(NS, "path");
+  const path = doc.createElementNS(NS, "path");
   path.setAttribute("d", "M3 1 L7 5 L3 9");
   path.setAttribute("fill", "none");
   path.setAttribute("stroke", "currentColor");
