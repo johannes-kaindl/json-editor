@@ -28,6 +28,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Removed the redundant Tree/Source **view-header action** — the labeled toolbar toggle and the `toggle-tree-source` command remain the toggle paths.
 - The breadcrumb's current segment is now emphasized by font weight instead of a filled accent chip, so it reads as a path location rather than a button.
 
+### Accessibility & polish (pre-publish pass)
+- Breadcrumb segments are now real `<button>`s — Tab-focusable and Enter/Space-operable with a visible focus ring (WCAG 2.1.1); previously they were `<span>`s with click-only handlers.
+- The copy button and tree row-action buttons now use the interface font (parity with the rest of the chrome), and the copy button gained an `aria-label`.
+
 ### Notes
 - `isDesktopOnly` stays `false` (the plugin uses no Node/Electron APIs). Real pointer-events touch-drag and the broader mobile/perf items (virtualization, source-mode debounce) remain deferred to a later release.
 
