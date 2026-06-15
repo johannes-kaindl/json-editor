@@ -231,7 +231,7 @@ export class TreeView {
     const content = row.parentElement;
     if (content) {
       const sibs = Array.from(content.children).filter(
-        (c): c is HTMLElement => c instanceof HTMLElement && c.classList.contains("json-row"),
+        (c): c is HTMLElement => c.instanceOf(HTMLElement) && c.classList.contains("json-row"),
       );
       const idx = sibs.indexOf(row);
       const sibling = sibs[idx + 1] ?? sibs[idx - 1] ?? null;
@@ -560,7 +560,7 @@ export class TreeView {
 
   private directChildWithClass(parent: HTMLElement, cls: string): HTMLElement | null {
     for (const child of Array.from(parent.children)) {
-      if (child instanceof HTMLElement && child.classList.contains(cls)) {
+      if (child.instanceOf(HTMLElement) && child.classList.contains(cls)) {
         return child;
       }
     }
@@ -813,7 +813,7 @@ function locateChildForSegment(parent: HTMLElement, segment: string | number): H
   const content = parent.querySelector<HTMLElement>(".json-content");
   if (!content) return null;
   const rows = Array.from(content.children).filter(
-    (el): el is HTMLElement => el instanceof HTMLElement && el.classList.contains("json-row"),
+    (el): el is HTMLElement => el.instanceOf(HTMLElement) && el.classList.contains("json-row"),
   );
   if (typeof segment === "string") {
     for (const row of rows) {
