@@ -1,3 +1,4 @@
+import { activeDoc } from "./dom";
 export interface SearchBarOptions {
   onQueryChange: (query: string) => void;
 }
@@ -9,24 +10,24 @@ export class SearchBar {
   private countEl: HTMLSpanElement;
 
   constructor(private opts: SearchBarOptions) {
-    this.el = activeDocument.createElement("div");
+    this.el = activeDoc().createElement("div");
     this.el.className = "json-search-bar";
 
     this.el.appendChild(this.makeIcon());
 
-    this.input = activeDocument.createElement("input");
+    this.input = activeDoc().createElement("input");
     this.input.type = "text";
     this.input.className = "json-search-input";
     this.input.placeholder = "Search keys and values…";
     this.input.spellcheck = false;
     this.el.appendChild(this.input);
 
-    this.countEl = activeDocument.createElement("span");
+    this.countEl = activeDoc().createElement("span");
     this.countEl.className = "json-search-count";
     this.countEl.hidden = true;
     this.el.appendChild(this.countEl);
 
-    this.clearBtn = activeDocument.createElement("button");
+    this.clearBtn = activeDoc().createElement("button");
     this.clearBtn.className = "json-search-clear";
     this.clearBtn.type = "button";
     this.clearBtn.setAttribute("aria-label", "Clear search");
@@ -105,19 +106,19 @@ export class SearchBar {
 
   private makeIcon(): SVGElement {
     const NS = "http://www.w3.org/2000/svg";
-    const svg = activeDocument.createElementNS(NS, "svg");
+    const svg = activeDoc().createElementNS(NS, "svg");
     svg.setAttribute("class", "json-search-icon");
     svg.setAttribute("viewBox", "0 0 16 16");
     svg.setAttribute("width", "12");
     svg.setAttribute("height", "12");
-    const circle = activeDocument.createElementNS(NS, "circle");
+    const circle = activeDoc().createElementNS(NS, "circle");
     circle.setAttribute("cx", "7");
     circle.setAttribute("cy", "7");
     circle.setAttribute("r", "5");
     circle.setAttribute("fill", "none");
     circle.setAttribute("stroke", "currentColor");
     circle.setAttribute("stroke-width", "1.5");
-    const line = activeDocument.createElementNS(NS, "line");
+    const line = activeDoc().createElementNS(NS, "line");
     line.setAttribute("x1", "11");
     line.setAttribute("y1", "11");
     line.setAttribute("x2", "14");

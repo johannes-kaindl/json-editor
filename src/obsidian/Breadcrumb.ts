@@ -1,4 +1,5 @@
 import type { JsonPath } from "../core/types";
+import { activeDoc } from "./dom";
 
 export interface BreadcrumbOptions {
   onSegmentClick?: (subPath: JsonPath) => void;
@@ -8,7 +9,7 @@ export class Breadcrumb {
   private el: HTMLElement;
 
   constructor(private opts: BreadcrumbOptions) {
-    this.el = activeDocument.createElement("div");
+    this.el = activeDoc().createElement("div");
     this.el.className = "json-breadcrumb";
     this.setPath([]);
   }
@@ -28,7 +29,7 @@ export class Breadcrumb {
 
     segments.forEach((s, idx) => {
       if (idx > 0) {
-        const sep = activeDocument.createElement("span");
+        const sep = activeDoc().createElement("span");
         sep.className = "bc-sep";
         sep.setAttribute("aria-hidden", "true");
         sep.textContent = "›";
@@ -36,7 +37,7 @@ export class Breadcrumb {
       }
       // A real <button> so the segment is Tab-focusable and Enter/Space-operable
       // (WCAG 2.1.1) — matches every other interactive control in the plugin.
-      const segEl = activeDocument.createElement("button");
+      const segEl = activeDoc().createElement("button");
       segEl.type = "button";
       segEl.className = "bc-seg";
       if (idx === segments.length - 1) segEl.classList.add("bc-seg-terminal");

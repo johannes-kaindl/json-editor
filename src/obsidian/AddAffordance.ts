@@ -1,3 +1,4 @@
+import { activeDoc } from "./dom";
 export interface AddAffordanceOptions {
   kind: "object" | "array";
   /** Called when user confirms add. For arrays, key is undefined. */
@@ -7,10 +8,10 @@ export interface AddAffordanceOptions {
 }
 
 export function createAddAffordance(opts: AddAffordanceOptions): HTMLElement {
-  const wrap = activeDocument.createElement("div");
+  const wrap = activeDoc().createElement("div");
   wrap.className = "json-add-affordance";
 
-  const trigger = activeDocument.createElement("button");
+  const trigger = activeDoc().createElement("button");
   trigger.className = "json-add-trigger";
   trigger.type = "button";
   trigger.textContent = opts.kind === "object" ? "+ Add key" : "+ Add item";
@@ -27,7 +28,7 @@ export function createAddAffordance(opts: AddAffordanceOptions): HTMLElement {
     // Objects: click reveals an inline input for the key name.
     trigger.addEventListener("click", (e) => {
       e.stopPropagation();
-      const input = activeDocument.createElement("input");
+      const input = activeDoc().createElement("input");
       input.type = "text";
       input.className = "json-add-input";
       input.placeholder = "Key";
