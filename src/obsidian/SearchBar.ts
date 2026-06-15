@@ -9,24 +9,24 @@ export class SearchBar {
   private countEl: HTMLSpanElement;
 
   constructor(private opts: SearchBarOptions) {
-    this.el = document.createElement("div");
+    this.el = activeDocument.createElement("div");
     this.el.className = "json-search-bar";
 
     this.el.appendChild(this.makeIcon());
 
-    this.input = document.createElement("input");
+    this.input = activeDocument.createElement("input");
     this.input.type = "text";
     this.input.className = "json-search-input";
     this.input.placeholder = "Search keys and values…";
     this.input.spellcheck = false;
     this.el.appendChild(this.input);
 
-    this.countEl = document.createElement("span");
+    this.countEl = activeDocument.createElement("span");
     this.countEl.className = "json-search-count";
     this.countEl.hidden = true;
     this.el.appendChild(this.countEl);
 
-    this.clearBtn = document.createElement("button");
+    this.clearBtn = activeDocument.createElement("button");
     this.clearBtn.className = "json-search-clear";
     this.clearBtn.type = "button";
     this.clearBtn.setAttribute("aria-label", "Clear search");
@@ -105,19 +105,19 @@ export class SearchBar {
 
   private makeIcon(): SVGElement {
     const NS = "http://www.w3.org/2000/svg";
-    const svg = document.createElementNS(NS, "svg");
+    const svg = activeDocument.createElementNS(NS, "svg");
     svg.setAttribute("class", "json-search-icon");
     svg.setAttribute("viewBox", "0 0 16 16");
     svg.setAttribute("width", "12");
     svg.setAttribute("height", "12");
-    const circle = document.createElementNS(NS, "circle");
+    const circle = activeDocument.createElementNS(NS, "circle");
     circle.setAttribute("cx", "7");
     circle.setAttribute("cy", "7");
     circle.setAttribute("r", "5");
     circle.setAttribute("fill", "none");
     circle.setAttribute("stroke", "currentColor");
     circle.setAttribute("stroke-width", "1.5");
-    const line = document.createElementNS(NS, "line");
+    const line = activeDocument.createElementNS(NS, "line");
     line.setAttribute("x1", "11");
     line.setAttribute("y1", "11");
     line.setAttribute("x2", "14");

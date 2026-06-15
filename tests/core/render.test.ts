@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { renderTree } from "../../src/core/render";
+import { renderTree as renderTreeRaw } from "../../src/core/render";
+import type { JsonValue, RenderOptions } from "../../src/core/types";
+
+// renderTree now takes an injected Document (so core/render stays Obsidian-free
+// and pop-out-safe). Inject the happy-dom document so the call sites stay unchanged.
+const renderTree = (value: JsonValue, opts: Omit<RenderOptions, "doc"> = {}) =>
+  renderTreeRaw(value, { ...opts, doc: document });
 
 describe("renderTree", () => {
   beforeEach(() => {

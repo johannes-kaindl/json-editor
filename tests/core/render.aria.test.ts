@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { renderTree } from "../../src/core/render";
+import { renderTree as renderTreeRaw } from "../../src/core/render";
+import type { JsonValue, RenderOptions } from "../../src/core/types";
+
+// renderTree now takes an injected Document; inject happy-dom's so calls stay unchanged.
+const renderTree = (value: JsonValue, opts: Omit<RenderOptions, "doc"> = {}) =>
+  renderTreeRaw(value, { ...opts, doc: document });
 
 describe("renderTree ARIA roles", () => {
   it("tree root has role='tree' with aria-label", () => {

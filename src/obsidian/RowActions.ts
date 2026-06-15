@@ -6,11 +6,11 @@ export interface RowActionsOptions {
 }
 
 export function createRowActions(opts: RowActionsOptions): HTMLElement {
-  const wrap = document.createElement("span");
+  const wrap = activeDocument.createElement("span");
   wrap.className = "json-row-actions";
 
   if (opts.onChangeType) {
-    const typeBtn = document.createElement("button");
+    const typeBtn = activeDocument.createElement("button");
     typeBtn.className = "json-row-action json-row-type";
     typeBtn.type = "button";
     typeBtn.title = "Change type";
@@ -24,7 +24,7 @@ export function createRowActions(opts: RowActionsOptions): HTMLElement {
   }
 
   if (opts.canRename) {
-    const renameBtn = document.createElement("button");
+    const renameBtn = activeDocument.createElement("button");
     renameBtn.className = "json-row-action json-row-rename";
     renameBtn.type = "button";
     renameBtn.title = "Rename key";
@@ -37,7 +37,7 @@ export function createRowActions(opts: RowActionsOptions): HTMLElement {
     wrap.appendChild(renameBtn);
   }
 
-  const delBtn = document.createElement("button");
+  const delBtn = activeDocument.createElement("button");
   delBtn.className = "json-row-action json-row-delete";
   delBtn.type = "button";
   delBtn.title = "Delete row";

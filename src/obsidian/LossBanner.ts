@@ -8,7 +8,7 @@ export class LossBanner {
   private el: HTMLDivElement;
 
   constructor() {
-    this.el = document.createElement("div");
+    this.el = activeDocument.createElement("div");
     this.el.className = "json-lossy-banner";
     this.el.hidden = true;
   }
