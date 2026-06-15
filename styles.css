@@ -585,7 +585,7 @@
   border-radius: var(--jv-radius-sm);
   color: var(--jv-fg-muted);
   cursor: pointer;
-  padding: var(--jv-space-1) var(--jv-space-3);
+  padding: var(--jv-space-2) var(--jv-space-4);
   font-family: var(--font-interface);
   font-size: 0.85em;
   transition: color var(--jv-dur-fast) var(--jv-ease), border-color var(--jv-dur-fast)
@@ -694,21 +694,37 @@
   margin-right: var(--jv-space-3);
 }
 /* Native Obsidian button look (the missing font-family made it render in the
-   UA default/monospace and read as unstyled). */
+   UA default/monospace; padding matches the .json-empty-state-init precedent so
+   the label has comfortable breathing room). */
 .json-large-file-load {
   margin-left: auto;
   white-space: nowrap;
   font-family: var(--font-interface);
   font-size: var(--font-ui-small);
-  padding: var(--jv-space-2) var(--jv-space-4);
+  padding: var(--jv-space-3) var(--jv-space-5);
   border: none;
   border-radius: var(--jv-radius-md);
   background: var(--interactive-normal);
   color: var(--text-normal);
+  box-shadow: var(--input-shadow);
   cursor: pointer;
 }
 .json-large-file-load:hover {
   background: var(--interactive-hover);
+}
+
+/* The `hidden` attribute must override the class-level `display` — they have
+   equal specificity, so author source-order would otherwise keep these elements
+   visible even when toggled off via el.hidden (the same trap already fixed for
+   .json-tooltip). Without this, e.g. the large-file banner's button shows on
+   every file and the search-clear (×) shows with an empty query. */
+.json-large-file-banner[hidden],
+.json-schema-banner[hidden],
+.json-loss-banner[hidden],
+.json-search-bar[hidden],
+.json-search-count[hidden],
+.json-search-clear[hidden] {
+  display: none;
 }
 
 /* ─── Row error marker ───────────────────────────────────────────── */

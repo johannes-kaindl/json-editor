@@ -23,7 +23,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Fixed
 - The copy button is now revealed on `:focus-within`, not just `:hover` (keyboard / touch-laptop access; audit §4.3.1).
 - The type-change menu now also closes on `pointerdown` outside, not only `mousedown`, so it can't get stuck open on touch.
-- The large-file banner's "Load tree anyway" button rendered in the wrong (UA-default) font because it set no `font-family`, and read as unstyled/unclear; it now uses the interface font + native Obsidian button styling, carries an explanatory tooltip, and the banner wraps gracefully on narrow screens.
+- **`hidden`-toggled elements stayed visible.** The large-file banner, schema banner, search bar, match-count and search-clear (×) set a `display` value on their class, which overrode the UA `[hidden] { display: none }` (equal specificity) — so `el.hidden = true` didn't hide them (the "Load tree anyway" button showed on every file, including small ones; the × showed with an empty query). Added explicit `[hidden]` overrides (the fix already present for the tooltip).
+- The large-file banner's "Load tree anyway" button rendered in the wrong (UA-default) font because it set no `font-family`, and read as unstyled/unclear; it now uses the interface font + native Obsidian button styling (comfortable label padding + button shadow), carries an explanatory tooltip, and the banner wraps gracefully on narrow screens. The `+ Add` affordance gained matching padding.
 
 ### Toolbar polish (audit §6.1)
 - Removed the redundant Tree/Source **view-header action** — the labeled toolbar toggle and the `toggle-tree-source` command remain the toggle paths.
