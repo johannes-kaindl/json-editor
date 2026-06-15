@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-## [1.8.0] — 2026-06-13
+## [1.8.0] — 2026-06-15
 
 **Mobile interaction model.** Tree-mode editing is now fully usable on touch devices, with no dead or invisible affordances. No desktop behavior changes beyond two additive improvements (keyboard reorder, focus-revealed copy button).
 
