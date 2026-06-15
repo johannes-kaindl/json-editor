@@ -13,13 +13,14 @@ Deliberately small surface: vanilla TypeScript, one runtime dependency (`ajv`), 
 
 ## Current state
 
-- **Latest release:** `1.7.0` (Rename & submission-prep: plugin id `obsidian-json-editor`→`json-editor`, full pre-submission doc/license-attribution pass; no editor functional changes. `minAppVersion` 1.5.7). The release asset carries the renamed `id` (verified).
+- **Latest release:** `1.8.0` (Mobile interaction model — long-press RowMenu, Alt+Arrow reorder, mobile undo/redo, 44px touch targets — plus toolbar/a11y polish, `Cmd/Ctrl+E` tree/source toggle via the view scope, and a hidden-attribute CSS fix. `minAppVersion` 1.5.7). Live on both remotes; GitHub release built with all 3 assets, CI green (verified).
+- **2026-06-15:** `1.8.0` — mobile interaction model + native UI/a11y polish; merged, tagged, pushed; mobile-model review + pre-publish + submission-readiness workflows, all findings addressed
 - **2026-06-13:** `1.7.0` — Phase-3 rename + docs (audit 1.1, 2.4–2.7, 2.15, 6.9); 3 commits, submission-readiness review + fixes
 - **2026-06-13:** `1.6.0` — Phase-2 guideline+UX release (audit Sections 2+3+4.1); 10 commits, multi-agent review + fixes
 - **2026-06-13:** `1.5.0` — Phase-1 blocker release (audit Section 1 + 2.8); 8 commits, multi-agent review + 2 rounds of fixes
 - **2026-05-27:** `0.1.2` → `1.3.0` released in one autonomous run (entire 1.x feature roadmap)
-- **Unreleased on `main`:** nothing pending. Deployed to test-vault `10_Pallas` (folder `json-editor`).
-- **Roadmap (next — only the submission remains):** **GATE — Community Plugin submission** via the `community.obsidian.md` Developer Dashboard (repo `johannes-kaindl/json-editor`; the portal scan is the install gate; the legacy obsidianmd/obsidian-releases PR path is retired). ID is first-come-first-served — do it promptly. Pre-submission smoke test (visual + mobile) recommended first; drag-drop is desktop-only. Deferred follow-ups: `prefer-active-doc` popout polish (69 lint warnings), mobile interaction model (audit §4.2–4.5), A11y (§5), 2.x feature ideas (§3.3–3.13, §6). Older open: cross-container drag-drop, `$schema` URL fetching.
+- **Unreleased on `main`:** nothing pending. **1.8.0 is live on both remotes with a GitHub release (3 assets, CI green).** Deployed to test-vault `10_Pallas` (folder `json-editor`); mobile interaction verified on a real iPhone.
+- **Roadmap (next — only the submission remains):** **GATE — Community Plugin submission** via the `community.obsidian.md` Developer Dashboard (repo `johannes-kaindl/json-editor`; the portal scan is the install gate; the legacy obsidianmd/obsidian-releases PR path is retired but still operational). ID is first-come-first-served — do it promptly. Submission-readiness workflow (2026-06-15) confirmed the repo is compliant (104 checks). Deferred follow-ups: `prefer-active-doc` popout polish (~70 lint warnings), broader A11y (§5; breadcrumb keyboard-access already fixed in 1.8.0), 2.x feature ideas (§6: schema autocompletion, multi-select, .jsonl; §3.3–3.13). Older open: cross-container drag-drop, `$schema` URL fetching, real pointer-events touch-drag.
 - **Tests:** 537 Vitest tests, all green; `npm test`
 - **Coverage:** 94.10% statements / 85.56% branches / 95.78% functions; `npm run test:coverage`
 - **Build:** `npm run build` clean. Bundle is ~163 KB (Ajv is the bulk; was ~37 KB pre-1.3.0).
@@ -40,7 +41,7 @@ Asymmetric: Codeberg is primary for source development; GitHub serves as a relea
 
 Auth: SSH key (`~/.ssh/id_ed25519`) registered with both accounts.
 
-**Mirror automation:** `.woodpecker.yml` is in the repo for Codeberg→GitHub auto-sync on tags, but Woodpecker CI is **not yet activated** — currently a manual two-step `git push` to each remote is needed. Activation TODO: enable Woodpecker on Codeberg + add two secrets (`github_token` PAT with `repo` scope, `github_repo` = `johannes-kaindl/json-editor`).
+**Mirror automation:** A **Codeberg native push-mirror to GitHub is ACTIVE** (`sync_on_commit`) — a push to Codeberg (`origin`) auto-propagates to GitHub including tags, and the mirror's PAT-authenticated push triggers `release.yml` on GitHub (verified end-to-end for 1.8.0). So **`git push origin main && git push origin <tag>` is sufficient** — no separate GitHub push needed. (`.woodpecker.yml` is an unused alternative mechanism and could be removed.)
 
 ## Architecture principles
 
@@ -213,7 +214,7 @@ In priority order:
    - Persistent undo across file reopens
    - Group-by-time-window batching for source-mode history (currently per-keystroke)
 
-5. **Activate Woodpecker CI** for Codeberg→GitHub mirror automation (currently manual two-step push works fine)
+5. **Mirror is already active** (Codeberg native push-mirror, see *Hosting setup*) — the `.woodpecker.yml` alternative is redundant and could be removed.
 
 ## Gotchas (known limitations, documented in code)
 
@@ -235,6 +236,16 @@ In priority order:
 ## Session history
 
 Append new entries at the top. Each entry = one working session.
+
+### 2026-06-15 — `1.8.0`: Mobile interaction model + native UI/a11y polish, released
+
+User-driven: build the full mobile interaction model before submitting (audit §4.2–4.5/6.10). Brainstorm → spec (`docs/superpowers/specs/2026-06-13-mobile-interaction-model-design.md`) → plan → strict TDD, inline. Shipped on `feat/mobile-interaction-model` (merged `--no-ff`): consolidated **long-press → Obsidian `Menu`** (`RowMenu.ts`) replacing hover-affordances + DnD on `Platform.isMobile`; `Alt+Arrow` keyboard reorder; mobile undo/redo toolbar buttons (`clickable-icon`); 44px touch targets; `touchMode` injected into `TreeView` (keeps it `Platform`-free + testable); shared `clipboard.ts`; `jsonTypeOf` extracted to `core/edit`. Decisions D1–D4 ratified with the user.
+
+Then several user-prompted iteration rounds (deploy → real-iPhone test → fix loop): toolbar native polish (audit 6.1 — dropped the redundant view-header action, softened the breadcrumb terminal); `Cmd/Ctrl+E` tree/source toggle added to the **view scope** (docks onto the core binding without a global override — the user's insight); breadcrumb `<span>`→`<button>` keyboard a11y; button font/aria parity; **systemic `[hidden]`-override bug** found (class `display` beat the `hidden` attribute → large-file "Load tree anyway" button + search-× showed when they shouldn't) and fixed for all affected elements with a regression test; native button padding.
+
+Adversarial workflows: mobile-model multi-dim review, pre-publish review, and a **submission-readiness** workflow (researched live docs.obsidian.md + obsidian-releases) — 104 compliance checks pass, no code blockers. iOS load failure during testing was diagnosed (systematic-debugging) to an **orphaned old 1.3 install colliding on the `.json` claim**, not our build.
+
+Release: merged to `main`, tagged `1.8.0`, pushed to Codeberg → **auto-mirrored to GitHub** (the push-mirror is active; the manual `push_mirrors-sync` API returned 500 but `sync_on_commit` propagated anyway) → `release.yml` built the GitHub release with all 3 assets; Test + Release CI green (verified via API). Tests 537→590. **Only the community.obsidian.md portal submission remains** (user step).
 
 ### 2026-06-13 — Phase 3: Rename + Docs (`1.7.0`) + alle drei Releases gepusht
 
