@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 **Mobile interaction model.** Tree-mode editing is now fully usable on touch devices, with no dead or invisible affordances. No desktop behavior changes beyond two additive improvements (keyboard reorder, focus-revealed copy button).
 
 ### Added
+- **<kbd>Cmd/Ctrl</kbd>+<kbd>E</kbd> toggles Tree/Source** while a JSON view is focused. It's handled by the view-local keymap scope (not a global command hotkey), so it never shadows the core "Toggle reading view" binding in Markdown — and the *Toggle tree/source view* command remains for custom rebinding. (Same scope mechanism that already powers <kbd>Cmd/Ctrl</kbd>+<kbd>F</kbd>/<kbd>Z</kbd>/<kbd>Shift</kbd>+<kbd>Z</kbd> inside JSON views.)
 - **Long-press action menu (mobile).** On Obsidian mobile, long-pressing a tree row opens a consolidated menu with *Copy value · Copy path · Rename key · Change type · Move up/down · Delete* — replacing the hover-only inline buttons and drag-and-drop, which don't work on touch (audit §4.2, §4.3, §6.10).
 - **`Alt+ArrowUp` / `Alt+ArrowDown` reorder** the focused row within its parent — a keyboard path for reordering on every platform (previously only mouse drag-and-drop; audit §4.2).
 - **Undo/Redo toolbar buttons on mobile**, with a live disabled state, since there is no hardware `Mod+Z` on touch (audit §4.5).

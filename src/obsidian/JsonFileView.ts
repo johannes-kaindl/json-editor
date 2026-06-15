@@ -88,14 +88,21 @@ export class JsonFileView extends TextFileView {
   /**
    * View-local key bindings (audit 2.1). The commands carry NO default
    * hotkeys (which violated the guideline and shadowed user bindings); instead
-   * a view Scope handles Mod+F/Mod+Z/Mod+Shift+Z only while this view is
-   * focused. Mod+Z/Mod+Shift+Z fall through (return undefined) when a text
-   * input or the CodeMirror editor is focused, so native input undo works.
+   * a view Scope handles Mod+F/Mod+E/Mod+Z/Mod+Shift+Z only while this view is
+   * focused. Because the Scope is on the keymap stack only for the JSON view,
+   * Mod+E toggles Tree/Source here without shadowing the core "Toggle reading
+   * view" (Mod+E) in Markdown — no global override. Mod+Z/Mod+Shift+Z fall
+   * through (return undefined) when a text input or the CodeMirror editor is
+   * focused, so native input undo works.
    */
   private registerKeymap(): void {
     this.scope = new Scope(this.app.scope);
     this.scope.register(["Mod"], "f", () => {
       this.focusSearch();
+      return false;
+    });
+    this.scope.register(["Mod"], "e", () => {
+      this.toggleMode();
       return false;
     });
     this.scope.register(["Mod"], "z", () => {

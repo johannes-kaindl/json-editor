@@ -76,7 +76,7 @@ Submission to the official Obsidian Community Plugin Directory is pending — se
 ## Usage
 
 - **Open a `.json` file** — the plugin's view is registered as the default opener for that extension.
-- **Switch mode** with the **Tree / Source** pills on the right of the toolbar.
+- **Switch mode** with the **Tree / Source** pills on the right of the toolbar, or press <kbd>Cmd/Ctrl</kbd>+<kbd>E</kbd> while a JSON file is focused (this only toggles tree/source inside JSON views — the core "Toggle reading view" binding is untouched everywhere else). You can also bind your own key via the *Toggle tree/source view* command.
 - **Edit values** in tree mode by clicking them. Strings get an `<input>`, numbers get numeric validation, booleans get a toggle. Press <kbd>Enter</kbd> to commit, <kbd>Esc</kbd> to cancel.
 - **Edit structure in tree mode** — `+ Add key` / `+ Add item` at the bottom of each container; hover a row for ✎ (rename key), ✕ (delete), `⋮⋮` (drag to reorder), and `T` (switch JSON type). `Backspace` / `Delete` removes the focused row.
 - **Edit free-text in source mode** — full CodeMirror editing with `Cmd/Ctrl+F` find. Switching back to tree re-renders from the current text.
