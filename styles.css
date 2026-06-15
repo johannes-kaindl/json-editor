@@ -664,6 +664,7 @@
 .json-large-file-banner {
   display: flex;
   align-items: center;
+  flex-wrap: wrap; /* on narrow/mobile, the button wraps below the message */
   gap: var(--jv-space-3);
   margin: 0;
   padding: var(--jv-space-3) var(--jv-space-5);
@@ -673,19 +674,30 @@
   background: color-mix(in srgb, var(--text-warning, #c8862e) 8%, var(--jv-bg-inset));
   border-bottom: 1px solid var(--jv-border);
 }
+.json-large-file-message {
+  flex: 1;
+  min-width: 12em;
+}
 .json-large-file-message::before {
   content: "⚠";
   margin-right: var(--jv-space-3);
 }
+/* Native Obsidian button look (the missing font-family made it render in the
+   UA default/monospace and read as unstyled). */
 .json-large-file-load {
   margin-left: auto;
-  padding: var(--jv-space-1) var(--jv-space-3);
-  border: 1px solid var(--jv-border);
-  border-radius: var(--jv-radius-md);
-  background: var(--jv-bg-panel);
-  color: var(--jv-fg);
-  cursor: pointer;
   white-space: nowrap;
+  font-family: var(--font-interface);
+  font-size: var(--font-ui-small);
+  padding: var(--jv-space-2) var(--jv-space-4);
+  border: none;
+  border-radius: var(--jv-radius-md);
+  background: var(--interactive-normal);
+  color: var(--text-normal);
+  cursor: pointer;
+}
+.json-large-file-load:hover {
+  background: var(--interactive-hover);
 }
 
 /* ─── Row error marker ───────────────────────────────────────────── */
@@ -827,4 +839,7 @@ body.is-mobile .json-add-trigger {
 body.is-mobile .json-inline-edit[type="checkbox"] {
   width: 22px;
   height: 22px;
+}
+body.is-mobile .json-large-file-load {
+  min-height: 44px;
 }

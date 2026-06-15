@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Fixed
 - The copy button is now revealed on `:focus-within`, not just `:hover` (keyboard / touch-laptop access; audit §4.3.1).
 - The type-change menu now also closes on `pointerdown` outside, not only `mousedown`, so it can't get stuck open on touch.
+- The large-file banner's "Load tree anyway" button rendered in the wrong (UA-default) font because it set no `font-family`, and read as unstyled/unclear; it now uses the interface font + native Obsidian button styling, carries an explanatory tooltip, and the banner wraps gracefully on narrow screens.
 
 ### Toolbar polish (audit §6.1)
 - Removed the redundant Tree/Source **view-header action** — the labeled toolbar toggle and the `toggle-tree-source` command remain the toggle paths.
