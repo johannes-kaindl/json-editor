@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.8.2] — 2026-06-16
+
+**Lint follow-up.** Fixes a regression in 1.8.1's review cleanup.
+
+### Fixed
+- 1.8.1 silenced the `prefer-active-doc` warnings by using the `activeDocument` global, but the community-review's type-aware linter sees `activeDocument` as `any` (it doesn't load Obsidian's ambient global declarations), which cascaded into many `no-unsafe-*` warnings across the UI components. DOM access now goes through a typed `activeDoc(): Document` helper, so call sites stay type-safe (`prefer-active-doc` remains satisfied). Functionally identical; our own `tsc` against the real Obsidian types was clean throughout.
+
 ## [1.8.1] — 2026-06-16
 
 **Review cleanup.** Addresses the recommendations and warnings from the Obsidian Community automated review (which had passed with no errors). No user-facing behavior changes — pop-out windows aside.
