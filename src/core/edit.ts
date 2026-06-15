@@ -127,6 +127,22 @@ export function deleteAt(value: JsonValue, path: JsonPath): JsonValue {
 
 export type JsonType = "string" | "number" | "boolean" | "null" | "object" | "array";
 
+/** Classify a JsonValue into one of the six JSON types. */
+export function jsonTypeOf(value: JsonValue): JsonType {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "array";
+  switch (typeof value) {
+    case "string":
+      return "string";
+    case "number":
+      return "number";
+    case "boolean":
+      return "boolean";
+    default:
+      return "object";
+  }
+}
+
 function defaultForType(type: JsonType): JsonValue {
   switch (type) {
     case "string":

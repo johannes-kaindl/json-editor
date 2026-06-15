@@ -1,10 +1,20 @@
-import { Notice, Scope, TFile, TextFileView, type WorkspaceLeaf, normalizePath } from "obsidian";
+import {
+  Notice,
+  Platform,
+  Scope,
+  TFile,
+  TextFileView,
+  type WorkspaceLeaf,
+  normalizePath,
+  setIcon,
+} from "obsidian";
 import {
   type JsonType,
   addArrayItem,
   addObjectKey,
   changeType,
   deleteAt,
+  jsonTypeOf,
   moveArrayItem,
   moveObjectKey,
   renameKey,
@@ -20,6 +30,7 @@ import type { JsonPath, JsonValue } from "../core/types";
 import { Breadcrumb } from "./Breadcrumb";
 import { LargeFileBanner } from "./LargeFileBanner";
 import { LossBanner } from "./LossBanner";
+import { openRowMenu } from "./RowMenu";
 import { SchemaBanner } from "./SchemaBanner";
 import { SearchBar } from "./SearchBar";
 import type { JsonEditorSettings } from "./SettingsTab";
@@ -27,6 +38,7 @@ import { SourceView } from "./SourceView";
 import { Tooltip, tooltipContentForValue } from "./Tooltip";
 import { TreeView } from "./TreeView";
 import { closeActiveMenu } from "./TypeMenu";
+import { copyJsonPath, copyJsonValue } from "./clipboard";
 
 export const JSON_VIEW_TYPE = "json-editor-view";
 
@@ -41,6 +53,8 @@ export class JsonFileView extends TextFileView {
 
   private toolbarEl!: HTMLDivElement;
   private toggleEl!: HTMLDivElement;
+  private undoBtn: HTMLButtonElement | null = null;
+  private redoBtn: HTMLButtonElement | null = null;
   private treePillEl!: HTMLButtonElement;
   private sourcePillEl!: HTMLButtonElement;
   private bodyEl!: HTMLDivElement;
@@ -74,14 +88,21 @@ export class JsonFileView extends TextFileView {
   /**
    * View-local key bindings (audit 2.1). The commands carry NO default
    * hotkeys (which violated the guideline and shadowed user bindings); instead
-   * a view Scope handles Mod+F/Mod+Z/Mod+Shift+Z only while this view is
-   * focused. Mod+Z/Mod+Shift+Z fall through (return undefined) when a text
-   * input or the CodeMirror editor is focused, so native input undo works.
+   * a view Scope handles Mod+F/Mod+E/Mod+Z/Mod+Shift+Z only while this view is
+   * focused. Because the Scope is on the keymap stack only for the JSON view,
+   * Mod+E toggles Tree/Source here without shadowing the core "Toggle reading
+   * view" (Mod+E) in Markdown — no global override. Mod+Z/Mod+Shift+Z fall
+   * through (return undefined) when a text input or the CodeMirror editor is
+   * focused, so native input undo works.
    */
   private registerKeymap(): void {
     this.scope = new Scope(this.app.scope);
     this.scope.register(["Mod"], "f", () => {
       this.focusSearch();
+      return false;
+    });
+    this.scope.register(["Mod"], "e", () => {
+      this.toggleMode();
       return false;
     });
     this.scope.register(["Mod"], "z", () => {
@@ -128,6 +149,7 @@ export class JsonFileView extends TextFileView {
       this.treePillEl.disabled = false;
       this.renderEmptyState();
       this.applyValidation();
+      this.refreshUndoButtons();
       return;
     }
     if (!this.recomputeFromData()) this.mode = "source";
@@ -140,6 +162,7 @@ export class JsonFileView extends TextFileView {
     this.updateLossyState();
     this.refreshMode();
     this.applyValidation();
+    this.refreshUndoButtons();
     void this.tryLoadCompanionSchema();
   }
 
@@ -258,6 +281,17 @@ export class JsonFileView extends TextFileView {
     this.toolbarEl.appendChild(this.breadcrumb.getElement());
     this.toolbarEl.appendChild(this.searchBar.getElement());
     this.toolbarEl.appendChild(this.toggleEl);
+    // Mobile has no hardware Mod+Z (audit 4.5): expose undo/redo in the toolbar.
+    if (Platform.isMobile) {
+      this.undoBtn = this.makeToolbarIconButton("json-undo-btn", "rotate-ccw", "Undo", () =>
+        this.undo(),
+      );
+      this.redoBtn = this.makeToolbarIconButton("json-redo-btn", "rotate-cw", "Redo", () =>
+        this.redo(),
+      );
+      this.toolbarEl.appendChild(this.undoBtn);
+      this.toolbarEl.appendChild(this.redoBtn);
+    }
     this.contentEl.appendChild(this.toolbarEl);
 
     this.schemaBanner = new SchemaBanner();
@@ -272,6 +306,29 @@ export class JsonFileView extends TextFileView {
     this.tooltip = new Tooltip(this.contentEl);
 
     this.contentEl.appendChild(this.bodyEl);
+  }
+
+  private makeToolbarIconButton(
+    cls: string,
+    icon: string,
+    label: string,
+    onClick: () => void,
+  ): HTMLButtonElement {
+    const btn = document.createElement("button");
+    // `clickable-icon` is Obsidian's native icon-button class — consistent
+    // sizing/hover/theming, and enlarged on mobile for touch.
+    btn.className = `clickable-icon json-toolbar-btn ${cls}`;
+    btn.type = "button";
+    btn.setAttribute("aria-label", label);
+    btn.title = label;
+    setIcon(btn, icon);
+    btn.addEventListener("click", () => onClick());
+    return btn;
+  }
+
+  private refreshUndoButtons(): void {
+    if (this.undoBtn) this.undoBtn.disabled = !this.canUndo();
+    if (this.redoBtn) this.redoBtn.disabled = !this.canRedo();
   }
 
   setSchema(schemaText: string): void {
@@ -371,10 +428,6 @@ export class JsonFileView extends TextFileView {
     this.switchTo(this.mode === "tree" ? "source" : "tree");
   }
 
-  override async onOpen(): Promise<void> {
-    this.addAction("list-tree", "Toggle tree/source view", () => this.toggleMode());
-  }
-
   private refreshMode(): void {
     this.sourceView?.destroy();
     this.bodyEl.replaceChildren();
@@ -387,9 +440,11 @@ export class JsonFileView extends TextFileView {
     if (this.mode === "tree" && this.currentValue !== null) {
       this.treeView = new TreeView(this.bodyEl, {
         readonly: this.lossyRoundtrip,
+        touchMode: Platform.isMobile,
         markerStyle: this.settings.markerStyle,
         autoCollapseDepth: this.settings.autoCollapseDepth,
         onChange: (newValue) => this.handleTreeChange(newValue),
+        onContextMenu: (evt, path) => this.openRowMenuFor(evt, path),
         onPathClick: (path) => this.breadcrumb.setPath(path),
         onBeforeRender: () => this.tooltip.hide(),
         onValueHover: (target, path, value) => {
@@ -420,6 +475,7 @@ export class JsonFileView extends TextFileView {
     } else if (this.mode !== "tree") {
       this.searchBar.setMatchInfo(null);
     }
+    this.refreshUndoButtons();
   }
 
   private onQueryChange(query: string): void {
@@ -542,6 +598,77 @@ export class JsonFileView extends TextFileView {
     }
   }
 
+  /**
+   * Reorder the value at `path` within its parent by dir (-1 up / +1 down).
+   * Shared seam for the touch RowMenu's Move up/down. No-op at the bounds.
+   */
+  moveRow(path: JsonPath, dir: -1 | 1): void {
+    const lastSeg = path[path.length - 1];
+    const parentPath = path.slice(0, -1);
+    const parent = this.valueAt(parentPath);
+    if (typeof lastSeg === "number" && Array.isArray(parent)) {
+      const toIdx = lastSeg + dir;
+      if (toIdx < 0 || toIdx >= parent.length) return;
+      this.handleMoveItem(parentPath, lastSeg, toIdx);
+    } else if (typeof lastSeg === "string" && parent !== null && typeof parent === "object") {
+      const keys = Object.keys(parent as Record<string, JsonValue>);
+      const pos = keys.indexOf(lastSeg);
+      const toPos = pos + dir;
+      if (pos === -1 || toPos < 0 || toPos >= keys.length) return;
+      this.handleMoveKey(parentPath, lastSeg, toPos);
+    }
+  }
+
+  private valueAt(path: JsonPath): JsonValue {
+    let cur: JsonValue = this.currentValue;
+    for (const seg of path) {
+      if (Array.isArray(cur) && typeof seg === "number") cur = cur[seg];
+      else if (cur !== null && typeof cur === "object" && typeof seg === "string")
+        cur = (cur as { [k: string]: JsonValue })[seg];
+      else return null;
+    }
+    return cur;
+  }
+
+  private openRowMenuFor(evt: MouseEvent, path: JsonPath): void {
+    const value = this.valueAt(path);
+    const lastSeg = path[path.length - 1];
+    const parentPath = path.slice(0, -1);
+    const parent = this.valueAt(parentPath);
+    let pos = -1;
+    let siblingCount = 0;
+    if (typeof lastSeg === "number" && Array.isArray(parent)) {
+      pos = lastSeg;
+      siblingCount = parent.length;
+    } else if (typeof lastSeg === "string" && parent !== null && typeof parent === "object") {
+      const keys = Object.keys(parent as Record<string, JsonValue>);
+      pos = keys.indexOf(lastSeg);
+      siblingCount = keys.length;
+    }
+    const errMap =
+      this.settings.validateAgainstSchema && this.currentSchema && this.currentValue !== null
+        ? pathErrorsToMap(this.currentSchema.validate(this.currentValue))
+        : new Map<string, string>();
+    const key = path.length === 0 ? "root" : pathToString(path);
+    openRowMenu(evt, {
+      value,
+      path,
+      canRename: typeof lastSeg === "string",
+      currentType: jsonTypeOf(value),
+      readonly: this.lossyRoundtrip,
+      validationError: errMap.get(key),
+      moveUpEnabled: pos > 0,
+      moveDownEnabled: pos >= 0 && pos < siblingCount - 1,
+      onCopyValue: () => copyJsonValue(value),
+      onCopyPath: () => copyJsonPath(path),
+      onRename: () => this.treeView?.startRenameAt(path),
+      onChangeType: (t) => this.handleChangeType(path, t),
+      onMoveUp: () => this.moveRow(path, -1),
+      onMoveDown: () => this.moveRow(path, +1),
+      onDelete: () => this.handleDelete(path),
+    });
+  }
+
   private applyMutation(newValue: JsonValue, _description: string): void {
     // Unified history (1.2.0): push the pre-edit TEXT, not the JsonValue.
     this.history.push(this.data);
@@ -556,18 +683,21 @@ export class JsonFileView extends TextFileView {
       }
     }
     this.applyValidation();
+    this.refreshUndoButtons();
   }
 
   undo(): void {
     const prev = this.history.undo(this.data);
     if (prev === null) return;
     this.restoreText(prev);
+    this.refreshUndoButtons();
   }
 
   redo(): void {
     const next = this.history.redo(this.data);
     if (next === null) return;
     this.restoreText(next);
+    this.refreshUndoButtons();
   }
 
   private restoreText(text: string): void {
@@ -619,6 +749,9 @@ export class JsonFileView extends TextFileView {
     this.updateLossyState();
     this.requestSave();
     this.applyValidation();
+    // A source-mode edit grows the unified history, so the mobile undo button
+    // must reflect it immediately (not wait for the next refresh).
+    this.refreshUndoButtons();
   }
 
   private showBanner(message: string): void {

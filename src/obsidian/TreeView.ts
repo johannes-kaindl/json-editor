@@ -1,4 +1,4 @@
-import { type JsonType, computeInsertionIndex, editValue } from "../core/edit";
+import { type JsonType, computeInsertionIndex, editValue, jsonTypeOf } from "../core/edit";
 import { pathToString } from "../core/path";
 import { renderTree } from "../core/render";
 import { findMatches } from "../core/search";
@@ -30,6 +30,16 @@ export interface TreeViewOptions {
   onMoveKey?: (parentPath: JsonPath, key: string, toPos: number) => void;
   onChangeType?: (path: JsonPath, newType: JsonType) => void;
   onError?: (err: Error) => void;
+  /**
+   * When true (Obsidian mobile), suppress hover/DnD affordances; actions come
+   * from a long-press menu instead. Injected from JsonFileView's Platform.isMobile.
+   */
+  touchMode?: boolean;
+  /**
+   * Touch-mode only: fired on long-press (contextmenu) of a row. The host opens
+   * the consolidated RowMenu. Receives the originating event and the row path.
+   */
+  onContextMenu?: (evt: MouseEvent, path: JsonPath) => void;
 }
 
 const FLASH_MS = 600;
@@ -239,6 +249,16 @@ export class TreeView {
       const lastSeg = path[path.length - 1];
       const canRename = typeof lastSeg === "string";
 
+      if (this.opts.touchMode) {
+        // Touch: no hover/DnD affordances — a long-press opens the RowMenu.
+        row.addEventListener("contextmenu", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.opts.onContextMenu?.(e as MouseEvent, path);
+        });
+        return;
+      }
+
       const handle = document.createElement("span");
       handle.className = "json-drag-handle";
       handle.setAttribute("aria-hidden", "true");
@@ -282,7 +302,7 @@ export class TreeView {
 
   private openTypeMenuFor(row: HTMLElement, path: JsonPath, value: JsonValue): void {
     if (!this.opts.onChangeType) return;
-    const current = typeOfJsonValue(value);
+    const current = jsonTypeOf(value);
     openTypeMenu(row, {
       currentType: current,
       onPick: (newType) => this.opts.onChangeType?.(path, newType),
@@ -420,6 +440,20 @@ export class TreeView {
 
   private parsePathStrSafe(pathStr: string): JsonPath {
     return parsePathStr(pathStr);
+  }
+
+  /**
+   * Public seam: start inline rename for the row at `path` (used by the touch
+   * RowMenu's "Rename key"). No-op for array indices or missing rows.
+   */
+  startRenameAt(path: JsonPath): void {
+    const lastSeg = path[path.length - 1];
+    if (typeof lastSeg !== "string") return;
+    const pathStr = pathToString(path);
+    const row = this.container.querySelector<HTMLElement>(
+      `.json-row[data-path="${cssEscapeAttr(pathStr)}"]`,
+    );
+    if (row) this.startRename(row, path, lastSeg);
   }
 
   private startRename(row: HTMLElement, path: JsonPath, currentKey: string): void {
@@ -575,6 +609,32 @@ export class TreeView {
     }
   }
 
+  /**
+   * Reorder the active row within its parent by `dir` (-1 up / +1 down). Shared
+   * by Alt+Arrow keyboard reorder (and conceptually mirrors the touch RowMenu's
+   * Move up/down). No-op at the bounds or in read-only mode.
+   */
+  private moveActive(row: HTMLElement, dir: -1 | 1): void {
+    if (this.opts.readonly) return;
+    const pathStr = row.getAttribute("data-path");
+    if (!pathStr) return;
+    const path = this.parsePathStrSafe(pathStr);
+    const lastSeg = path[path.length - 1];
+    const parentPath = path.slice(0, -1);
+    const parent = this.getValueAt(parentPath);
+    if (typeof lastSeg === "number" && Array.isArray(parent)) {
+      const toIdx = lastSeg + dir;
+      if (toIdx < 0 || toIdx >= parent.length) return;
+      this.opts.onMoveItem?.(parentPath, lastSeg, toIdx);
+    } else if (typeof lastSeg === "string" && parent !== null && typeof parent === "object") {
+      const keys = Object.keys(parent as Record<string, unknown>);
+      const pos = keys.indexOf(lastSeg);
+      const toPos = pos + dir;
+      if (pos === -1 || toPos < 0 || toPos >= keys.length) return;
+      this.opts.onMoveKey?.(parentPath, lastSeg, toPos);
+    }
+  }
+
   private handleKeydown(e: KeyboardEvent): void {
     if (this.editing) return;
     const active = this.activeRow;
@@ -591,6 +651,11 @@ export class TreeView {
 
     switch (e.key) {
       case "ArrowDown": {
+        if (e.altKey) {
+          e.preventDefault();
+          this.moveActive(active, +1);
+          return;
+        }
         const next = rows[idx + 1];
         if (next) {
           e.preventDefault();
@@ -599,6 +664,11 @@ export class TreeView {
         return;
       }
       case "ArrowUp": {
+        if (e.altKey) {
+          e.preventDefault();
+          this.moveActive(active, -1);
+          return;
+        }
         const prev = rows[idx - 1];
         if (prev) {
           e.preventDefault();
@@ -665,6 +735,7 @@ export class TreeView {
   }
 
   private attachCopyButtons(treeRoot: HTMLElement): void {
+    if (this.opts.touchMode) return;
     const rows = treeRoot.querySelectorAll<HTMLElement>(".json-row");
     rows.forEach((row) => {
       const pathStr = row.getAttribute("data-path");
@@ -751,21 +822,6 @@ function locateChildForSegment(parent: HTMLElement, segment: string | number): H
     return null;
   }
   return rows[segment] ?? null;
-}
-
-function typeOfJsonValue(value: JsonValue): JsonType {
-  if (value === null) return "null";
-  if (Array.isArray(value)) return "array";
-  switch (typeof value) {
-    case "string":
-      return "string";
-    case "number":
-      return "number";
-    case "boolean":
-      return "boolean";
-    default:
-      return "object";
-  }
 }
 
 function locateValueByPathStr(root: JsonValue, pathStr: string): JsonValue {

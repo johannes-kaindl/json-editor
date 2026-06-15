@@ -14,6 +14,8 @@ describe("LargeFileBanner", () => {
     const btn = b.getElement().querySelector("button");
     expect(btn).not.toBeNull();
     expect(btn?.textContent).toMatch(/load tree anyway/i);
+    // tooltip explains what the button does (clarity fix)
+    expect(btn?.title).toMatch(/tree/i);
   });
 
   it("clicking the button fires onLoadAnyway", () => {

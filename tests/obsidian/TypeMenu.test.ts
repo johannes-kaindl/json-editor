@@ -80,6 +80,15 @@ describe("openTypeMenu", () => {
     expect(document.querySelector(".json-type-menu")).toBeNull();
   });
 
+  it("pointerdown outside closes the menu (touch-laptop hardening)", () => {
+    const anchor = document.createElement("button");
+    const elsewhere = document.createElement("div");
+    document.body.append(anchor, elsewhere);
+    openTypeMenu(anchor, { currentType: "string", onPick: () => {} });
+    elsewhere.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+    expect(document.querySelector(".json-type-menu")).toBeNull();
+  });
+
   it("only one menu is visible at a time (opening a second closes the first)", () => {
     const anchorA = document.createElement("button");
     const anchorB = document.createElement("button");

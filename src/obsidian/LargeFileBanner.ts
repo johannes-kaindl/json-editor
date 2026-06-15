@@ -20,6 +20,8 @@ export class LargeFileBanner {
     btn.type = "button";
     btn.className = "json-large-file-load";
     btn.textContent = "Load tree anyway";
+    btn.title =
+      "Render this large file as an interactive tree instead of plain text (may be slow to open).";
     btn.addEventListener("click", () => onLoadAnyway());
     this.el.appendChild(btn);
   }

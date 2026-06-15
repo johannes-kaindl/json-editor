@@ -59,17 +59,21 @@ export function openTypeMenu(anchor: HTMLElement, opts: TypeMenuOptions): void {
       closeActiveMenu();
     }
   };
-  const onMousedown = (e: MouseEvent) => {
+  const onPointerOutside = (e: Event) => {
     const t = e.target as Node | null;
     if (t && menu.contains(t)) return;
     closeActiveMenu();
   };
   doc.addEventListener("keydown", onKeydown);
-  doc.addEventListener("mousedown", onMousedown);
+  // Listen on both mousedown and pointerdown: pointerdown fires for touch input
+  // (and touch-laptops) where mousedown may not, preventing a stuck-open menu.
+  doc.addEventListener("mousedown", onPointerOutside);
+  doc.addEventListener("pointerdown", onPointerOutside);
 
   const close = () => {
     doc.removeEventListener("keydown", onKeydown);
-    doc.removeEventListener("mousedown", onMousedown);
+    doc.removeEventListener("mousedown", onPointerOutside);
+    doc.removeEventListener("pointerdown", onPointerOutside);
     menu.remove();
     if (activeMenu?.el === menu) activeMenu = null;
   };

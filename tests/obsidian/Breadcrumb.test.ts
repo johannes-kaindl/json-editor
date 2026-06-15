@@ -33,6 +33,14 @@ describe("Breadcrumb", () => {
     expect(seps.length).toBe(3);
   });
 
+  it("renders segments as focusable <button>s (keyboard accessible, WCAG 2.1.1)", () => {
+    const b = new Breadcrumb({});
+    b.setPath(["a", "b"]);
+    const segs = b.getElement().querySelectorAll(".bc-seg");
+    expect(segs.length).toBe(3);
+    segs.forEach((s) => expect(s.tagName).toBe("BUTTON"));
+  });
+
   it("marks the last segment with .bc-seg-terminal", () => {
     const b = new Breadcrumb({});
     b.setPath(["a", "b"]);

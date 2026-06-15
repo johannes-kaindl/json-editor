@@ -23,14 +23,31 @@ describe("JsonFileView keymap Scope (audit 2.1)", () => {
     document.body.innerHTML = "";
   });
 
-  it("registers a view-local Scope with Mod+F, Mod+Z, Mod+Shift+Z", () => {
+  it("registers a view-local Scope with Mod+F, Mod+E, Mod+Z, Mod+Shift+Z", () => {
     const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
     const scope = scopeOf(v);
     expect(scope).toBeTruthy();
     const bindings = scope.keys.map(binding);
     expect(bindings).toContain("Mod:f");
+    expect(bindings).toContain("Mod:e");
     expect(bindings).toContain("Mod:z");
     expect(bindings).toContain("Mod+Shift:z");
+  });
+
+  it("Mod+E toggles Tree<->Source (consumes the key) without a global override", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS); // defaultMode 'tree'
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"a":1}', true);
+    expect(v.contentEl.querySelector(".json-tree-root")).not.toBeNull();
+
+    const modE = scopeOf(v).keys.find((k) => binding(k) === "Mod:e");
+    expect(modE).toBeTruthy();
+
+    expect(modE?.handler()).toBe(false); // consumed → core Cmd+E does not also fire
+    expect(v.contentEl.querySelector(".cm-editor")).not.toBeNull(); // now source
+
+    modE?.handler();
+    expect(v.contentEl.querySelector(".json-tree-root")).not.toBeNull(); // back to tree
   });
 
   it("Mod+Z falls through (no document undo) while an inline editor is focused", () => {

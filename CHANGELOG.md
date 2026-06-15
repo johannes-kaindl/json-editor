@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.8.0] — 2026-06-13
+
+**Mobile interaction model.** Tree-mode editing is now fully usable on touch devices, with no dead or invisible affordances. No desktop behavior changes beyond two additive improvements (keyboard reorder, focus-revealed copy button).
+
+### Added
+- **<kbd>Cmd/Ctrl</kbd>+<kbd>E</kbd> toggles Tree/Source** while a JSON view is focused. It's handled by the view-local keymap scope (not a global command hotkey), so it never shadows the core "Toggle reading view" binding in Markdown — and the *Toggle tree/source view* command remains for custom rebinding. (Same scope mechanism that already powers <kbd>Cmd/Ctrl</kbd>+<kbd>F</kbd>/<kbd>Z</kbd>/<kbd>Shift</kbd>+<kbd>Z</kbd> inside JSON views.)
+- **Long-press action menu (mobile).** On Obsidian mobile, long-pressing a tree row opens a consolidated menu with *Copy value · Copy path · Rename key · Change type · Move up/down · Delete* — replacing the hover-only inline buttons and drag-and-drop, which don't work on touch (audit §4.2, §4.3, §6.10).
+- **`Alt+ArrowUp` / `Alt+ArrowDown` reorder** the focused row within its parent — a keyboard path for reordering on every platform (previously only mouse drag-and-drop; audit §4.2).
+- **Undo/Redo toolbar buttons on mobile**, with a live disabled state, since there is no hardware `Mod+Z` on touch (audit §4.5).
+
+### Changed
+- On mobile, the hover-revealed inline row actions, copy button and drag handle are no longer rendered (they were invisible-but-tappable — a stray tap could fire an unconfirmed delete) and rows are not marked `draggable` (which collided with touch scroll/long-press); all actions come from the long-press menu instead (audit §4.3, §4.4, §4.8).
+- ≥44px touch targets on mobile across the UI (audit §4.4): the collapse toggle, toolbar icon buttons (undo/redo), search-clear, mode pills, and the value-editing controls (inline text/number/key-rename field, the boolean checkbox, and the "+ Add key/item" button). The undo/redo buttons use Obsidian's native `clickable-icon` class for consistent sizing/theming.
+
+### Fixed
+- The copy button is now revealed on `:focus-within`, not just `:hover` (keyboard / touch-laptop access; audit §4.3.1).
+- The type-change menu now also closes on `pointerdown` outside, not only `mousedown`, so it can't get stuck open on touch.
+- **`hidden`-toggled elements stayed visible.** The large-file banner, schema banner, search bar, match-count and search-clear (×) set a `display` value on their class, which overrode the UA `[hidden] { display: none }` (equal specificity) — so `el.hidden = true` didn't hide them (the "Load tree anyway" button showed on every file, including small ones; the × showed with an empty query). Added explicit `[hidden]` overrides (the fix already present for the tooltip).
+- The large-file banner's "Load tree anyway" button rendered in the wrong (UA-default) font because it set no `font-family`, and read as unstyled/unclear; it now uses the interface font + native Obsidian button styling (comfortable label padding + button shadow), carries an explanatory tooltip, and the banner wraps gracefully on narrow screens. The `+ Add` affordance gained matching padding.
+
+### Toolbar polish (audit §6.1)
+- Removed the redundant Tree/Source **view-header action** — the labeled toolbar toggle and the `toggle-tree-source` command remain the toggle paths.
+- The breadcrumb's current segment is now emphasized by font weight instead of a filled accent chip, so it reads as a path location rather than a button.
+
+### Accessibility & polish (pre-publish pass)
+- Breadcrumb segments are now real `<button>`s — Tab-focusable and Enter/Space-operable with a visible focus ring (WCAG 2.1.1); previously they were `<span>`s with click-only handlers.
+- The copy button and tree row-action buttons now use the interface font (parity with the rest of the chrome), and the copy button gained an `aria-label`.
+
+### Notes
+- `isDesktopOnly` stays `false` (the plugin uses no Node/Electron APIs). Real pointer-events touch-drag and the broader mobile/perf items (virtualization, source-mode debounce) remain deferred to a later release.
+
 ## [1.7.0] — 2026-06-13
 
 **Rename & submission-prep release.** No functional changes to the editor — this renames the plugin for the Community Plugin Directory and completes the documentation/attribution pass.

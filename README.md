@@ -9,7 +9,7 @@ View and edit `.json` files in Obsidian with a Tree↔Source toggle. Renders `` 
 
 **Target platform:** Obsidian 1.5.7+ on desktop and mobile. No external services, no remote resources, no telemetry.
 
-> **Status: 1.6.0 released.** Tree mode is a full structural editor — add / delete / rename keys, add / delete items, reorder rows by drag-and-drop, and switch a value's JSON type. Undo/redo (`Cmd/Ctrl+Z` / `Cmd/Ctrl+Shift+Z`) is unified across tree and source modes. Optional JSON Schema validation (opt-in) and a large-file guard round out the editor. See [`CHANGELOG.md`](CHANGELOG.md) for the full per-release log.
+> **Status: 1.8.0 released.** Tree mode is a full structural editor — add / delete / rename keys, add / delete items, reorder rows (drag-and-drop or `Alt`+`↑`/`↓`), and switch a value's JSON type. Undo/redo (`Cmd/Ctrl+Z` / `Cmd/Ctrl+Shift+Z`) is unified across tree and source modes. On mobile, a long-press action menu, touch-sized controls and toolbar undo/redo make tree editing fully usable by touch. Optional JSON Schema validation (opt-in) and a large-file guard round out the editor. See [`CHANGELOG.md`](CHANGELOG.md) for the full per-release log.
 
 ---
 
@@ -76,7 +76,7 @@ Submission to the official Obsidian Community Plugin Directory is pending — se
 ## Usage
 
 - **Open a `.json` file** — the plugin's view is registered as the default opener for that extension.
-- **Switch mode** with the **Tree / Source** pills on the right of the toolbar.
+- **Switch mode** with the **Tree / Source** pills on the right of the toolbar, or press <kbd>Cmd/Ctrl</kbd>+<kbd>E</kbd> while a JSON file is focused (this only toggles tree/source inside JSON views — the core "Toggle reading view" binding is untouched everywhere else). You can also bind your own key via the *Toggle tree/source view* command.
 - **Edit values** in tree mode by clicking them. Strings get an `<input>`, numbers get numeric validation, booleans get a toggle. Press <kbd>Enter</kbd> to commit, <kbd>Esc</kbd> to cancel.
 - **Edit structure in tree mode** — `+ Add key` / `+ Add item` at the bottom of each container; hover a row for ✎ (rename key), ✕ (delete), `⋮⋮` (drag to reorder), and `T` (switch JSON type). `Backspace` / `Delete` removes the focused row.
 - **Edit free-text in source mode** — full CodeMirror editing with `Cmd/Ctrl+F` find. Switching back to tree re-renders from the current text.
@@ -87,6 +87,15 @@ Submission to the official Obsidian Community Plugin Directory is pending — se
   { "feature": "tree-rendered", "collapsible": true }
   ```
   ````
+- **Reorder** a row with <kbd>Alt</kbd>+<kbd>↑</kbd> / <kbd>Alt</kbd>+<kbd>↓</kbd> (keyboard), or drag the `⋮⋮` handle (mouse).
+
+### On mobile
+
+Hover and drag-and-drop don't exist on touch, so the row actions are consolidated into a menu:
+
+- **Long-press a tree row** to open its action menu: *Copy value · Copy path · Rename key · Change type · Move up / Move down · Delete*.
+- **Single-tap** a value to edit it; tap the chevron to collapse/expand.
+- **Undo / Redo** buttons appear in the toolbar (no hardware <kbd>Cmd/Ctrl+Z</kbd> on touch).
 
 ---
 
@@ -222,12 +231,11 @@ Bug reports and pull requests are welcome on Codeberg. For larger changes, pleas
 
 Actively maintained by a single maintainer ([@jkaindl](https://codeberg.org/jkaindl) / [@johannes-kaindl](https://github.com/johannes-kaindl)). Built for personal use, released because it might be useful to others.
 
-**Shipped** (see [`CHANGELOG.md`](CHANGELOG.md)): structural tree editing & undo/redo (1.0.0), drag-and-drop reorder + type-switching (1.1.0), unified cross-mode undo/redo (1.2.0), JSON Schema validation (1.3.0, opt-in since 1.5.0), data-integrity & crash hardening (1.5.0), guideline alignment + large-file guard + source-mode search (1.6.0).
+**Shipped** (see [`CHANGELOG.md`](CHANGELOG.md)): structural tree editing & undo/redo (1.0.0), drag-and-drop reorder + type-switching (1.1.0), unified cross-mode undo/redo (1.2.0), JSON Schema validation (1.3.0, opt-in since 1.5.0), data-integrity & crash hardening (1.5.0), guideline alignment + large-file guard + source-mode search (1.6.0), submission-prep + plugin rename to `json-editor` (1.7.0), mobile interaction model + toolbar polish (1.8.0).
 
 **Roadmap (rough, 2.x ideas):**
-1. **Community Plugin Directory submission** — via the Developer Dashboard at `community.obsidian.md` (the old `obsidianmd/obsidian-releases` PR flow was retired May 2026).
-2. **Consolidated mobile interaction model** — long-press context menu replacing hover / Alt-click / drag.
-3. **Tree search match navigation** — next/prev jumps and match highlighting, beyond the current strict filter.
+1. **Tree search match navigation** — next/prev jumps and match highlighting, beyond the current strict filter.
+2. **Schema-aware autocompletion** — key/enum suggestions when a companion schema is loaded.
 
 ---
 

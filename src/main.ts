@@ -61,9 +61,10 @@ export default class JsonEditorPlugin extends Plugin {
     this.addCommand({
       id: "toggle-tree-source",
       name: "Toggle tree/source view",
-      // No default hotkey: Cmd+E collides with the core "Toggle reading view".
-      // Users can bind it themselves; checkCallback lets the binding fall
-      // through to the core command in non-JSON views.
+      // No default *command* hotkey (those are global and would shadow the core
+      // "Toggle reading view"). Mod+E is instead handled by the view-local Scope
+      // in JsonFileView (active only in JSON views, so it never overrides the
+      // core binding elsewhere). This command stays for the palette + custom rebinding.
       checkCallback: (checking: boolean) => {
         const view = this.app.workspace.getActiveViewOfType(JsonFileView);
         if (!view) return false;
