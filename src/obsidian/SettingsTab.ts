@@ -52,9 +52,9 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
         dd.addOption("tree", "Tree");
         dd.addOption("source", "Source");
         dd.setValue(s.defaultMode);
-        dd.onChange(async (v) => {
+        dd.onChange((v) => {
           s.defaultMode = v as "tree" | "source";
-          await this.settingsPlugin.saveSettings();
+          void this.settingsPlugin.saveSettings();
         });
       });
 
@@ -66,9 +66,9 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
         dd.addOption("4", "Four spaces");
         dd.addOption("tab", "Tab");
         dd.setValue(s.indent === "\t" ? "tab" : String(s.indent));
-        dd.onChange(async (v) => {
+        dd.onChange((v) => {
           s.indent = v === "tab" ? "\t" : (Number.parseInt(v, 10) as 2 | 4);
-          await this.settingsPlugin.saveSettings();
+          void this.settingsPlugin.saveSettings();
         });
       });
 
@@ -79,9 +79,9 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
         dd.addOption("modern", "Modern (clean indent)");
         dd.addOption("classic", "Classic (┐├┘)");
         dd.setValue(s.markerStyle);
-        dd.onChange(async (v) => {
+        dd.onChange((v) => {
           s.markerStyle = v as "modern" | "classic";
-          await this.settingsPlugin.saveSettings();
+          void this.settingsPlugin.saveSettings();
         });
       });
 
@@ -90,11 +90,11 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
       .setDesc("Nodes strictly deeper than this depth start collapsed. 0 = collapse all but root.")
       .addText((text) => {
         text.setValue(String(s.autoCollapseDepth));
-        text.onChange(async (v) => {
+        text.onChange((v) => {
           const n = Number.parseInt(v, 10);
           if (Number.isFinite(n) && n >= 0) {
             s.autoCollapseDepth = n;
-            await this.settingsPlugin.saveSettings();
+            void this.settingsPlugin.saveSettings();
           }
         });
       });
@@ -106,9 +106,9 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
       )
       .addToggle((toggle) => {
         toggle.setValue(s.validateAgainstSchema);
-        toggle.onChange(async (v) => {
+        toggle.onChange((v) => {
           s.validateAgainstSchema = v;
-          await this.settingsPlugin.saveSettings();
+          void this.settingsPlugin.saveSettings();
         });
       });
 
@@ -119,11 +119,11 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
       )
       .addText((text) => {
         text.setValue(s.companionSchemaSuffix);
-        text.onChange(async (v) => {
+        text.onChange((v) => {
           const trimmed = v.trim();
           if (isValidCompanionSuffix(trimmed)) {
             s.companionSchemaSuffix = trimmed;
-            await this.settingsPlugin.saveSettings();
+            void this.settingsPlugin.saveSettings();
           }
         });
       });

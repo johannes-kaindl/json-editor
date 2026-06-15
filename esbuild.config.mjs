@@ -1,5 +1,5 @@
+import { builtinModules } from "node:module";
 import process from "node:process";
-import builtins from "builtin-modules";
 import esbuild from "esbuild";
 
 const prod = process.argv[2] === "production";
@@ -26,7 +26,8 @@ const ctx = await esbuild.context({
     "@lezer/common",
     "@lezer/highlight",
     "@lezer/lr",
-    ...builtins,
+    ...builtinModules,
+    ...builtinModules.map((m) => `node:${m}`),
   ],
   format: "cjs",
   target: "es2020",

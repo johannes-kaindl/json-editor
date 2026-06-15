@@ -254,7 +254,7 @@ export class TreeView {
         row.addEventListener("contextmenu", (e) => {
           e.preventDefault();
           e.stopPropagation();
-          this.opts.onContextMenu?.(e as MouseEvent, path);
+          this.opts.onContextMenu?.(e, path);
         });
         return;
       }
@@ -520,7 +520,7 @@ export class TreeView {
       if (hadFocus) initial.focus();
     }
 
-    treeRoot.addEventListener("keydown", (e) => this.handleKeydown(e as KeyboardEvent));
+    treeRoot.addEventListener("keydown", (e) => this.handleKeydown(e));
   }
 
   private setActiveRow(row: HTMLElement): void {

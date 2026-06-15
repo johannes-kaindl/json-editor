@@ -45,7 +45,7 @@ function collectPatterns(node: unknown, out: string[]): void {
       typeof val === "object" &&
       !Array.isArray(val)
     ) {
-      for (const patternKey of Object.keys(val as object)) out.push(patternKey);
+      for (const patternKey of Object.keys(val)) out.push(patternKey);
     }
     collectPatterns(val, out);
   }
