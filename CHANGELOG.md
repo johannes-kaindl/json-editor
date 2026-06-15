@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.8.1] — 2026-06-16
+
+**Review cleanup.** Addresses the recommendations and warnings from the Obsidian Community automated review (which had passed with no errors). No user-facing behavior changes — pop-out windows aside.
+
+### Fixed
+- **Pop-out window correctness (audit §2.11).** All DOM creation now uses Obsidian's `activeDocument` (or, in the pure `core/render`, a `Document` injected by the adapter) instead of the global `document`, and element type checks use Obsidian's cross-window-safe `Node.instanceOf`. Rendering a JSON view in a detached window now works correctly. (Resolves ~70 `prefer-active-doc` + 3 `instanceof` review warnings.)
+
+### Changed
+- Replaced the `builtin-modules` build dependency with Node's built-in `module.builtinModules` (one fewer dependency).
+- Removed `!important` from the stylesheet (uses selector specificity instead); made Settings `onChange` handlers non-async (`no-misused-promises`); dropped redundant type assertions.
+
+### Added
+- **Build-provenance attestations** for the release assets (`actions/attest-build-provenance`), so users can cryptographically verify the assets were built from this repo.
+
+### Documentation
+- `SECURITY.md` discloses Ajv's `new Function` schema-compilation (opt-in only; no plugin code uses `eval`/`new Function`) and the clipboard copy behavior.
+
 ## [1.8.0] — 2026-06-15
 
 **Mobile interaction model.** Tree-mode editing is now fully usable on touch devices, with no dead or invisible affordances. No desktop behavior changes beyond two additive improvements (keyboard reorder, focus-revealed copy button).

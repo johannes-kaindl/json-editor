@@ -6,7 +6,7 @@ Only the latest published release is supported with security fixes. Older versio
 
 | Version | Supported |
 |---|---|
-| `1.x` (latest: `1.8.0`) | ✅ |
+| `1.x` (latest: `1.8.1`) | ✅ |
 | `0.x` and earlier | ❌ |
 
 ## Reporting a vulnerability
