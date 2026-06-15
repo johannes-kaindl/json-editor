@@ -6,7 +6,7 @@ Only the latest published release is supported with security fixes. Older versio
 
 | Version | Supported |
 |---|---|
-| `1.x` (latest: `1.6.0`) | ✅ |
+| `1.x` (latest: `1.8.0`) | ✅ |
 | `0.x` and earlier | ❌ |
 
 ## Reporting a vulnerability
@@ -31,6 +31,8 @@ This plugin runs entirely inside Obsidian, with no network access, no telemetry,
   - **Schema validation is opt-in.** `validateAgainstSchema` defaults to `false`; with the default settings no companion schema is ever loaded, compiled, or run. This is the primary defense in a shared or synced vault.
   - **Cheap pre-checks** before Ajv compiles: oversized schemas (> ~1 MB) are rejected, and a nested-quantifier heuristic rejects the classic catastrophic shapes (`(a+)+`, `(x+)*`, `(.*)+`, `(a{1,}){1,}`, …).
   - **Residual surface (stated honestly):** the heuristic is conservative and does not catch every ReDoS class (e.g. alternation-based `(a|a)+`). Validation runs **synchronously on the main thread**, and a synchronous regex cannot be aborted — so a sufficiently crafted schema that you have explicitly opted into trusting could still stall the UI. Only enable validation for schema files you trust. A hard guarantee (validation in a Worker with a timeout) is future work.
+- **Dynamic code generation (Ajv).** Ajv compiles JSON-Schema validators with `new Function` — its standard, documented mechanism. This is why an automated scan reports "dynamic code execution." It only happens when schema validation is opt-in-enabled *and* a companion schema you trust is loaded; **no plugin code itself uses `eval` or `new Function`.**
+- **Clipboard.** The copy-value / copy-path actions write to the system clipboard via `navigator.clipboard`, only on explicit user action. The plugin never *reads* the clipboard.
 - **DOM injection** through a misrendered value. The renderer uses `textContent` / `replaceChildren()`, never `innerHTML` with untrusted strings (a regression test enforces no `innerHTML` across the source tree, 1.5.0).
 - **Lossy number handling** is a data-integrity (not security) concern: integers beyond 2^53 are detected and the tree opens read-only so a tree edit can't silently rewrite them (1.5.0).
 - **Path-disclosure** through error messages.
