@@ -373,7 +373,7 @@ export class TreeView {
         if (parentObj === null || typeof parentObj !== "object" || Array.isArray(parentObj)) {
           return;
         }
-        const keys = Object.keys(parentObj as Record<string, JsonValue>);
+        const keys = Object.keys(parentObj);
         const fromPos = keys.indexOf(srcLast);
         const toPosTarget = keys.indexOf(dstLast);
         if (fromPos === -1 || toPosTarget === -1) return;
@@ -629,7 +629,7 @@ export class TreeView {
       if (toIdx < 0 || toIdx >= parent.length) return;
       this.opts.onMoveItem?.(parentPath, lastSeg, toIdx);
     } else if (typeof lastSeg === "string" && parent !== null && typeof parent === "object") {
-      const keys = Object.keys(parent as Record<string, unknown>);
+      const keys = Object.keys(parent);
       const pos = keys.indexOf(lastSeg);
       const toPos = pos + dir;
       if (pos === -1 || toPos < 0 || toPos >= keys.length) return;
@@ -803,9 +803,9 @@ export class TreeView {
       current = locateChildForSegment(current, seg);
     }
     if (!current) return null;
-    const primitive = current.querySelector(
+    const primitive = current.querySelector<HTMLElement>(
       ".json-string, .json-number, .json-boolean, .json-null",
-    ) as HTMLElement | null;
+    );
     return primitive ?? current;
   }
 }

@@ -1,0 +1,17 @@
+{
+  // Editor + test type-checking context. Unlike tsconfig.json (which the
+  // Obsidian portal reviewer auto-discovers and must resolve the REAL obsidian
+  // types), this config aliases `obsidian` to the Vitest mock so test files —
+  // which use mock-only helpers like Notice.instances — type-check in the
+  // editor. Vitest itself resolves the mock via vitest.config.ts (independent
+  // of any tsconfig); this file only serves IDEs. No build/CI step consumes it.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "obsidian": ["./tests/__mocks__/obsidian.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts"],
+  "exclude": ["node_modules"]
+}

@@ -12,7 +12,7 @@ function hasOwn(obj: object, key: string): boolean {
  * property instead of becoming the prototype (which JSON.stringify would drop).
  */
 function objectFromEntries(entries: Array<[string, JsonValue]>): { [k: string]: JsonValue } {
-  return Object.fromEntries(entries) as { [k: string]: JsonValue };
+  return Object.fromEntries(entries);
 }
 
 export function editValue(value: JsonValue, path: JsonPath, newVal: JsonValue): JsonValue {
@@ -34,7 +34,7 @@ export function editValue(value: JsonValue, path: JsonPath, newVal: JsonValue): 
     if (typeof head !== "string") {
       throw new Error(`Expected string key at object, got ${typeof head}`);
     }
-    const obj = value as { [k: string]: JsonValue };
+    const obj = value;
     return { ...obj, [head]: editValue(obj[head], rest, newVal) };
   }
 
@@ -66,7 +66,7 @@ export function addObjectKey(
   if (parent === null || typeof parent !== "object" || Array.isArray(parent)) {
     throw new Error("Parent is not an object");
   }
-  const obj = parent as { [k: string]: JsonValue };
+  const obj = parent;
   if (hasOwn(obj, key)) throw new Error(`Key "${key}" already exists`);
   const updated: { [k: string]: JsonValue } = { ...obj, [key]: newVal };
   if (parentPath.length === 0) return updated;
@@ -115,7 +115,7 @@ export function deleteAt(value: JsonValue, path: JsonPath): JsonValue {
     if (typeof lastSeg !== "string") {
       throw new Error(`Expected string key for object, got ${typeof lastSeg}`);
     }
-    const obj = parent as { [k: string]: JsonValue };
+    const obj = parent;
     if (!hasOwn(obj, lastSeg)) return value;
     const updated = objectFromEntries(Object.entries(obj).filter(([k]) => k !== lastSeg));
     if (parentPath.length === 0) return updated;
@@ -217,7 +217,7 @@ export function moveObjectKey(
   if (parent === null || typeof parent !== "object" || Array.isArray(parent)) {
     throw new Error("Parent is not an object");
   }
-  const obj = parent as { [k: string]: JsonValue };
+  const obj = parent;
   const keys = Object.keys(obj);
   const currentPos = keys.indexOf(key);
   if (currentPos === -1) throw new Error("Key not found");
@@ -263,7 +263,7 @@ export function renameKey(value: JsonValue, path: JsonPath, newKey: string): Jso
   if (parent === null || typeof parent !== "object" || Array.isArray(parent)) {
     throw new Error("Parent is not an object");
   }
-  const obj = parent as { [k: string]: JsonValue };
+  const obj = parent;
   if (!hasOwn(obj, oldKey)) return value;
   if (hasOwn(obj, newKey)) throw new Error(`Key "${newKey}" already exists`);
 

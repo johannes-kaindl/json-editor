@@ -7,13 +7,14 @@ Orientation for AI agents (Claude Code, Codex, …) and contributors working on 
 **Project:** `json-editor` (plugin id; renamed from `obsidian-json-editor` in Phase 3 per audit 1.1) — Obsidian plugin for viewing/editing `.json` files with Tree↔Source toggle, plus read-only tree rendering for ```` ```json ```` code blocks in Markdown notes.
 
 **Author:** Johannes Kaindl (`jkaindl` on Codeberg, `johannes-kaindl` on GitHub).
-Deliberately small surface: vanilla TypeScript, one runtime dependency (`ajv`), strict TDD, no telemetry or remote resources.
+Deliberately small surface: vanilla TypeScript, one runtime dependency (`@cfworker/json-schema`, eval-free), strict TDD, no telemetry or remote resources.
 
 ---
 
 ## Current state
 
-- **Latest release:** `1.8.2` (Lint follow-up — DOM access via a typed `activeDoc(): Document` helper (`src/obsidian/dom.ts`) instead of the bare `activeDocument` global. 1.8.1's `activeDocument` switch silenced `prefer-active-doc` but the portal types `activeDocument` as `any` → cascaded into hundreds of `no-unsafe-*`; the typed wrapper collapses that while keeping `prefer-active-doc` at 0. `minAppVersion` 1.5.7). Live on both remotes; GitHub release w/ 3 assets + attestation, CI green (verified).
+- **Latest release:** `1.9.0` (Eval-free schema validation + a clean community-review report. Replaced Ajv with the eval-free `@cfworker/json-schema` → no `new Function`/`eval`, so the portal's "dynamic code execution" disclosure is gone and the bundle dropped ~176 KB → ~85 KB; drove the portal's type-aware `no-unsafe-*`/`no-unnecessary-type-assertion` warnings to **0** via the `tsconfig.json` mock-alias root-fix (`npm run lint:portal` = 0). `format` is now enforced (the old Ajv build ran without ajv-formats). `minAppVersion` 1.5.7). Live on both remotes; CI green.
+- **2026-06-16:** `1.9.0` — eval-free `@cfworker/json-schema` swap + portal-eslint root-fix (Review → pass); adversarial review (19 verified findings) + 9 new regression tests
 - **2026-06-16:** `1.8.2` — typed `activeDoc()` wrapper, fixes 1.8.1's portal `no-unsafe` regression
 - **2026-06-16:** `1.8.1` — review-cleanup patch (popout/lint/attestations); addresses the community-review recommendations
 - **2026-06-16:** `1.8.1` — review-cleanup patch (popout/lint/attestations); 6 commits, addresses the community-review recommendations
@@ -23,16 +24,16 @@ Deliberately small surface: vanilla TypeScript, one runtime dependency (`ajv`), 
 - **2026-06-13:** `1.6.0` — Phase-2 guideline+UX release (audit Sections 2+3+4.1); 10 commits, multi-agent review + fixes
 - **2026-06-13:** `1.5.0` — Phase-1 blocker release (audit Section 1 + 2.8); 8 commits, multi-agent review + 2 rounds of fixes
 - **2026-05-27:** `0.1.2` → `1.3.0` released in one autonomous run (entire 1.x feature roadmap)
-- **Unreleased on `main`:** nothing pending. **`1.8.2` is live on both remotes (release: 3 assets + attestation, CI green).** Submission passed the automated scan with no errors; in human review. Mobile verified on a real iPhone. **Residual portal warnings are GENUINE portal-eslint artifacts, left on purpose:** ~15 `no-unsafe-*` (the portal sees `app`/`activeDocument` as `any` because it doesn't load Obsidian's ambient globals) + one `querySelector as HTMLElement`. Our `tsc` against the real obsidian types is clean. **Do not "fix" these with casts** — that just trades them for `no-unnecessary-type-assertion` locally. They're advisory, not blockers.
+- **Unreleased on `main`:** nothing pending. **`1.9.0` is live on both remotes (release: 3 assets + attestation, CI green).** Submission passed the automated scan with no errors; in human review. Mobile verified on a real iPhone. **Portal-eslint is now clean (`npm run lint:portal` = 0 problems).** The fix removed the `obsidian` → mock `paths` alias from `tsconfig.json` (so the portal's type-aware eslint resolves the *real* obsidian types instead of the loose Vitest mock that was driving the `no-unsafe-*` cascade); the Vitest mock moved to `tests/__mocks__/obsidian.ts` and a new `tsconfig.test.json` aliases it for editor typing of the tests; the `@typescript-eslint/no-unnecessary-type-assertion` rule is re-enabled (12 now-unnecessary assertions removed); and the one `querySelector as HTMLElement` was rewritten to the generic `querySelector<HTMLElement>`. **`eslint.portal.config.mjs` + `npm run lint:portal` is the committed regression guard** that mirrors the community.obsidian.md portal reviewer — run it before submission-affecting changes.
 - **Roadmap (next — only the submission remains):** **GATE — Community Plugin submission** via the `community.obsidian.md` Developer Dashboard (repo `johannes-kaindl/json-editor`; the portal scan is the install gate; the legacy obsidianmd/obsidian-releases PR path is retired but still operational). ID is first-come-first-served — do it promptly. Submission-readiness workflow (2026-06-15) confirmed the repo is compliant (104 checks). Deferred follow-ups: `prefer-active-doc` popout polish (~70 lint warnings), broader A11y (§5; breadcrumb keyboard-access already fixed in 1.8.0), 2.x feature ideas (§6: schema autocompletion, multi-select, .jsonl; §3.3–3.13). Older open: cross-container drag-drop, `$schema` URL fetching, real pointer-events touch-drag.
 - **Tests:** 537 Vitest tests, all green; `npm test`
 - **Coverage:** 94.10% statements / 85.56% branches / 95.78% functions; `npm run test:coverage`
-- **Build:** `npm run build` clean. Bundle is ~163 KB (Ajv is the bulk; was ~37 KB pre-1.3.0).
+- **Build:** `npm run build` clean. Bundle is ~85 KB.
 - **Predecessor:** `0.1.0` (v1.0 — core viewer/editor)
 - **Branch:** `main` is canonical; feature branches `feat/<name>` per release, merged via `--no-ff`
 - **Coverage tooling:** `@vitest/coverage-v8` set up (added in 0.3.0); `npm run test:coverage` for html report in `coverage/`
 - **CI:** GitHub Actions has both `release.yml` (tag → build → release with notes extracted from CHANGELOG section) and `test.yml` (PR + push to main → npm ci → test → build)
-- **Runtime deps:** `ajv@8` (1.3.0+). Only this one runtime dep; everything else is devDeps.
+- **Runtime deps:** `@cfworker/json-schema@4.1.1` (eval-free; zero transitive deps). Only this one runtime dep; everything else is devDeps.
 
 ## Hosting setup
 
@@ -56,8 +57,12 @@ Auth: SSH key (`~/.ssh/id_ed25519`) registered with both accounts.
 ```
 src/
 ├── core/                       pure TS, no Obsidian imports (vitest tests directly)
-│   ├── schema.ts               compileSchema(text) → ajv-wrapped CompiledSchema;
-│   │                           validate(value) → PathError[] (JsonPath, not Pointer)
+│   ├── schema.ts               compileSchema(text) → @cfworker/json-schema-wrapped
+│   │                           CompiledSchema; validate(value) → PathError[]
+│   │                           (JsonPath, not Pointer)
+│   ├── draft07-meta-schema.ts  canonical draft-07 meta-schema, embedded to detect
+│   │                           malformed companion schemas (cfworker, unlike ajv,
+│   │                           does not throw on a structurally invalid schema)
 │   ├── types.ts                JsonValue, JsonPath, ParseResult, RenderOptions,
 │   │                           SerializeOptions, SearchOptions, SearchResult
 │   ├── parse.ts                parse(text) → ParseResult (line/col errors)
@@ -110,10 +115,12 @@ src/
 │                               settings tab + commands: focus-search (Mod+F),
 │                               undo-edit (Mod+Z), redo-edit (Mod+Shift+Z)
 │                               — IDs renamed in 1.2.0 (were undo/redo-tree-edit)
-└── __mocks__/obsidian.ts       Vitest mock (NOT used by production build —
-                                only by `tsconfig.json` paths)
+└── (no test mocks under src/ — the Vitest obsidian mock lives under tests/)
 
 tests/
+├── __mocks__/obsidian.ts       Vitest mock (NOT used by production build —
+│                               resolved by `vitest.config.ts` + `tsconfig.test.json`,
+│                               NOT by `tsconfig.json`)
 ├── core/                       parse, serialize, edit (incl. structural ops),
 │                               history, render, render.aria, search, path
 └── obsidian/                   adapter tests; JsonFileView (incl. undo),
@@ -127,8 +134,9 @@ docs/superpowers/
 _archiv/                        (gitignored) old Jupyter v0.1.5 — reference only
 ```
 
-**Two tsconfigs:**
-- `tsconfig.json` — IDE + Vitest; has `paths` alias `obsidian` → mock
+**Three tsconfigs:**
+- `tsconfig.json` — IDE + `src/`; **no** `paths` alias (resolves the *real* obsidian types; the mock alias was removed in the portal-eslint root-fix)
+- `tsconfig.test.json` — editor typing of the tests; aliases `obsidian` → `tests/__mocks__/obsidian.ts`
 - `tsconfig.build.json` — production `tsc` check; no paths alias (validates against real obsidian.d.ts)
 
 ## Conventions
@@ -240,6 +248,16 @@ In priority order:
 ## Session history
 
 Append new entries at the top. Each entry = one working session.
+
+### 2026-06-16 — `1.9.0`: Eval-free validator swap + portal-eslint root-fix, released
+
+User goal: the `community.obsidian.md` review showed "Review: Caution" (with passing "Health: Excellent") and a scary "Dynamic Code Execution / eval()" disclosure — drive it to 100% clean. Research (workflow, 3 agents) established the mechanism: the portal runs `eslint-plugin-obsidianmd` recommended (type-checked) with `project: "./tsconfig.json"`; our tsconfig had an `obsidian` → Vitest-mock `paths` alias, so Obsidian types resolved to a loose mock → a `no-unsafe-*` cascade. Crucially, **only the SOURCE CODE eslint warnings drive "Caution"**; the BEHAVIOR items (clipboard, eval) are informational disclosures that do NOT affect the score.
+
+Two workstreams, both verified against a local portal-sim harness (`eslint.portal.config.mjs`, committed as `npm run lint:portal`):
+1. **ESLint root-fix → Review pass.** Removed the mock alias from `tsconfig.json` (real Obsidian types resolve; portal-sim 49 → 12), moved the mock `src/__mocks__/` → `tests/__mocks__/` (so no `src/` file is excluded from `tsconfig.json` — closes a "file not in project" parser-error risk a reviewer flagged), added `tsconfig.test.json` for editor typing of tests, re-enabled `no-unnecessary-type-assertion` + removed 12 now-redundant assertions (one `querySelector` was a rule false-positive → rewrote to the generic `querySelector<HTMLElement>`). `lint:portal` = 0.
+2. **`ajv` → `@cfworker/json-schema` (eval-free).** Kills the "dynamic code execution" disclosure at the source (`new Function`/`eval` in bundle = 0) and halves the bundle (~176 KB → ~85 KB). New `src/core/draft07-meta-schema.ts` restores ajv's "malformed schema → error" contract (cfworker is lenient). `reduceErrors()` collapses cfworker's cascading errors back to ajv granularity.
+
+Adversarial review (workflow, 23 agents): **19 confirmed findings, 0 refuted.** Fixed: a `not`-failure being dropped, `additionalProperties:false` duplicate noise, allOf/$ref noise (rewrote the error filter, verified against 11 cases + 5 new regression tests); meta-validation over-rejecting a cosmetic non-URI `$id` (relaxed identifier formats); the mock-in-`src/` parser-error risk; and all stale docs (THIRD-PARTY-NOTICES, SECURITY, README, AGENTS). **Intentional behavior change:** cfworker enforces `format` (Ajv ran without ajv-formats) — kept + documented + tested. Tests 592 → 601; `npm test`/`typecheck`/`build`/`lint:obsidian`/`lint:portal`/`biome` all green. Released: feature branch → `--no-ff` merge → tag `1.9.0` → pushed to Codeberg (auto-mirrors to GitHub + triggers `release.yml`).
 
 ### 2026-06-15 — `1.8.0`: Mobile interaction model + native UI/a11y polish, released
 

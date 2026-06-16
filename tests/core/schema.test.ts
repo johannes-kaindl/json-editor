@@ -36,6 +36,16 @@ describe("compileSchema", () => {
     expect(result.ok).toBe(true);
   });
 
+  it("accepts a schema with a non-URI $id instead of disabling all validation", () => {
+    // The draft-07 meta-schema declares $id as format:uri-reference, but we relax
+    // it so a cosmetic identifier never turns off validation for the whole file.
+    const result = compileSchema('{"$id":"not a uri","type":"number"}');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.schema.validate(5)).toEqual([]);
+    expect(result.schema.validate("x").length).toBe(1);
+  });
+
   // Blocker 1.3: a companion schema is attacker-controlled in shared/synced
   // vaults. Reject catastrophic-backtracking regex patterns and oversized
   // schemas BEFORE Ajv compiles/validates them (a synchronous regex cannot be
@@ -149,5 +159,79 @@ describe("compiled schema validate", () => {
     const paths = errors.map((e) => e.path);
     expect(paths).toContainEqual(["a/b"]);
     expect(paths).toContainEqual(["c~d"]);
+  });
+});
+
+// @cfworker/json-schema reports verbose, cascading errors (a wrapper at every
+// enclosing applicator level) where ajv reported one error per failing instance.
+// reduceErrors() collapses that back; these pin the behavior so it cannot
+// silently regress (all were verified against the old ajv granularity).
+describe("compiled schema validate — cfworker error granularity", () => {
+  it("keeps an independent `not` failure alongside a nested child error", () => {
+    const r = compileSchema(
+      '{"type":"object","properties":{"x":{"not":{"type":"object"},"properties":{"y":{"type":"string"}}}}}',
+    );
+    if (!r.ok) throw new Error("schema compile failed");
+    const errors = r.schema.validate({ x: { y: 123 } });
+    expect(errors.length).toBe(2);
+    expect(errors.some((e) => e.path.length === 1 && e.path[0] === "x")).toBe(true);
+    expect(errors.some((e) => e.path.join("/") === "x/y")).toBe(true);
+  });
+
+  it("reports a wrong-typed declared property once under additionalProperties:false", () => {
+    const r = compileSchema(
+      '{"type":"object","properties":{"name":{"type":"string"},"age":{"type":"number"}},"additionalProperties":false}',
+    );
+    if (!r.ok) throw new Error("schema compile failed");
+    const errors = r.schema.validate({ name: "x", age: "notanumber" });
+    expect(errors.length).toBe(1);
+    expect(errors[0].path).toEqual(["age"]);
+  });
+
+  it("reports a genuinely-extra property once under additionalProperties:false", () => {
+    const r = compileSchema(
+      '{"type":"object","properties":{"name":{"type":"string"}},"additionalProperties":false}',
+    );
+    if (!r.ok) throw new Error("schema compile failed");
+    const errors = r.schema.validate({ name: "x", extra: "foo" });
+    expect(errors.length).toBe(1);
+    expect(errors[0].path).toEqual(["extra"]);
+  });
+
+  it("de-duplicates identical errors from overlapping allOf branches", () => {
+    const r = compileSchema(
+      '{"allOf":[{"type":"object","properties":{"a":{"type":"string"}}},{"type":"object","properties":{"a":{"type":"string"}}}]}',
+    );
+    if (!r.ok) throw new Error("schema compile failed");
+    const errors = r.schema.validate({ a: 5 });
+    expect(errors.length).toBe(1);
+    expect(errors[0].path).toEqual(["a"]);
+  });
+
+  it("collapses a $ref wrapper down to the underlying assertion", () => {
+    const r = compileSchema(
+      '{"definitions":{"pos":{"type":"integer","minimum":0}},"type":"object","properties":{"x":{"$ref":"#/definitions/pos"}}}',
+    );
+    if (!r.ok) throw new Error("schema compile failed");
+    const errors = r.schema.validate({ x: -5 });
+    expect(errors.length).toBe(1);
+    expect(errors[0].path).toEqual(["x"]);
+  });
+});
+
+// Behavior change vs the old ajv build (which ran WITHOUT ajv-formats and thus
+// treated `format` as a no-op annotation): @cfworker enforces format assertions
+// in draft-07 mode. Documented in CHANGELOG; pinned here.
+describe("compiled schema validate — format assertions are enforced", () => {
+  it("flags a value that violates a format constraint", () => {
+    const r = compileSchema('{"type":"string","format":"email"}');
+    if (!r.ok) throw new Error("schema compile failed");
+    expect(r.schema.validate("not-an-email").length).toBe(1);
+  });
+
+  it("accepts a value that satisfies the format constraint", () => {
+    const r = compileSchema('{"type":"string","format":"email"}');
+    if (!r.ok) throw new Error("schema compile failed");
+    expect(r.schema.validate("a@b.com")).toEqual([]);
   });
 });

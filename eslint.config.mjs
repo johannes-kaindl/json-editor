@@ -10,7 +10,6 @@ export default [
       "coverage/**",
       "node_modules/**",
       "tests/**",
-      "src/__mocks__/**",
       ".remember/**",
       "_archiv/**",
       "design/**",
@@ -32,9 +31,6 @@ export default [
       },
     },
     rules: {
-      // General TS-quality rule, not an Obsidian guideline — already covered
-      // by Biome + the strict production tsc build.
-      "@typescript-eslint/no-unnecessary-type-assertion": "off",
       // The suggested `.instanceOf()` is an Obsidian HTMLElement augmentation
       // that does not exist in the happy-dom test runtime (would throw), and
       // the tree's nodes all live in a single document/realm, so standard
