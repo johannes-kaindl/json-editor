@@ -7,6 +7,13 @@
 
 View and edit `.json` files in Obsidian with a Tree↔Source toggle. Renders `` ```json `` code blocks inside Markdown notes as collapsible, theme-aware trees.
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/johannes-kaindl/json-editor/1.9.1/docs/images/hero-light.gif">
+    <img alt="JSON Editor: a .json file opens as a collapsible tree; a value is inline-edited, then the view toggles to the syntax-highlighted source editor and back" src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/1.9.1/docs/images/hero-dark.gif" width="820">
+  </picture>
+</p>
+
 **Target platform:** Obsidian 1.5.7+ on desktop and mobile. No external services, no remote resources, no telemetry.
 
 > **Status: 1.9.0 released.** Tree mode is a full structural editor — add / delete / rename keys, add / delete items, reorder rows (drag-and-drop or `Alt`+`↑`/`↓`), and switch a value's JSON type. Undo/redo (`Cmd/Ctrl+Z` / `Cmd/Ctrl+Shift+Z`) is unified across tree and source modes. On mobile, a long-press action menu, touch-sized controls and toolbar undo/redo make tree editing fully usable by touch. Optional JSON Schema validation (opt-in) and a large-file guard round out the editor. See [`CHANGELOG.md`](CHANGELOG.md) for the full per-release log.
@@ -24,6 +31,94 @@ JSON inside Obsidian — without losing the editing affordances you'd expect fro
 The plugin also renders `` ```json `` fences inside regular Markdown notes as read-only collapsible trees, so your config snippets and API examples stop being unreadable walls of text.
 
 Everything stays inside your vault. The plugin uses Obsidian's own CSS variables, so it follows whichever theme you're using — light, dark, minimal, anything.
+
+---
+
+## See it in action
+
+### Tree and Source
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/johannes-kaindl/json-editor/1.9.1/docs/images/tree-view-light.png">
+    <img alt="Tree view of a config file: collapsible nested blocks, a breadcrumb, and a hovered row showing the rename, delete, type-switch and drag-handle controls" src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/1.9.1/docs/images/tree-view-dark.png" width="780">
+  </picture>
+</p>
+
+*Tree mode follows your theme. Hover a row for rename (✎), delete (✕), type-switch (T) and the drag handle (⋮⋮); the breadcrumb tracks your position.*
+
+<p align="center">
+  <img alt="Source mode: the same JSON in a CodeMirror editor with syntax highlighting" src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/1.9.1/docs/images/source-view.png" width="780">
+</p>
+
+*Source mode is CodeMirror 6 with JSON highlighting, a parse-error banner, and `Cmd/Ctrl+F` find. Toggle with the toolbar pills or `Cmd/Ctrl+E`.*
+
+### Restructure by hand
+
+<p align="center">
+  <img alt="Dragging a row by its handle to reorder it within its container" src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/1.9.1/docs/images/reorder.gif" width="520">
+</p>
+
+*Reorder rows by dragging the `⋮⋮` handle — or with `Alt`+`↑`/`↓` from the keyboard. Same-container, and undoable.*
+
+<p align="center">
+  <img alt="The type-switch menu changing a value's JSON type" src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/1.9.1/docs/images/type-switch.gif" width="520">
+</p>
+
+*The `T` button switches a value's JSON type — string, number, boolean, null, object, array.*
+
+### Find, undo, validate
+
+<p align="center">
+  <img alt="Cmd/Ctrl+F live-filtering the tree down to rows matching the query" src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/1.9.1/docs/images/search-filter.gif" width="520">
+</p>
+
+*`Cmd/Ctrl+F` live-filters the tree to matching keys and values (and opens CodeMirror's find in source mode).*
+
+<p align="center">
+  <img alt="Undo reverting an edit after switching from tree to source mode" src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/1.9.1/docs/images/undo-crossmode.gif" width="520">
+</p>
+
+*Undo/redo is **unified across tree and source** — switch modes and `Cmd/Ctrl+Z` still walks one history.*
+
+<p align="center">
+  <img alt="Opt-in JSON Schema validation: two rows outlined in red with an error-count banner above the tree" src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/1.9.1/docs/images/schema-validation.png" width="780">
+</p>
+
+*Opt-in JSON Schema validation: invalid rows get a red outline and an error-count banner. Off by default — auto-loading schema files from a shared vault is a trust decision.*
+
+### In your Markdown notes
+
+<p align="center">
+  <img alt="A json fenced code block inside a Markdown note rendered as a collapsible titled tree in reading view" src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/1.9.1/docs/images/codeblock-in-note.png" width="780">
+</p>
+
+*` ```json ` fences render as collapsible, theme-aware trees — config snippets and API examples stop being walls of text.*
+
+### On mobile
+
+<p align="center">
+  <img alt="Mobile: a long-press action menu on a tree row with copy, rename, change-type, move and delete actions" src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/1.9.1/docs/images/mobile-menu.png" width="320">
+</p>
+
+*Long-press a row for the full action menu; values single-tap to edit, and undo/redo live in the toolbar.*
+
+<details>
+<summary>More screenshots — settings &amp; guards</summary>
+
+<p align="center">
+  <img alt="The JSON Editor settings tab" src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/1.9.1/docs/images/settings.png" width="640">
+</p>
+
+*Settings: default mode, indent, marker style, auto-collapse depth, opt-in schema validation, companion-schema suffix.*
+
+<p align="center">
+  <img alt="The large-file guard banner offering to load the tree anyway" src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/1.9.1/docs/images/guards.png" width="780">
+</p>
+
+*Guards: a multi-MB file opens in source mode with a *Load tree anyway* banner; files with integers past 2^53 open read-only so an edit can't corrupt them.*
+
+</details>
 
 ---
 
@@ -130,7 +225,7 @@ This plugin registers itself as the editor for the `.json` file extension. Obsid
 
 ```bash
 npm install                                # use --legacy-peer-deps if needed; .npmrc handles it
-npm test                                   # 537 Vitest tests, ~3s
+npm test                                   # 601 Vitest tests, ~3s
 npm run dev                                # esbuild watch mode
 npm run build                              # production build (tsc-check + esbuild)
 npm run lint                               # Biome (format + general lint)

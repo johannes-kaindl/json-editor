@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Trailhead config",
+  "type": "object",
+  "required": ["name", "version", "maintainers"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "settings": {
+      "type": "object",
+      "properties": {
+        "maxElevationGain": {
+          "type": "number",
+          "maximum": 1500
+        }
+      }
+    }
+  }
+}
