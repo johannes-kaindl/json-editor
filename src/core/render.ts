@@ -45,7 +45,7 @@ function renderValue(
     renderContainer(parent, items, path, depth, opts, "array");
     return;
   }
-  const obj = value as { [k: string]: JsonValue };
+  const obj = value;
   const items: ContainerItem[] = Object.entries(obj).map(([k, v]) => ({ segment: k, value: v }));
   renderContainer(parent, items, path, depth, opts, "object");
 }

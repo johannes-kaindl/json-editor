@@ -6,7 +6,7 @@ const prod = process.argv[2] === "production";
 
 const ctx = await esbuild.context({
   banner: {
-    js: "/* json-editor — built with esbuild. Bundles ajv (MIT), fast-uri (BSD-3-Clause), fast-deep-equal (MIT), json-schema-traverse (MIT), @codemirror/lang-json (MIT), @lezer/json (MIT). See THIRD-PARTY-NOTICES.md. */",
+    js: "/* json-editor — built with esbuild. Bundles @cfworker/json-schema (MIT), @codemirror/lang-json (MIT), @lezer/json (MIT). See THIRD-PARTY-NOTICES.md. */",
   },
   // Preserve upstream @license / SPDX comments in the bundle for attribution.
   legalComments: "inline",

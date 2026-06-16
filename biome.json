@@ -33,6 +33,10 @@
     {
       "include": ["tests/**"],
       "linter": { "rules": { "style": { "noNonNullAssertion": "off" } } }
+    },
+    {
+      "include": ["tsconfig*.json"],
+      "json": { "parser": { "allowComments": true } }
     }
   ]
 }

@@ -11,12 +11,12 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html"],
       include: ["src/**/*.ts"],
-      exclude: ["src/__mocks__/**", "src/main.ts"],
+      exclude: ["src/main.ts"],
     },
   },
   resolve: {
     alias: {
-      obsidian: fileURLToPath(new URL("./src/__mocks__/obsidian.ts", import.meta.url)),
+      obsidian: fileURLToPath(new URL("./tests/__mocks__/obsidian.ts", import.meta.url)),
     },
   },
 });

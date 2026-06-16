@@ -9,7 +9,7 @@ View and edit `.json` files in Obsidian with a Tree↔Source toggle. Renders `` 
 
 **Target platform:** Obsidian 1.5.7+ on desktop and mobile. No external services, no remote resources, no telemetry.
 
-> **Status: 1.8.2 released.** Tree mode is a full structural editor — add / delete / rename keys, add / delete items, reorder rows (drag-and-drop or `Alt`+`↑`/`↓`), and switch a value's JSON type. Undo/redo (`Cmd/Ctrl+Z` / `Cmd/Ctrl+Shift+Z`) is unified across tree and source modes. On mobile, a long-press action menu, touch-sized controls and toolbar undo/redo make tree editing fully usable by touch. Optional JSON Schema validation (opt-in) and a large-file guard round out the editor. See [`CHANGELOG.md`](CHANGELOG.md) for the full per-release log.
+> **Status: 1.9.0 released.** Tree mode is a full structural editor — add / delete / rename keys, add / delete items, reorder rows (drag-and-drop or `Alt`+`↑`/`↓`), and switch a value's JSON type. Undo/redo (`Cmd/Ctrl+Z` / `Cmd/Ctrl+Shift+Z`) is unified across tree and source modes. On mobile, a long-press action menu, touch-sized controls and toolbar undo/redo make tree editing fully usable by touch. Optional JSON Schema validation (opt-in) and a large-file guard round out the editor. See [`CHANGELOG.md`](CHANGELOG.md) for the full per-release log.
 
 ---
 
@@ -156,7 +156,8 @@ json-editor/
 │   │   ├── history.ts         generic undo/redo stack (unified text history)
 │   │   ├── render.ts          renderTree(value, opts) → HTMLElement
 │   │   ├── search.ts          findMatches(value, query) for the tree filter
-│   │   ├── schema.ts          compileSchema (Ajv) + Ajv→JsonPath + ReDoS guards
+│   │   ├── schema.ts          compileSchema (@cfworker/json-schema) + Pointer→JsonPath + draft-07 meta-validation + ReDoS guards
+│   │   ├── draft07-meta-schema.ts  canonical draft-07 meta-schema (detects malformed companion schemas)
 │   │   ├── roundtrip.ts       detects lossy number literals (> 2^53, format)
 │   │   ├── render-budget.ts   large-file guard (byte + node budget)
 │   │   ├── textdiff.ts        minimal-span diff for source-mode undo
@@ -177,10 +178,10 @@ json-editor/
 │   │   ├── LargeFileBanner.ts large-file banner + "Load tree anyway"
 │   │   ├── CopyButton.ts      hover-only buttons; click=value, Alt+click=path
 │   │   └── Tooltip.ts         singleton hover-tooltip
-│   ├── main.ts                plugin entry — registers view (guarded .json claim),
-│   │                          codeblock processor, settings, and commands
-│   └── __mocks__/obsidian.ts  Vitest-only mock (not bundled into production)
-├── tests/                     core/ + obsidian/ + toolchain/ (537 tests)
+│   └── main.ts                plugin entry — registers view (guarded .json claim),
+│                              codeblock processor, settings, and commands
+├── tests/                     core/ + obsidian/ + toolchain/ (601 tests)
+│   └── __mocks__/obsidian.ts  Vitest-only mock (resolved via vitest.config + tsconfig.test.json)
 ├── docs/superpowers/          design specs and implementation plans (one per release)
 ├── .github/workflows/         release.yml + test.yml (CI: tests, lint:obsidian, build)
 ├── eslint.config.mjs          eslint-plugin-obsidianmd guideline gate
@@ -192,9 +193,10 @@ json-editor/
 └── SECURITY.md                security-reporting policy
 ```
 
-**Two tsconfigs:**
-- `tsconfig.json` — IDE + Vitest, with `paths` alias `obsidian` → mock.
-- `tsconfig.build.json` — production `tsc` check, no paths alias (validates against real `obsidian.d.ts`).
+**Three tsconfigs:**
+- `tsconfig.json` — IDE + the community-portal eslint scan; **no** paths alias, so `obsidian` resolves to the real `obsidian.d.ts` (this is what keeps the portal review clean).
+- `tsconfig.build.json` — production `tsc` check (validates against real `obsidian.d.ts`).
+- `tsconfig.test.json` — editor typing of tests, with the `paths` alias `obsidian` → `tests/__mocks__/obsidian.ts` (Vitest itself resolves the mock via `vitest.config.ts`).
 
 ---
 
@@ -246,7 +248,7 @@ Actively maintained by a single maintainer ([@jkaindl](https://codeberg.org/jkai
 - **Contributing:** external contributions are accepted under the [Contributor License Agreement](CLA.md), which keeps the dual-licensing model possible.
 - **Documentation/text:** Creative Commons Attribution-ShareAlike 4.0 (CC BY-SA 4.0) — see [`LICENSE-DOCS`](LICENSE-DOCS).
 
-**Dependency licenses (bundled in `main.js`):** This plugin statically bundles [ajv](https://github.com/ajv-validator/ajv) (MIT) for JSON Schema validation, together with its dependencies [fast-uri](https://github.com/fastify/fast-uri) (**BSD-3-Clause**), [fast-deep-equal](https://github.com/epoberezkin/fast-deep-equal) (MIT) and [json-schema-traverse](https://github.com/epoberezkin/json-schema-traverse) (MIT), plus the source-mode JSON grammar [@codemirror/lang-json](https://github.com/codemirror/lang-json) (MIT) and [@lezer/json](https://github.com/lezer-parser/json) (MIT). All are AGPL-3.0-compatible. Full license texts and copyright notices are in [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md). The remaining `@codemirror/*` and `@lezer/{common,highlight,lr}` packages, and the Obsidian plugin API, are **not bundled** — they are provided by Obsidian at runtime (marked `external` in `esbuild.config.mjs`).
+**Dependency licenses (bundled in `main.js`):** This plugin statically bundles [@cfworker/json-schema](https://github.com/cfworker/cfworker) (MIT) for JSON Schema validation, plus the source-mode JSON grammar [@codemirror/lang-json](https://github.com/codemirror/lang-json) (MIT) and [@lezer/json](https://github.com/lezer-parser/json) (MIT). All are AGPL-3.0-compatible. Full license texts and copyright notices are in [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md). The remaining `@codemirror/*` and `@lezer/{common,highlight,lr}` packages, and the Obsidian plugin API, are **not bundled** — they are provided by Obsidian at runtime (marked `external` in `esbuild.config.mjs`).
 
 ---
 

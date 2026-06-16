@@ -612,7 +612,7 @@ export class JsonFileView extends TextFileView {
       if (toIdx < 0 || toIdx >= parent.length) return;
       this.handleMoveItem(parentPath, lastSeg, toIdx);
     } else if (typeof lastSeg === "string" && parent !== null && typeof parent === "object") {
-      const keys = Object.keys(parent as Record<string, JsonValue>);
+      const keys = Object.keys(parent);
       const pos = keys.indexOf(lastSeg);
       const toPos = pos + dir;
       if (pos === -1 || toPos < 0 || toPos >= keys.length) return;
@@ -642,7 +642,7 @@ export class JsonFileView extends TextFileView {
       pos = lastSeg;
       siblingCount = parent.length;
     } else if (typeof lastSeg === "string" && parent !== null && typeof parent === "object") {
-      const keys = Object.keys(parent as Record<string, JsonValue>);
+      const keys = Object.keys(parent);
       pos = keys.indexOf(lastSeg);
       siblingCount = keys.length;
     }

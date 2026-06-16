@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.9.0] — 2026-06-16
+
+**Eval-free JSON Schema validation + a clean community-review report.** Replaces the Ajv validator with the eval-free [`@cfworker/json-schema`](https://github.com/cfworker/cfworker), and drives the type-aware ESLint findings from the `community.obsidian.md` review to zero. The plugin bundle is ~52% smaller.
+
+### Changed
+- **JSON Schema validation now uses `@cfworker/json-schema` instead of Ajv.** It is an eval-free, tree-walking validator (no `new Function` / no `eval`), so the automated review's "dynamic code execution" disclosure no longer applies. The bundle drops from ~176 KB to ~85 KB. Supported drafts are a superset of before (draft-04/07/2019-09/2020-12 vs. draft-07-only); the public validation contract (inline row errors + the error-count banner) is unchanged.
+- **`format` keywords are now enforced.** The previous Ajv build ran without `ajv-formats`, so `format` (`email`, `uri`, `date-time`, …) was a no-op annotation. The new validator enforces formats in draft-07 mode, so a value that violates a `format` constraint in an (opt-in) companion schema now reports an error. A structurally malformed companion schema (e.g. `{"type": 123}`) is still rejected via draft-07 meta-validation; a merely cosmetic, non-URI `$id` no longer disables validation for the whole file.
+
+### Fixed
+- **The community-review ESLint warnings are now zero.** The review's type-aware linter resolved `obsidian` to the Vitest mock (via a `tsconfig.json` `paths` alias), so every Obsidian-typed expression was flagged as `no-unsafe-*` and one assertion as `no-unnecessary-type-assertion`. The mock alias is gone from `tsconfig.json` (real Obsidian types now resolve), the Vitest mock moved to `tests/__mocks__/`, and the redundant assertions were removed. None of this changes runtime behavior. A committed `npm run lint:portal` guard now mirrors the review so the warnings cannot silently come back.
+
+### Internal
+- Added `tsconfig.test.json` (editor typing of tests against the mock), `eslint.portal.config.mjs` + `npm run lint:portal`, and `src/core/draft07-meta-schema.ts`. The Vitest suite (601 tests) pins the new validator's error granularity and format behavior.
+
 ## [1.8.2] — 2026-06-16
 
 **Lint follow-up.** Fixes a regression in 1.8.1's review cleanup.
