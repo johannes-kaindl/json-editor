@@ -1,77 +1,76 @@
 name: Release
 
+# Baut das Plugin, attestiert die Assets und veröffentlicht ein GitHub-Release.
+# Läuft auf der GitHub-Seite (Mirror von Codeberg) bei einem SemVer-Tag (ohne v) oder manuell.
 on:
   push:
     tags:
-      - "[0-9]+.[0-9]+.[0-9]+"
+      - "[0-9]+.[0-9]+.[0-9]+"   # SemVer ohne v-Praefix (CORE-GIT-03)
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build and release (e.g. 0.1.3)"
+        required: true
 
 permissions:
-  contents: write
-  id-token: write # for build-provenance attestations
-  attestations: write
+  contents: write       # Release anlegen + Assets hochladen
+  id-token: write       # OIDC für die Attestation-Signatur
+  attestations: write   # Attestations schreiben
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Resolve tag
+        id: tag
+        run: echo "tag=${{ github.event.inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Run tests
-        run: npm test
+      - name: Gate (typecheck + test + lint + build)
+        run: npm run typecheck && npm test && npm run lint && npm run build
 
-      - name: Build production bundle
-        run: npm run build
-
-      - name: Verify tag matches manifest version
+      - name: Verify tag == package.json == manifest.json and versions.json covers it
         run: |
-          TAG="${GITHUB_REF_NAME}"
-          MANIFEST_VERSION=$(node -p "require('./manifest.json').version")
-          if [ "$TAG" != "$MANIFEST_VERSION" ]; then
-            echo "Tag $TAG does not match manifest.json version $MANIFEST_VERSION" >&2
+          TAG="${{ steps.tag.outputs.tag }}"
+          PKG="$(node -p "require('./package.json').version")"
+          MAN="$(node -p "require('./manifest.json').version")"
+          HAS="$(node -p "require('./versions.json')['$TAG'] ? 'yes' : 'no'")"
+          if [ "$TAG" != "$PKG" ] || [ "$TAG" != "$MAN" ]; then
+            echo "::error::Tag $TAG, package.json $PKG, manifest.json $MAN — must all match"
+            exit 1
+          fi
+          if [ "$HAS" != "yes" ]; then
+            echo "::error::versions.json has no entry for $TAG"
             exit 1
           fi
 
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             main.js
             manifest.json
             styles.css
 
-      - name: Extract release notes from CHANGELOG.md
-        id: notes
-        run: |
-          TAG="${GITHUB_REF_NAME}"
-          # Pull the section between "## [TAG]" and the next "## " header.
-          NOTES=$(awk -v tag="$TAG" '
-            $0 ~ "^## \\[" tag "\\]" {flag=1; next}
-            flag && /^## / {flag=0}
-            flag {print}
-          ' CHANGELOG.md)
-          if [ -z "$NOTES" ]; then
-            NOTES="Release $TAG — see [CHANGELOG.md](CHANGELOG.md) for details."
-          fi
-          {
-            echo "notes<<EOF"
-            echo "$NOTES"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Create GitHub release
+      - name: Create or update release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_NOTES: ${{ steps.notes.outputs.notes }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" \
-            --title "$GITHUB_REF_NAME" \
-            --notes "$RELEASE_NOTES" \
-            main.js manifest.json styles.css
+          tag="${{ steps.tag.outputs.tag }}"
+          notes=$(awk -v t="## [$tag]" 'index($0,t)==1{f=1;next} /^## \[/{f=0} f' CHANGELOG.md)
+          [ -z "$notes" ] && notes="Release $tag"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" main.js manifest.json styles.css --clobber
+          else
+            gh release create "$tag" main.js manifest.json styles.css --title "$tag" --notes "$notes"
+          fi
