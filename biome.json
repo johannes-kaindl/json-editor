@@ -27,7 +27,7 @@
     }
   },
   "files": {
-    "ignore": ["dist", "node_modules", "main.js"]
+    "ignore": ["dist", "node_modules", "main.js", "scripts"]
   },
   "overrides": [
     {

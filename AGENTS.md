@@ -160,11 +160,13 @@ npm run build                          # tsc-check (build config) + esbuild prod
 npx vitest run tests/core/parse.test.ts  # single test file
 npx vitest                             # watch mode
 
-# Tag + push a new release:
-git tag -a 0.1.X -m "v0.1.X — ..."
-git push origin main && git push origin 0.1.X
-git push github main && git push github 0.1.X
-# GitHub Actions then builds + creates the Release with assets attached.
+# Release (PROF-OBS-09 — ein Befehl, dual-forge):
+npm run release 1.9.X                  # bump (package/manifest/versions) → CHANGELOG → commit →
+                                       # tag → push Codeberg → build → Codeberg-Release.
+                                       # GitHub-Release folgt automatisch via Mirror→Action.
+npm run release -- 1.9.X --dry-run     # nur loggen, nichts schreiben/pushen
+# Voraussetzung: ~/.codeberg-token, sauberer Arbeitsbaum, CHANGELOG-`## [Unreleased]`-Block.
+# Alt-Flow (weiterhin gültig): git tag -a 1.9.X -m "…" && git push origin main --follow-tags
 ```
 
 ## Test vault for smoke tests
