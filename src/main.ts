@@ -6,13 +6,13 @@ import {
   type JsonEditorSettings,
   JsonEditorSettingsTab,
 } from "./obsidian/SettingsTab";
+import { mergeSettings } from "./vendor/kit/settings";
 
 export default class JsonEditorPlugin extends Plugin {
   settings: JsonEditorSettings = { ...DEFAULT_SETTINGS };
 
   async onload() {
-    const stored = (await this.loadData()) as Partial<JsonEditorSettings> | null;
-    this.settings = { ...DEFAULT_SETTINGS, ...(stored ?? {}) };
+    this.settings = mergeSettings(DEFAULT_SETTINGS, await this.loadData());
 
     this.registerView(
       JSON_VIEW_TYPE,
