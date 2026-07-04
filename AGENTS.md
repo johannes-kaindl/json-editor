@@ -348,3 +348,10 @@ All four releases pushed to both remotes, GitHub Actions release workflows trigg
 - Second iteration: brainstorm → spec → 9-task plan → subagent-driven execution → final review (caught Critical+Important issues, all fixed) → tag `0.1.1` → install in test-vault
 - Codeberg + GitHub repos created and pushed; SSH-key-based auth; GitHub Actions release workflow runs green on tag push
 - Time: long single session spanning two calendar days
+
+## Dach-Kontext (obsidian-plugins)
+
+Dieses Repo liegt unter dem Koordinations-Dach `/Users/Shared/code/obsidian-plugins/`.
+**Vor dem Lösen eines Problems:** `../AGENTS.md` (Kit-first-Regel) und `../REGISTRY.md`
+(Lösungs-Registry) prüfen — viele Probleme sind in Nachbar-Plugins oder im
+`obsidian-kit` bereits gelöst.
