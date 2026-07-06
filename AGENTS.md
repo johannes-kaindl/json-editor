@@ -239,7 +239,7 @@ In priority order:
 
 ## Memory
 
-- Project memory: `~/.claude/projects/-Users-Shared-code-json-viewer/memory/` (index `MEMORY.md`).
+- Project memory: `~/.claude/projects/-Users-Shared-code-obsidian-plugins-json-viewer/memory/` (index `MEMORY.md`).
 - Session handoff buffer: `.remember/` (gitignored). Detailed working history is appended below.
 
 ## Abweichungen von der Leitkonvention
