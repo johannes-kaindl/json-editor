@@ -44,7 +44,7 @@ function extractPosition(text: string, message: string): { line: number; col: nu
   return { line: 1, col: 1 };
 }
 
-function offsetToLineCol(text: string, offset: number): { line: number; col: number } {
+export function offsetToLineCol(text: string, offset: number): { line: number; col: number } {
   let line = 1;
   let col = 1;
   for (let i = 0; i < offset && i < text.length; i++) {
