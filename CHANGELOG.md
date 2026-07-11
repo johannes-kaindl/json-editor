@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.10.1] — 2026-07-11
+
 ### Fixed
 - **`.jsonc` files no longer falsely trigger the lossy-number guard.** The big-integer detector scanned the raw text and skipped string contents but not comments, so a hyphenated word in a comment (e.g. `App-Konfiguration`) was read as the literal `-` (`Number("-")` = `NaN`) and mis-flagged as an unrepresentable number — disabling tree editing on perfectly safe files. The detector now skips `//` and `/* */` comments and ignores any literal without a digit. `.json` behavior is unchanged.
 

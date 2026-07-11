@@ -1,6 +1,6 @@
 {
   "name": "json-editor",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "description": "View and edit JSON files with a Tree/Source toggle. Renders JSON code blocks in Markdown notes.",
   "main": "main.js",
   "author": {
