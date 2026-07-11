@@ -59,4 +59,31 @@ describe("hasNumberRoundtripLoss", () => {
   it("returns false for a plain top-level safe number", () => {
     expect(hasNumberRoundtripLoss("8080")).toBe(false);
   });
+
+  // JSONC support (1.10.0): the detector now also sees .jsonc text, so it must
+  // skip comments — a hyphen in a comment word (e.g. "App-Konfiguration") was
+  // scanned as the literal "-", and Number("-") = NaN was mis-flagged as lossy.
+  it("does NOT flag a hyphen inside a line comment (regression: .jsonc false positive)", () => {
+    expect(hasNumberRoundtripLoss('{\n  // App-Konfiguration\n  "a": 1\n}')).toBe(false);
+  });
+
+  it("does NOT flag a trailing line comment with a hyphenated word", () => {
+    expect(hasNumberRoundtripLoss('{\n  "maxNodes": 15000, // Render-Budget\n}')).toBe(false);
+  });
+
+  it("does NOT flag a hyphen inside a block comment", () => {
+    expect(hasNumberRoundtripLoss('{\n  /* Block-Kommentar über die Feature-Liste */\n  "a": 1\n}')).toBe(
+      false,
+    );
+  });
+
+  it("does NOT flag a big integer that appears only inside a comment", () => {
+    expect(hasNumberRoundtripLoss('{\n  // id was 9007199254740993 once\n  "a": 1\n}')).toBe(false);
+  });
+
+  it("STILL flags a real lossy integer in a .jsonc file with comments", () => {
+    expect(hasNumberRoundtripLoss('{\n  // a comment with a dash-word\n  "id": 9007199254740993\n}')).toBe(
+      true,
+    );
+  });
 });

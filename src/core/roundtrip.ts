@@ -13,6 +13,7 @@
  *   real configs, and worth it to avoid false positives on common files.)
  */
 function literalLosesValue(literal: string): boolean {
+  if (!/[0-9]/.test(literal)) return false; // no digit → not a real number literal (e.g. a lone "-")
   const n = Number(literal);
   if (!Number.isFinite(n)) return true; // overflow to ±Infinity
   if (/[.eE]/.test(literal)) return false; // decimal/exponent: format-only
@@ -30,8 +31,9 @@ function literalLosesValue(literal: string): boolean {
  *
  * Works on the ORIGINAL text and compares number TOKENS only: it scans the
  * document, skips string contents (so numeric-looking text inside strings or
- * keys never triggers), and tests each bare number literal with
- * literalLosesValue. Whitespace/indent and value-preserving format
+ * keys never triggers) and skips `//` / block comments (so a hyphen or a big
+ * number inside a .jsonc comment never triggers), and tests each bare number
+ * literal with literalLosesValue. Whitespace/indent and value-preserving format
  * normalization are inherently ignored.
  *
  * Pure — no Obsidian imports. Returns true on the FIRST lossy literal found.
@@ -57,6 +59,22 @@ export function hasNumberRoundtripLoss(text: string): boolean {
     if (c === '"') {
       inString = true;
       i++;
+      continue;
+    }
+
+    // Skip comments (.jsonc). Comment bodies contain prose — a hyphenated word
+    // like "App-Konfiguration" or a big number in a note must never be scanned
+    // as a value literal. In strict .json these sequences can't appear outside
+    // strings, so this is a no-op there.
+    if (c === "/" && text[i + 1] === "/") {
+      i += 2;
+      while (i < n && text[i] !== "\n") i++;
+      continue;
+    }
+    if (c === "/" && text[i + 1] === "*") {
+      i += 2;
+      while (i < n && !(text[i] === "*" && text[i + 1] === "/")) i++;
+      i += 2; // skip the closing */
       continue;
     }
 
