@@ -92,3 +92,23 @@ describe("JsonFileView .jsonc round-trip (T10)", () => {
     expect(v.getViewData()).toBe(src);
   });
 });
+
+describe("JsonFileView .jsonc schema validation (T10)", () => {
+  const VALIDATING = { ...DEFAULT_SETTINGS, validateAgainstSchema: true };
+  const SCHEMA = `{ "type": "object", "properties": { "age": { "type": "integer" } } }`;
+
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("validates the comment-stripped value: a bad type in a .jsonc is flagged", () => {
+    const v = new JsonFileView(fakeLeaf(), VALIDATING);
+    document.body.appendChild(v.contentEl);
+    asJsonc(v);
+    v.setViewData(`{\n  // a comment\n  "age": "old"\n}`, true);
+    v.setSchema(SCHEMA);
+    const banner = v.contentEl.querySelector(".json-schema-banner") as HTMLElement;
+    expect(banner).not.toBeNull();
+    expect(banner.hidden).toBe(false); // "old" violates integer → error surfaced
+  });
+});
