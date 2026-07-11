@@ -1,7 +1,7 @@
 {
   "id": "json-editor",
   "name": "JSON Editor",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "minAppVersion": "1.5.7",
   "description": "View and edit JSON files with a Tree/Source toggle. Renders JSON code blocks in Markdown notes.",
   "author": "Johannes Kaindl",
