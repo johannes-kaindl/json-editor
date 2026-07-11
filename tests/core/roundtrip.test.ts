@@ -72,9 +72,9 @@ describe("hasNumberRoundtripLoss", () => {
   });
 
   it("does NOT flag a hyphen inside a block comment", () => {
-    expect(hasNumberRoundtripLoss('{\n  /* Block-Kommentar über die Feature-Liste */\n  "a": 1\n}')).toBe(
-      false,
-    );
+    expect(
+      hasNumberRoundtripLoss('{\n  /* Block-Kommentar über die Feature-Liste */\n  "a": 1\n}'),
+    ).toBe(false);
   });
 
   it("does NOT flag a big integer that appears only inside a comment", () => {
@@ -82,8 +82,8 @@ describe("hasNumberRoundtripLoss", () => {
   });
 
   it("STILL flags a real lossy integer in a .jsonc file with comments", () => {
-    expect(hasNumberRoundtripLoss('{\n  // a comment with a dash-word\n  "id": 9007199254740993\n}')).toBe(
-      true,
-    );
+    expect(
+      hasNumberRoundtripLoss('{\n  // a comment with a dash-word\n  "id": 9007199254740993\n}'),
+    ).toBe(true);
   });
 });
