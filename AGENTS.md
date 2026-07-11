@@ -7,7 +7,7 @@ Orientation for AI agents (Claude Code, Codex, …) and contributors working on 
 **Project:** `json-editor` (plugin id; renamed from `obsidian-json-editor` in Phase 3 per audit 1.1) — Obsidian plugin for viewing/editing `.json` files with Tree↔Source toggle, plus read-only tree rendering for ```` ```json ```` code blocks in Markdown notes.
 
 **Author:** Johannes Kaindl (`jkaindl` on Codeberg, `johannes-kaindl` on GitHub).
-Deliberately small surface: vanilla TypeScript, one runtime dependency (`@cfworker/json-schema`, eval-free), strict TDD, no telemetry or remote resources.
+Deliberately small surface: vanilla TypeScript, two runtime dependencies (`@cfworker/json-schema` + `jsonc-parser`, both eval-free), strict TDD, no telemetry or remote resources.
 
 ---
 
@@ -33,7 +33,7 @@ Deliberately small surface: vanilla TypeScript, one runtime dependency (`@cfwork
 - **Branch:** `main` is canonical; feature branches `feat/<name>` per release, merged via `--no-ff`
 - **Coverage tooling:** `@vitest/coverage-v8` set up (added in 0.3.0); `npm run test:coverage` for html report in `coverage/`
 - **CI:** GitHub Actions has both `release.yml` (tag → build → release with notes extracted from CHANGELOG section) and `test.yml` (PR + push to main → npm ci → test → build)
-- **Runtime deps:** `@cfworker/json-schema@4.1.1` (eval-free; zero transitive deps). Only this one runtime dep; everything else is devDeps.
+- **Runtime deps:** `@cfworker/json-schema@4.1.1` + `jsonc-parser@3.3.1` (both eval-free; zero transitive deps). Everything else is devDeps.
 
 ## Hosting setup
 
@@ -65,7 +65,14 @@ src/
 │   │                           does not throw on a structurally invalid schema)
 │   ├── types.ts                JsonValue, JsonPath, ParseResult, RenderOptions,
 │   │                           SerializeOptions, SearchOptions, SearchResult
-│   ├── parse.ts                parse(text) → ParseResult (line/col errors)
+│   ├── parse.ts                parse(text) → ParseResult (line/col errors);
+│   │                           exports offsetToLineCol (shared with jsonc.ts)
+│   ├── jsonc.ts                comment-preserving JSONC edit engine (wraps
+│   │                           jsonc-parser): jsoncParse + text-in/text-out ops
+│   │                           mirroring edit.ts (editValue/addKey/addItem/delete/
+│   │                           renameKey/changeType/moveArrayItem/moveObjectKey).
+│   │                           .jsonc mutations map to source text edits so
+│   │                           comments survive; used only on the .jsonc path.
 │   ├── serialize.ts            serialize(value, opts) → string
 │   ├── edit.ts                 editValue + addObjectKey + addArrayItem +
 │   │                           deleteAt + renameKey + moveArrayItem +

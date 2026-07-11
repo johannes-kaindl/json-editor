@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- **`.jsonc` file support with comment-preserving tree editing.** JSONC files (JSON with `//` and `/* */` comments and trailing commas) now open in the same Tree/Source editor. Every structural edit in the tree — edit value, add/delete, rename, change type, reorder — is applied as a targeted text edit on the source (via Microsoft's [`jsonc-parser`](https://github.com/microsoft/node-jsonc-parser)), so **comments and formatting survive editing and saving**. Opening and saving an unedited `.jsonc` file is byte-for-byte identical. `.json` files are unchanged — they stay strict (a comment is still a parse error).
+- **`` ```jsonc `` code blocks** in Markdown notes render as a read-only tree, tolerating comments (analogous to the existing `` ```json `` block).
+
+### Known limitations
+- Reordering rows in a `.jsonc` file moves each element with its same-line trailing comment; a free-standing comment line keeps its absolute position, so after a reorder it may sit next to a different element. No comment is ever lost — full positional fidelity on reorder is a future improvement.
+
 ## [1.9.1] — 2026-07-11
 
 **Maintenance release.** No user-facing behavior changes — internal robustness and release tooling only.
