@@ -20,8 +20,9 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
 
   it("survives a .json extension collision and still registers everything else", async () => {
     class CollidingPlugin extends JsonEditorPlugin {
-      override registerExtensions(): void {
-        throw new Error('Attempting to register an existing file extension "json"');
+      override registerExtensions(exts: string[]): void {
+        if (exts.includes("json"))
+          throw new Error('Attempting to register an existing file extension "json"');
       }
     }
     const plugin = new CollidingPlugin(appStub(), MANIFEST);
@@ -29,14 +30,15 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
     await expect(plugin.onload()).resolves.toBeUndefined();
 
     expect(plugin.postprocessors.json).toBeDefined(); // codeblock processor survived
+    expect(plugin.postprocessors.jsonc).toBeDefined(); // jsonc codeblock survived too
     expect(plugin.settingTabs.length).toBe(1);
     expect(plugin.commands.length).toBe(4);
   });
 
   it("shows an explanatory Notice naming the .json conflict on collision", async () => {
     class CollidingPlugin extends JsonEditorPlugin {
-      override registerExtensions(): void {
-        throw new Error("collision");
+      override registerExtensions(exts: string[]): void {
+        if (exts.includes("json")) throw new Error("collision");
       }
     }
     await new CollidingPlugin(appStub(), MANIFEST).onload();
@@ -46,7 +48,7 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
     expect(Notice.instances[0].message.toLowerCase()).toMatch(/disabled|code.?block|still/);
   });
 
-  it("happy path: claims the json extension once and shows no Notice", async () => {
+  it("happy path: claims the json + jsonc extensions and shows no Notice", async () => {
     const calls: Array<[string[], string]> = [];
     class OkPlugin extends JsonEditorPlugin {
       override registerExtensions(exts: string[], viewType: string): void {
@@ -55,8 +57,22 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
     }
     await new OkPlugin(appStub(), MANIFEST).onload();
 
-    expect(calls).toEqual([[["json"], JSON_VIEW_TYPE]]);
+    expect(calls).toEqual([
+      [["json"], JSON_VIEW_TYPE],
+      [["jsonc"], JSON_VIEW_TYPE],
+    ]);
     expect(Notice.instances.length).toBe(0);
+  });
+
+  it("a .jsonc collision alone still registers .json and warns only about .jsonc", async () => {
+    class JsoncCollides extends JsonEditorPlugin {
+      override registerExtensions(exts: string[]): void {
+        if (exts.includes("jsonc")) throw new Error("collision");
+      }
+    }
+    await new JsoncCollides(appStub(), MANIFEST).onload();
+    expect(Notice.instances.length).toBe(1);
+    expect(Notice.instances[0].message.toLowerCase()).toMatch(/\.jsonc/);
   });
 
   it("registers no default hotkey on any command (audit 2.1)", async () => {

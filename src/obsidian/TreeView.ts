@@ -13,7 +13,9 @@ export interface TreeViewOptions {
   readonly?: boolean;
   markerStyle?: MarkerStyle;
   autoCollapseDepth?: number;
-  onChange?: (newValue: JsonValue) => void;
+  /** Fired on an inline value edit with the edited path + new value. The adapter
+   *  maps this to the .json (serialize) or .jsonc (source-text) mutation path. */
+  onValueEdit?: (path: JsonPath, newVal: JsonValue) => void;
   onPathClick?: (path: JsonPath) => void;
   onValueHover?: (target: HTMLElement, path: JsonPath, value: JsonValue) => void;
   onBeforeRender?: () => void;
@@ -759,9 +761,10 @@ export class TreeView {
     const finish = (newVal: JsonValue | undefined) => {
       this.editing = false;
       if (newVal !== undefined) {
-        const updated = editValue(this.current, path, newVal);
-        this.current = updated;
-        this.opts.onChange?.(updated);
+        // Update the local model optimistically for immediate re-render; the
+        // adapter recomputes the authoritative value from its mutation path.
+        this.current = editValue(this.current, path, newVal);
+        this.opts.onValueEdit?.(path, newVal);
       }
       this.render();
     };

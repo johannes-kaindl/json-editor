@@ -63,6 +63,7 @@
     "vitest": "^1.6.0"
   },
   "dependencies": {
-    "@cfworker/json-schema": "^4.1.1"
+    "@cfworker/json-schema": "^4.1.1",
+    "jsonc-parser": "^3.3.1"
   }
 }

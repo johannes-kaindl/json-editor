@@ -20,7 +20,7 @@ describe("TreeView number editor — unsafe integer guard (#7)", () => {
     const changes: unknown[] = [];
     const tv = new TreeView(container, {
       onError: (e) => errors.push(e),
-      onChange: (v) => changes.push(v),
+      onValueEdit: (_path, newVal) => changes.push(newVal),
     });
     tv.setValue({ n: 5 });
 
@@ -37,7 +37,7 @@ describe("TreeView number editor — unsafe integer guard (#7)", () => {
 
   it("still allows editing a number to a safe value", () => {
     const changes: unknown[] = [];
-    const tv = new TreeView(container, { onChange: (v) => changes.push(v) });
+    const tv = new TreeView(container, { onValueEdit: (_path, newVal) => changes.push(newVal) });
     tv.setValue({ n: 5 });
 
     const numEl = container.querySelector<HTMLElement>(".json-number")!;
@@ -46,6 +46,6 @@ describe("TreeView number editor — unsafe integer guard (#7)", () => {
     input.value = "42";
     input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
 
-    expect(changes).toEqual([{ n: 42 }]);
+    expect(changes).toEqual([42]);
   });
 });

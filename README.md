@@ -5,7 +5,7 @@
 [![Release](https://img.shields.io/gitea/v/release/jkaindl/json-editor?gitea_url=https%3A%2F%2Fcodeberg.org&label=release)](https://codeberg.org/jkaindl/json-editor/releases)
 [![Obsidian](https://img.shields.io/badge/obsidian-1.5.7%2B-purple)](https://obsidian.md)
 
-View and edit `.json` files in Obsidian with a Tree↔Source toggle. Renders `` ```json `` code blocks inside Markdown notes as collapsible, theme-aware trees.
+View and edit `.json` and `.jsonc` files in Obsidian with a Tree↔Source toggle. Renders `` ```json `` and `` ```jsonc `` code blocks inside Markdown notes as collapsible, theme-aware trees. Comments in `.jsonc` files are preserved when you edit.
 
 **Target platform:** Obsidian 1.5.7+ on desktop and mobile. No external services, no remote resources, no telemetry.
 
@@ -29,7 +29,8 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 
 ## Features
 
-- **`.json` file view** with a Tree↔Source mode toggle in a unified top toolbar.
+- **`.json` and `.jsonc` file view** with a Tree↔Source mode toggle in a unified top toolbar.
+- **`.jsonc` comment preservation** — open a JSONC file (comments + trailing commas) and edit it in the tree; every edit is applied as a targeted text edit on the source, so comments and formatting are kept. An unedited open→save is byte-identical. `.json` stays strict (comments are an error). *Reorder caveat:* a free-standing comment line keeps its position on reorder — no comment is lost, but it may end up beside a different element.
 - **Inline editing** of strings, numbers, and booleans in tree mode — click a value, press Enter to commit, Escape to cancel.
 - **Structural editing** — add keys to objects (`+ Add key` affordance at the bottom of each container), append items to arrays, rename object keys (✎ hover button), delete any row (✕ hover button or `Backspace` / `Delete` on focused row).
 - **Drag-and-drop reorder** — hover a row to reveal a `⋮⋮` handle; drag it up/down within its container (array items or object keys). Same-parent only; undoable.
@@ -43,7 +44,7 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 - **Breadcrumb** showing the current path; clicking a segment scrolls back up the tree.
 - **Copy buttons** on hover — click copies the value, Alt-click copies the JSON path.
 - **Theme-aware styling** via Obsidian CSS variables — no hardcoded colors, no theme breakage.
-- **Embedded code blocks** — `` ```json `` fences in any Markdown note render as a titled card with a collapsible tree. Blocks over 20 lines auto-collapse. Invalid JSON renders as a styled error card with line/column info, not a crash.
+- **Embedded code blocks** — `` ```json `` and `` ```jsonc `` fences in any Markdown note render as a titled card with a collapsible tree (the `` ```jsonc `` variant tolerates comments). Blocks over 20 lines auto-collapse. Invalid JSON renders as a styled error card with line/column info, not a crash.
 - **Settings** — default mode, indent (2 / 4 / tab), tree marker style (modern / classic), auto-collapse depth, JSON Schema validation (opt-in), companion-schema suffix.
 - **No telemetry, no remote resources.** All assets ship with the plugin.
 
