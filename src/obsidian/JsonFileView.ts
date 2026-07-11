@@ -14,12 +14,24 @@ import {
   addObjectKey,
   changeType,
   deleteAt,
+  editValue,
   jsonTypeOf,
   moveArrayItem,
   moveObjectKey,
   renameKey,
 } from "../core/edit";
 import { History } from "../core/history";
+import {
+  jsoncAddItem,
+  jsoncAddKey,
+  jsoncChangeType,
+  jsoncDelete,
+  jsoncEditValue,
+  jsoncMoveArrayItem,
+  jsoncMoveObjectKey,
+  jsoncParse,
+  jsoncRenameKey,
+} from "../core/jsonc";
 import { parse } from "../core/parse";
 import { pathToString } from "../core/path";
 import { exceedsRenderBudget } from "../core/render-budget";
@@ -75,6 +87,8 @@ export class JsonFileView extends TextFileView {
   // can detect that the file changed while it was awaiting and bail out.
   private fileGeneration = 0;
   private history = new History<string>();
+  /** True when the open file is `.jsonc` — routes to the comment-preserving path. */
+  private isJsonc = false;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -139,6 +153,10 @@ export class JsonFileView extends TextFileView {
     // contract, drop all per-file state. Internal undo/redo restores pass
     // clear=false so the unified history survives those.
     if (clear) this.resetPerFileState();
+    // The file's extension decides the parser + mutation path. `file` is set by
+    // Obsidian's onLoadFile before setViewData; recompute here so leaf reuse
+    // (a .json file swapped for a .jsonc one) picks the right path.
+    this.isJsonc = this.file?.extension === "jsonc";
     this.data = data;
     if (data.trim() === "") {
       this.invalid = false;
@@ -188,8 +206,13 @@ export class JsonFileView extends TextFileView {
    * WITHOUT touching the mode or rebuilding any view. Returns whether the parse
    * succeeded. Shared by setViewData and the source-mode undo/redo path (2.2).
    */
+  /** Parse `this.data` with the extension-appropriate parser (.jsonc tolerates comments). */
+  private parseData(): ReturnType<typeof parse> {
+    return this.isJsonc ? jsoncParse(this.data) : parse(this.data);
+  }
+
   private recomputeFromData(): boolean {
-    const parsed = parse(this.data);
+    const parsed = this.parseData();
     if (parsed.ok) {
       this.invalid = false;
       this.currentValue = parsed.value;
@@ -402,7 +425,7 @@ export class JsonFileView extends TextFileView {
     }
     if (this.mode === "source" && this.sourceView) {
       this.data = this.sourceView.getValue();
-      const parsed = parse(this.data);
+      const parsed = this.parseData();
       if (parsed.ok) {
         this.currentValue = parsed.value;
       } else {
@@ -444,7 +467,7 @@ export class JsonFileView extends TextFileView {
         touchMode: Platform.isMobile,
         markerStyle: this.settings.markerStyle,
         autoCollapseDepth: this.settings.autoCollapseDepth,
-        onChange: (newValue) => this.handleTreeChange(newValue),
+        onValueEdit: (path, newVal) => this.handleValueEdit(path, newVal),
         onContextMenu: (evt, path) => this.openRowMenuFor(evt, path),
         onPathClick: (path) => this.breadcrumb.setPath(path),
         onBeforeRender: () => this.tooltip.hide(),
@@ -529,14 +552,23 @@ export class JsonFileView extends TextFileView {
     this.bodyEl.appendChild(wrap);
   }
 
-  private handleTreeChange(newValue: JsonValue): void {
-    this.applyMutation(newValue, "Edit value");
+  // Each structural handler branches once on isJsonc: the .json path runs the
+  // pure edit.ts op on the value + serializes; the .jsonc path runs the
+  // comment-preserving jsonc op on the source text. Both converge in commit*.
+
+  private handleValueEdit(path: JsonPath, newVal: JsonValue): void {
+    try {
+      if (this.isJsonc) this.commitJsonc(jsoncEditValue(this.data, path, newVal));
+      else this.applyMutation(editValue(this.currentValue, path, newVal), "Edit value");
+    } catch (e) {
+      new Notice((e as Error).message);
+    }
   }
 
   private handleAddKey(parentPath: JsonPath, key: string): void {
     try {
-      const next = addObjectKey(this.currentValue, parentPath, key, null);
-      this.applyMutation(next, `Add key "${key}"`);
+      if (this.isJsonc) this.commitJsonc(jsoncAddKey(this.data, parentPath, key, null));
+      else this.applyMutation(addObjectKey(this.currentValue, parentPath, key, null), `Add key "${key}"`);
     } catch (e) {
       new Notice((e as Error).message);
     }
@@ -544,8 +576,8 @@ export class JsonFileView extends TextFileView {
 
   private handleAddItem(parentPath: JsonPath): void {
     try {
-      const next = addArrayItem(this.currentValue, parentPath, null);
-      this.applyMutation(next, "Add item");
+      if (this.isJsonc) this.commitJsonc(jsoncAddItem(this.data, parentPath, null));
+      else this.applyMutation(addArrayItem(this.currentValue, parentPath, null), "Add item");
     } catch (e) {
       new Notice((e as Error).message);
     }
@@ -553,8 +585,8 @@ export class JsonFileView extends TextFileView {
 
   private handleDelete(path: JsonPath): void {
     try {
-      const next = deleteAt(this.currentValue, path);
-      this.applyMutation(next, "Delete row");
+      if (this.isJsonc) this.commitJsonc(jsoncDelete(this.data, path));
+      else this.applyMutation(deleteAt(this.currentValue, path), "Delete row");
     } catch (e) {
       new Notice((e as Error).message);
     }
@@ -562,8 +594,8 @@ export class JsonFileView extends TextFileView {
 
   private handleRename(path: JsonPath, newKey: string): void {
     try {
-      const next = renameKey(this.currentValue, path, newKey);
-      this.applyMutation(next, `Rename to "${newKey}"`);
+      if (this.isJsonc) this.commitJsonc(jsoncRenameKey(this.data, path, newKey));
+      else this.applyMutation(renameKey(this.currentValue, path, newKey), `Rename to "${newKey}"`);
     } catch (e) {
       new Notice((e as Error).message);
     }
@@ -571,6 +603,10 @@ export class JsonFileView extends TextFileView {
 
   private handleMoveItem(parentPath: JsonPath, fromIdx: number, toIdx: number): void {
     try {
+      if (this.isJsonc) {
+        this.commitJsonc(jsoncMoveArrayItem(this.data, parentPath, fromIdx, toIdx));
+        return;
+      }
       const next = moveArrayItem(this.currentValue, parentPath, fromIdx, toIdx);
       if (next === this.currentValue) return;
       this.applyMutation(next, "Reorder item");
@@ -581,6 +617,10 @@ export class JsonFileView extends TextFileView {
 
   private handleMoveKey(parentPath: JsonPath, key: string, toPos: number): void {
     try {
+      if (this.isJsonc) {
+        this.commitJsonc(jsoncMoveObjectKey(this.data, parentPath, key, toPos));
+        return;
+      }
       const next = moveObjectKey(this.currentValue, parentPath, key, toPos);
       if (next === this.currentValue) return;
       this.applyMutation(next, `Reorder key "${key}"`);
@@ -591,6 +631,10 @@ export class JsonFileView extends TextFileView {
 
   private handleChangeType(path: JsonPath, newType: JsonType): void {
     try {
+      if (this.isJsonc) {
+        this.commitJsonc(jsoncChangeType(this.data, path, newType));
+        return;
+      }
       const next = changeType(this.currentValue, path, newType);
       if (next === this.currentValue) return;
       this.applyMutation(next, `Change type to ${newType}`);
@@ -670,11 +714,15 @@ export class JsonFileView extends TextFileView {
     });
   }
 
-  private applyMutation(newValue: JsonValue, _description: string): void {
-    // Unified history (1.2.0): push the pre-edit TEXT, not the JsonValue.
+  /**
+   * Commit a new document string + its value: push pre-edit text to the unified
+   * history (1.2.0), swap data/value, save, re-render. The shared tail of both
+   * mutation paths (.json serialize + .jsonc source-edit).
+   */
+  private commitSource(newText: string, newValue: JsonValue): void {
     this.history.push(this.data);
+    this.data = newText;
     this.currentValue = newValue;
-    this.data = serialize(newValue, { indent: this.settings.indent });
     this.requestSave();
     if (this.treeView) {
       this.treeView.setValue(newValue);
@@ -685,6 +733,17 @@ export class JsonFileView extends TextFileView {
     }
     this.applyValidation();
     this.refreshUndoButtons();
+  }
+
+  private applyMutation(newValue: JsonValue, _description: string): void {
+    this.commitSource(serialize(newValue, { indent: this.settings.indent }), newValue);
+  }
+
+  /** .jsonc path: a source-text op produced `newText`; derive the value + commit. */
+  private commitJsonc(newText: string): void {
+    if (newText === this.data) return;
+    const parsed = jsoncParse(newText);
+    this.commitSource(newText, parsed.ok ? parsed.value : this.currentValue);
   }
 
   undo(): void {
@@ -735,7 +794,7 @@ export class JsonFileView extends TextFileView {
       this.history.push(this.data);
     }
     this.data = text;
-    const parsed = parse(text);
+    const parsed = this.parseData();
     if (parsed.ok) {
       this.currentValue = parsed.value;
       this.invalid = false;

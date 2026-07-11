@@ -60,25 +60,30 @@ describe("TreeView", () => {
     expect(container.querySelector("input")).toBeNull();
   });
 
-  it("emits onChange with the edited value when Enter is pressed on a text input", () => {
+  it("emits onValueEdit with the path + new value when Enter is pressed on a text input", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const changes: unknown[] = [];
-    const view = new TreeView(container, { onChange: (v) => changes.push(v) });
+    const view = new TreeView(container, {
+      onValueEdit: (path, newVal) => changes.push({ path, newVal }),
+    });
     view.setValue({ name: "jay" });
     const value = container.querySelector(".json-string") as HTMLElement;
     value.click();
     const input = container.querySelector("input[type='text']") as HTMLInputElement;
     input.value = "sam";
     input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
-    expect(changes).toEqual([{ name: "sam" }]);
+    expect(changes).toEqual([{ path: ["name"], newVal: "sam" }]);
+    expect(view.getValue()).toEqual({ name: "sam" });
   });
 
-  it("cancels edit on Escape without firing onChange", () => {
+  it("cancels edit on Escape without firing onValueEdit", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const changes: unknown[] = [];
-    const view = new TreeView(container, { onChange: (v) => changes.push(v) });
+    const view = new TreeView(container, {
+      onValueEdit: (path, newVal) => changes.push({ path, newVal }),
+    });
     view.setValue({ name: "jay" });
     const value = container.querySelector(".json-string") as HTMLElement;
     value.click();
