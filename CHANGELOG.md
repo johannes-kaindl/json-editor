@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+**Maintenance release.** No user-facing behavior changes — internal robustness and release tooling only.
+
+### Changed
+- Settings are now loaded through a small shared `mergeSettings` helper (vendored from `obsidian-kit`). It shallow-merges stored settings over the defaults exactly as before, with added reference-safety (default array/object values are cloned so a later mutation can't reach back into the defaults). Every setting in this plugin is a primitive, so the observable behavior is identical; this is a maintenance alignment with the other Obsidian plugins in the family.
+
+### Internal
+- Adopted the unified one-command release toolkit (`npm run release` / `scripts/release.mjs`): version bump → CHANGELOG → tag → Codeberg release → GitHub dual-push mirror, replacing the retired Woodpecker mirror config.
+- Documentation path/reference updates for the `obsidian-plugins/` umbrella repository layout.
+
 ## [1.9.0] — 2026-06-16
 
 **Eval-free JSON Schema validation + a clean community-review report.** Replaces the Ajv validator with the eval-free [`@cfworker/json-schema`](https://github.com/cfworker/cfworker), and drives the type-aware ESLint findings from the `community.obsidian.md` review to zero. The plugin bundle is ~52% smaller.
