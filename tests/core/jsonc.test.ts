@@ -48,8 +48,8 @@ describe("jsoncParse", () => {
 
 describe("detectIndent", () => {
   it("detects 4-space indent, falls back to 2", () => {
-    expect(detectIndent(`{\n    "a": 1\n}`)).toBe(4);
-    expect(detectIndent(`{}`)).toBe(2);
+    expect(detectIndent('{\n    "a": 1\n}')).toBe(4);
+    expect(detectIndent("{}")).toBe(2);
   });
 });
 

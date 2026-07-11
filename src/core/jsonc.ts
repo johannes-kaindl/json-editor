@@ -3,14 +3,14 @@
 // operates on the SOURCE TEXT so `//`, `/* */` comments and formatting survive
 // every mutation. See docs/superpowers/specs/2026-07-11-jsonc-support-design.md.
 import {
-  applyEdits,
   type FormattingOptions,
-  findNodeAtLocation,
   type JSONPath,
-  modify,
   type Node,
-  parse as jparse,
   type ParseError,
+  applyEdits,
+  findNodeAtLocation,
+  parse as jparse,
+  modify,
   parseTree,
   printParseErrorCode,
 } from "jsonc-parser";
@@ -65,7 +65,7 @@ function valueAtPath(src: string, path: JsonPath): JsonValue {
 }
 
 export function jsoncEditValue(src: string, path: JsonPath, newVal: JsonValue): string {
-  return applyEdits(src, modify(src, path as JSONPath, newVal, { formattingOptions: fmt(src) }));
+  return applyEdits(src, modify(src, path, newVal, { formattingOptions: fmt(src) }));
 }
 
 export function jsoncAddKey(
@@ -93,7 +93,7 @@ export function jsoncAddItem(src: string, parentPath: JsonPath, val: JsonValue):
 }
 
 export function jsoncDelete(src: string, path: JsonPath): string {
-  return applyEdits(src, modify(src, path as JSONPath, undefined, { formattingOptions: fmt(src) }));
+  return applyEdits(src, modify(src, path, undefined, { formattingOptions: fmt(src) }));
 }
 
 /**
@@ -104,12 +104,14 @@ export function jsoncDelete(src: string, path: JsonPath): string {
 export function jsoncRenameKey(src: string, path: JsonPath, newKey: string): string {
   const root = parseTree(src, [], PARSE_OPTS);
   if (!root) return src;
-  const valueNode = findNodeAtLocation(root, path as JSONPath);
+  const valueNode = findNodeAtLocation(root, path);
   const prop = valueNode?.parent; // property node: children = [keyNode, valueNode]
   const keyNode = prop?.type === "property" ? prop.children?.[0] : undefined;
   if (!keyNode) return src;
   return (
-    src.slice(0, keyNode.offset) + JSON.stringify(newKey) + src.slice(keyNode.offset + keyNode.length)
+    src.slice(0, keyNode.offset) +
+    JSON.stringify(newKey) +
+    src.slice(keyNode.offset + keyNode.length)
   );
 }
 
@@ -133,7 +135,7 @@ function defaultForType(t: JsonType): JsonValue {
 export function jsoncChangeType(src: string, path: JsonPath, newType: JsonType): string {
   return applyEdits(
     src,
-    modify(src, path as JSONPath, defaultForType(newType), { formattingOptions: fmt(src) }),
+    modify(src, path, defaultForType(newType), { formattingOptions: fmt(src) }),
   );
 }
 
@@ -154,7 +156,7 @@ function childInfos(src: string, containerPath: JsonPath): Child[] | null {
   const root = parseTree(src, [], PARSE_OPTS);
   if (!root) return null;
   const container: Node | undefined =
-    containerPath.length === 0 ? root : findNodeAtLocation(root, containerPath as JSONPath);
+    containerPath.length === 0 ? root : findNodeAtLocation(root, containerPath);
   const kids = container?.children;
   if (!kids || kids.length === 0) return [];
   return kids.map((n) => {

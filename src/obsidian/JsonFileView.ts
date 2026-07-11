@@ -568,7 +568,11 @@ export class JsonFileView extends TextFileView {
   private handleAddKey(parentPath: JsonPath, key: string): void {
     try {
       if (this.isJsonc) this.commitJsonc(jsoncAddKey(this.data, parentPath, key, null));
-      else this.applyMutation(addObjectKey(this.currentValue, parentPath, key, null), `Add key "${key}"`);
+      else
+        this.applyMutation(
+          addObjectKey(this.currentValue, parentPath, key, null),
+          `Add key "${key}"`,
+        );
     } catch (e) {
       new Notice((e as Error).message);
     }

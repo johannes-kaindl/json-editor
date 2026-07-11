@@ -85,7 +85,7 @@ export default class JsonEditorPlugin extends Plugin {
       this.registerExtensions(["json"], JSON_VIEW_TYPE);
     } catch {
       new Notice(
-        "JSON Editor: another plugin already handles .json — file view disabled, code-block rendering still active.",
+        "JSON editor: another plugin already handles .json — file view disabled, code-block rendering still active.",
       );
     }
     // Separate try/catch so a .jsonc collision doesn't skip the .json claim
@@ -94,7 +94,7 @@ export default class JsonEditorPlugin extends Plugin {
       this.registerExtensions(["jsonc"], JSON_VIEW_TYPE);
     } catch {
       new Notice(
-        "JSON Editor: another plugin already handles .jsonc — file view disabled, code-block rendering still active.",
+        "JSON editor: another plugin already handles .jsonc — file view disabled, code-block rendering still active.",
       );
     }
   }
