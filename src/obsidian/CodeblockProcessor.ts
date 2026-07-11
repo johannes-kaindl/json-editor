@@ -1,17 +1,21 @@
 import { type MarkdownPostProcessorContext, Notice } from "obsidian";
+import { jsoncParse } from "../core/jsonc";
 import { parse } from "../core/parse";
 import { renderTree } from "../core/render";
 import type { JsonEditorSettings } from "./SettingsTab";
+
+export type CodeblockLang = "json" | "jsonc";
 
 export function renderJsonCodeblock(
   source: string,
   el: HTMLElement,
   _ctx: MarkdownPostProcessorContext,
   settings: JsonEditorSettings,
+  lang: CodeblockLang = "json",
 ): void {
-  const parsed = parse(source);
+  const parsed = lang === "jsonc" ? jsoncParse(source) : parse(source);
   if (!parsed.ok) {
-    renderFallback(source, el, parsed.error);
+    renderFallback(el, parsed.error, lang);
     return;
   }
   const doc = el.ownerDocument;
@@ -22,7 +26,7 @@ export function renderJsonCodeblock(
   head.className = "json-codeblock-head";
   const label = doc.createElement("span");
   label.className = "json-codeblock-label";
-  label.textContent = "JSON";
+  label.textContent = lang === "jsonc" ? "JSONC" : "JSON";
   head.appendChild(label);
   head.appendChild(makeCopyButton(doc, source));
   card.appendChild(head);
@@ -65,7 +69,7 @@ function makeCopyButton(doc: Document, source: string): HTMLButtonElement {
   return btn;
 }
 
-function renderFallback(_source: string, el: HTMLElement, errorMessage: string): void {
+function renderFallback(el: HTMLElement, errorMessage: string, lang: CodeblockLang): void {
   const doc = el.ownerDocument;
   const card = doc.createElement("div");
   card.className = "json-codeblock is-error";
@@ -74,13 +78,13 @@ function renderFallback(_source: string, el: HTMLElement, errorMessage: string):
   head.className = "json-codeblock-head";
   const label = doc.createElement("span");
   label.className = "json-codeblock-label";
-  label.textContent = "JSON · error";
+  label.textContent = `${lang === "jsonc" ? "JSONC" : "JSON"} · error`;
   head.appendChild(label);
   card.appendChild(head);
 
   const body = doc.createElement("div");
   body.className = "json-codeblock-error";
-  body.textContent = `Invalid JSON: ${errorMessage}`;
+  body.textContent = `Invalid ${lang === "jsonc" ? "JSONC" : "JSON"}: ${errorMessage}`;
   card.appendChild(body);
 
   el.appendChild(card);
