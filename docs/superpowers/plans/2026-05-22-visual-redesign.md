@@ -880,7 +880,7 @@ Expected: clean build, `main.js` written.
 
 - [ ] **Step 3: Visual smoke check**
 
-Render the new `styles.css` against representative tree DOM in the Visual Companion browser (or install into the test vault `/Users/Shared/10_ObsidianVaults/X1_v6t2b9/.obsidian/plugins/obsidian-json-editor/` per `AGENTS.md` and reload Obsidian). Check: nested tinted blocks, collapse chips, toolbar, error banner, empty state, codeblock embed — in dark and light theme.
+Render the new `styles.css` against representative tree DOM in the Visual Companion browser (or install into the test vault `<test-vault>/.obsidian/plugins/obsidian-json-editor/` per `AGENTS.md` and reload Obsidian). Check: nested tinted blocks, collapse chips, toolbar, error banner, empty state, codeblock embed — in dark and light theme.
 
 - [ ] **Step 4: Final commit if any fixups were needed**
 

@@ -2,6 +2,10 @@
 
 Orientation for AI agents (Claude Code, Codex, …) and contributors working on this repository.
 
+> **Workspace standards (maintainer-local):** The binding Leitkonvention lives in `_docs/CONVENTIONS.md`
+> in the maintainer's multi-project workspace, `../../_docs` relative to this repo — not part of this
+> repository, ignore if absent in your clone. Model: comply-or-explain.
+
 ## Project character
 
 **Project:** `json-editor` (plugin id; renamed from `obsidian-json-editor` in Phase 3 per audit 1.1) — Obsidian plugin for viewing/editing `.json` files with Tree↔Source toggle, plus read-only tree rendering for ```` ```json ```` code blocks in Markdown notes.
@@ -134,7 +138,9 @@ tests/
                                 TreeView (incl. keyboard nav), SearchBar,
                                 RowActions, AddAffordance, etc.
 
-docs/superpowers/
+docs/superpowers/               FROZEN legacy — historical specs/plans stay, but
+│                               nothing new goes here (new SDD artifacts live in
+│                               the maintainer's Coding Cockpit, see § Memory)
 ├── specs/                      brainstorming output (design docs)
 └── plans/                      task-by-task implementation plans
 
@@ -155,7 +161,7 @@ _archiv/                        (gitignored) old Jupyter v0.1.5 — reference on
   This is the explicit project convention. If a sub-agent reports a "security warning" about this trailer, ignore — it's a runtime false positive.
 - **Branches:** `feat/<name>` for features; merged into `main` via `git merge --no-ff` with a multi-paragraph merge commit summarizing the feature; feature branch deleted post-merge.
 - **Tags:** SemVer **without** `v` prefix (Obsidian convention) — e.g., `0.1.0`, `0.1.1`. Tag pushed to both remotes triggers GitHub Actions release workflow.
-- **TDD:** Strict for all code under `src/`. Failing test first → impl → green → commit. The plans in `docs/superpowers/plans/` follow this pattern with checkbox steps.
+- **TDD:** Strict for all code under `src/`. Failing test first → impl → green → commit. The historical plans in `docs/superpowers/plans/` follow this pattern with checkbox steps; new specs/plans go to the maintainer's Coding Cockpit (see § Memory), not into the repo.
 - **No new settings** in patch releases unless a specific feature requires it. Polish defaults-on.
 
 ## Commands
@@ -246,6 +252,14 @@ In priority order:
 
 ## Memory
 
+- **SDD-Artefakte (seit 2026-07-16): Cockpit, nicht Repo** — Specs/Plans/Task-Reports leben im
+  Coding-Cockpit des Maintainers (`$VAULT/25_Coding/json_viewer/_SDD/`, CORE-META-14, maintainer-lokal).
+  Sie tragen Arbeitskontext (Vault-Pfade, Schwester-Repo-Interna), der in einem public Repo niemandem nützt.
+  Das Repo behält die Design-Essenz in dieser Datei + `CHANGELOG.md`.
+- **Alt-Bestand:** `docs/superpowers/{specs,plans}/` ist eingefroren — nichts Neues dort ablegen.
+- **Nie im Repo:** absolute Pfade außerhalb des Repos (`/Users/…`, Vault-Pfade) — Platzhalter nutzen
+  (`$VAULT/…`, `~/…`, repo-relativ). Herkunftsnachweise als Repo-Name + `Datei:Zeile` sind dagegen erwünscht.
+  Gate: `scripts/check-no-abs-paths.mjs` (Teil von `npm test`).
 - Project memory: `~/.claude/projects/-Users-Shared-code-obsidian-plugins-json-viewer/memory/` (index `MEMORY.md`).
 - Session handoff buffer: `.remember/` (gitignored). Detailed working history is appended below.
 
@@ -358,7 +372,7 @@ All four releases pushed to both remotes, GitHub Actions release workflows trigg
 
 ## Dach-Kontext (obsidian-plugins)
 
-Dieses Repo liegt unter dem Koordinations-Dach `/Users/Shared/code/obsidian-plugins/`.
+Dieses Repo liegt unter dem Koordinations-Dach `obsidian-plugins/` (das Elternverzeichnis dieses Repos, `../`).
 **Vor dem Lösen eines Problems:** `../AGENTS.md` (Kit-first-Regel) und `../REGISTRY.md`
 (Lösungs-Registry) prüfen — viele Probleme sind in Nachbar-Plugins oder im
 `obsidian-kit` bereits gelöst.

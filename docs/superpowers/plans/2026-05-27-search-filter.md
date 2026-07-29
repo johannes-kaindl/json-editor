@@ -1364,7 +1364,7 @@ GitHub Actions release workflow will then build + create the release page automa
 - [ ] All tasks above completed in order with commits.
 - [ ] `npm test` green (133 + ~30 new tests ≈ 165+).
 - [ ] `npm run build` clean.
-- [ ] Plugin copied into `/Users/Shared/10_ObsidianVaults/X1_v6t2b9/.obsidian/plugins/obsidian-json-editor/` and manual Cmd+R smoke-tested.
+- [ ] Plugin copied into `<test-vault>/.obsidian/plugins/obsidian-json-editor/` (the maintainer's local test vault) and manual Cmd+R smoke-tested.
 - [ ] Merge commit on `main`, both remotes pushed.
 - [ ] Tag `0.2.0` pushed (after user approval).
 - [ ] GitHub Release page live with assets.
