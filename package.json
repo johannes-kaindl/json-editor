@@ -5,16 +5,16 @@
   "main": "main.js",
   "author": {
     "name": "Johannes Kaindl",
-    "url": "https://codeberg.org/jkaindl"
+    "url": "https://git.jkaindl.de/jkaindl"
   },
   "license": "AGPL-3.0-or-later",
-  "homepage": "https://codeberg.org/jkaindl/json-editor",
+  "homepage": "https://git.jkaindl.de/jkaindl/json-editor",
   "repository": {
     "type": "git",
-    "url": "git+https://codeberg.org/jkaindl/json-editor.git"
+    "url": "git+https://git.jkaindl.de/jkaindl/json-editor.git"
   },
   "bugs": {
-    "url": "https://codeberg.org/jkaindl/json-editor/issues"
+    "url": "https://git.jkaindl.de/jkaindl/json-editor/issues"
   },
   "scripts": {
     "dev": "node esbuild.config.mjs",

@@ -4,8 +4,8 @@ Thanks for considering a contribution. This document covers bug reports, pull re
 
 ## Where to file things
 
-- **Bugs and feature requests:** [Codeberg issues](https://codeberg.org/jkaindl/json-editor/issues) (primary). The GitHub mirror exists for the Obsidian Community Plugin Directory and is not actively monitored for issues.
-- **Pull requests:** Codeberg. PRs against the GitHub mirror will be politely redirected.
+- **Bugs and feature requests:** [Forgejo issues](https://git.jkaindl.de/jkaindl/json-editor/issues) (primary). The GitHub mirror exists for the Obsidian Community Plugin Directory and is not actively monitored for issues.
+- **Pull requests:** Forgejo. PRs against the GitHub mirror will be politely redirected.
 - **Security issues:** see [`SECURITY.md`](SECURITY.md) — please do not file these as public issues.
 
 ## Bug reports
@@ -19,7 +19,7 @@ Good bug reports include:
 5. What you expected vs. what happened.
 6. Any errors visible in the developer console (`Cmd/Ctrl+Shift+I` → Console tab).
 
-The issue templates on Codeberg and GitHub will walk you through this.
+The issue templates on Forgejo and GitHub will walk you through this.
 
 ## Pull requests
 
@@ -30,7 +30,7 @@ For anything non-trivial (new features, refactors, breaking changes), please ope
 ### Setup
 
 ```bash
-git clone https://codeberg.org/jkaindl/json-editor.git
+git clone https://git.jkaindl.de/jkaindl/json-editor.git
 cd json-editor
 npm install            # uses .npmrc with legacy-peer-deps if needed
 npm test               # confirm green baseline

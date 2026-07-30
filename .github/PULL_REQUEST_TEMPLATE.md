@@ -1,6 +1,6 @@
 <!--
 Issues and PRs are primarily handled on Codeberg:
-https://codeberg.org/jkaindl/json-editor
+https://git.jkaindl.de/jkaindl/json-editor
 
 PRs against the GitHub mirror are welcome but will usually be ported across.
 -->

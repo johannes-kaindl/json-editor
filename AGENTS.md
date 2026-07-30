@@ -10,7 +10,7 @@ Orientation for AI agents (Claude Code, Codex, …) and contributors working on 
 
 **Project:** `json-editor` (plugin id; renamed from `obsidian-json-editor` in Phase 3 per audit 1.1) — Obsidian plugin for viewing/editing `.json` files with Tree↔Source toggle, plus read-only tree rendering for ```` ```json ```` code blocks in Markdown notes.
 
-**Author:** Johannes Kaindl (`jkaindl` on Codeberg, `johannes-kaindl` on GitHub).
+**Author:** Johannes Kaindl (`jkaindl` on Forgejo, `johannes-kaindl` on GitHub).
 Deliberately small surface: vanilla TypeScript, two runtime dependencies (`@cfworker/json-schema` + `jsonc-parser`, both eval-free), strict TDD, no telemetry or remote resources.
 
 ---
@@ -41,16 +41,16 @@ Deliberately small surface: vanilla TypeScript, two runtime dependencies (`@cfwo
 
 ## Hosting setup
 
-Asymmetric: Codeberg is primary for source development; GitHub serves as a release distributor only (Obsidian's Community Plugin Directory is wired to GitHub-only).
+Asymmetric: Forgejo is primary for source development; GitHub serves as a release distributor only (Obsidian's Community Plugin Directory is wired to GitHub-only).
 
 | Remote | URL | Role |
 |---|---|---|
-| `origin` | `git@codeberg.org:jkaindl/json-editor.git` | Primary, FOSS-ethics canonical |
+| `origin` | `git@git.jkaindl.de:jkaindl/json-editor.git` | Primary, FOSS-ethics canonical |
 | `github` | `git@github.com:johannes-kaindl/json-editor.git` | Release mirror for Obsidian submission |
 
 Auth: SSH key (`~/.ssh/id_ed25519`) registered with both accounts.
 
-**Mirror automation:** A **Codeberg native push-mirror to GitHub is ACTIVE** (`sync_on_commit`) — a push to Codeberg (`origin`) auto-propagates to GitHub including tags, and the mirror's PAT-authenticated push triggers `release.yml` on GitHub (verified end-to-end for 1.8.0). So **`git push origin main && git push origin <tag>` is sufficient** — no separate GitHub push needed. (`.woodpecker.yml` is an unused alternative mechanism and could be removed.)
+**Mirror automation:** A **Forgejo native push-mirror to GitHub is ACTIVE** (`sync_on_commit`) — a push to Forgejo (`origin`) auto-propagates to GitHub including tags, and the mirror's PAT-authenticated push triggers `release.yml` on GitHub (verified end-to-end for 1.8.0). So **`git push origin main && git push origin <tag>` is sufficient** — no separate GitHub push needed. (`.woodpecker.yml` is an unused alternative mechanism and could be removed.)
 
 ## Architecture principles
 
@@ -175,10 +175,10 @@ npx vitest                             # watch mode
 
 # Release (PROF-OBS-09 — ein Befehl, dual-forge):
 npm run release 1.9.X                  # bump (package/manifest/versions) → CHANGELOG → commit →
-                                       # tag → push Codeberg → build → Codeberg-Release.
+                                       # tag → push Forgejo → build → Forgejo-Release.
                                        # GitHub-Release folgt automatisch via Mirror→Action.
 npm run release -- 1.9.X --dry-run     # nur loggen, nichts schreiben/pushen
-# Voraussetzung: ~/.codeberg-token, sauberer Arbeitsbaum, CHANGELOG-`## [Unreleased]`-Block.
+# Voraussetzung: ~/.forgejo-token, sauberer Arbeitsbaum, CHANGELOG-`## [Unreleased]`-Block.
 # Alt-Flow (weiterhin gültig): git tag -a 1.9.X -m "…" && git push origin main --follow-tags
 ```
 
@@ -241,7 +241,7 @@ In priority order:
    - Persistent undo across file reopens
    - Group-by-time-window batching for source-mode history (currently per-keystroke)
 
-5. **Mirror is already active** (Codeberg native push-mirror, see *Hosting setup*) — the `.woodpecker.yml` alternative is redundant and could be removed.
+5. **Mirror is already active** (Forgejo native push-mirror, see *Hosting setup*) — the `.woodpecker.yml` alternative is redundant and could be removed.
 
 ## Gotchas (known limitations, documented in code)
 
@@ -280,7 +280,7 @@ Two workstreams, both verified against a local portal-sim harness (`eslint.porta
 1. **ESLint root-fix → Review pass.** Removed the mock alias from `tsconfig.json` (real Obsidian types resolve; portal-sim 49 → 12), moved the mock `src/__mocks__/` → `tests/__mocks__/` (so no `src/` file is excluded from `tsconfig.json` — closes a "file not in project" parser-error risk a reviewer flagged), added `tsconfig.test.json` for editor typing of tests, re-enabled `no-unnecessary-type-assertion` + removed 12 now-redundant assertions (one `querySelector` was a rule false-positive → rewrote to the generic `querySelector<HTMLElement>`). `lint:portal` = 0.
 2. **`ajv` → `@cfworker/json-schema` (eval-free).** Kills the "dynamic code execution" disclosure at the source (`new Function`/`eval` in bundle = 0) and halves the bundle (~176 KB → ~85 KB). New `src/core/draft07-meta-schema.ts` restores ajv's "malformed schema → error" contract (cfworker is lenient). `reduceErrors()` collapses cfworker's cascading errors back to ajv granularity.
 
-Adversarial review (workflow, 23 agents): **19 confirmed findings, 0 refuted.** Fixed: a `not`-failure being dropped, `additionalProperties:false` duplicate noise, allOf/$ref noise (rewrote the error filter, verified against 11 cases + 5 new regression tests); meta-validation over-rejecting a cosmetic non-URI `$id` (relaxed identifier formats); the mock-in-`src/` parser-error risk; and all stale docs (THIRD-PARTY-NOTICES, SECURITY, README, AGENTS). **Intentional behavior change:** cfworker enforces `format` (Ajv ran without ajv-formats) — kept + documented + tested. Tests 592 → 601; `npm test`/`typecheck`/`build`/`lint:obsidian`/`lint:portal`/`biome` all green. Released: feature branch → `--no-ff` merge → tag `1.9.0` → pushed to Codeberg (auto-mirrors to GitHub + triggers `release.yml`).
+Adversarial review (workflow, 23 agents): **19 confirmed findings, 0 refuted.** Fixed: a `not`-failure being dropped, `additionalProperties:false` duplicate noise, allOf/$ref noise (rewrote the error filter, verified against 11 cases + 5 new regression tests); meta-validation over-rejecting a cosmetic non-URI `$id` (relaxed identifier formats); the mock-in-`src/` parser-error risk; and all stale docs (THIRD-PARTY-NOTICES, SECURITY, README, AGENTS). **Intentional behavior change:** cfworker enforces `format` (Ajv ran without ajv-formats) — kept + documented + tested. Tests 592 → 601; `npm test`/`typecheck`/`build`/`lint:obsidian`/`lint:portal`/`biome` all green. Released: feature branch → `--no-ff` merge → tag `1.9.0` → pushed to Forgejo (auto-mirrors to GitHub + triggers `release.yml`).
 
 ### 2026-06-15 — `1.8.0`: Mobile interaction model + native UI/a11y polish, released
 
@@ -290,13 +290,13 @@ Then several user-prompted iteration rounds (deploy → real-iPhone test → fix
 
 Adversarial workflows: mobile-model multi-dim review, pre-publish review, and a **submission-readiness** workflow (researched live docs.obsidian.md + obsidian-releases) — 104 compliance checks pass, no code blockers. iOS load failure during testing was diagnosed (systematic-debugging) to an **orphaned old 1.3 install colliding on the `.json` claim**, not our build.
 
-Release: merged to `main`, tagged `1.8.0`, pushed to Codeberg → **auto-mirrored to GitHub** (the push-mirror is active; the manual `push_mirrors-sync` API returned 500 but `sync_on_commit` propagated anyway) → `release.yml` built the GitHub release with all 3 assets; Test + Release CI green (verified via API). Tests 537→590. **Only the community.obsidian.md portal submission remains** (user step).
+Release: merged to `main`, tagged `1.8.0`, pushed to Forgejo → **auto-mirrored to GitHub** (the push-mirror is active; the manual `push_mirrors-sync` API returned 500 but `sync_on_commit` propagated anyway) → `release.yml` built the GitHub release with all 3 assets; Test + Release CI green (verified via API). Tests 537→590. **Only the community.obsidian.md portal submission remains** (user step).
 
 ### 2026-06-13 — Phase 3: Rename + Docs (`1.7.0`) + alle drei Releases gepusht
 
 Abschluss des Gap-Audit-Sprints (alle drei Phasen in einer Session). Phase-3-Branch `feat/docs-id-rename` (3 Commits): Plugin-ID-Rename `obsidian-json-editor`→`json-editor` (manifest/package/deploy+install-Pfade/esbuild+styles-Banner; `JSON_VIEW_TYPE` bewusst belassen — interner View-Key), volles Doku-Paket (README an 1.6.0 + Known-conflicts + Key-Order-Limitation, `THIRD-PARTY-NOTICES.md` aus verifiziertem Bundle inkl. fast-uri BSD-3, SECURITY-Threat-Model, AGENTS-Submission-Pfad→Portal, CHANGELOG-Link-Block, esbuild legalComments). Recon- + Submission-Readiness-Review-Workflows; 5 Findings gefixt (uncommitted README-Note, stale Banner/Name in shipped Assets).
 
-Releases: **1.5.0 + 1.6.0 + 1.7.0** alle nach `main` gemergt (--no-ff), getaggt, zu beiden Remotes gepusht; GitHub-Actions-Releases live mit Assets. 1.7.0-Release-Asset trägt verifiziert die neue id `json-editor`. Nach Pallas-Test-Vault deployt (`.obsidian/plugins/json-editor/`). **Submission (community.obsidian.md Portal) bewusst auf nächste Session verschoben** (User-Wunsch). Methodik-Beobachtung: Codeberg→GitHub-**Mirror ist aktiv** (AGENTS-Hosting-Sektion sagt fälschlich „not yet activated") — beim Push erscheint GitHub „Everything up-to-date" bzw. tag „reference already exists", weil der Codeberg-Push schon gespiegelt hat. `gh` ist installiert (AGENTS sagte veraltet „not installed").
+Releases: **1.5.0 + 1.6.0 + 1.7.0** alle nach `main` gemergt (--no-ff), getaggt, zu beiden Remotes gepusht; GitHub-Actions-Releases live mit Assets. 1.7.0-Release-Asset trägt verifiziert die neue id `json-editor`. Nach Pallas-Test-Vault deployt (`.obsidian/plugins/json-editor/`). **Submission (community.obsidian.md Portal) bewusst auf nächste Session verschoben** (User-Wunsch). Methodik-Beobachtung: Forgejo→GitHub-**Mirror ist aktiv** (AGENTS-Hosting-Sektion sagt fälschlich „not yet activated") — beim Push erscheint GitHub „Everything up-to-date" bzw. tag „reference already exists", weil der Forgejo-Push schon gespiegelt hat. `gh` ist installiert (AGENTS sagte veraltet „not installed").
 
 ### 2026-06-13 — Phase 2: Guideline+UX-Release (`1.6.0`)
 
@@ -329,7 +329,7 @@ Sequence:
 2. **1.2.0 — Cross-mode unified Undo/Redo** — refactor `History` → `History<T>` (generic), JsonFileView holds `History<string>`. Both `applyMutation` and `handleSourceChange` push pre-state text; mode-switch no longer clears. SourceView drops CodeMirror's local `history()`. Plugin command IDs renamed `undo-tree-edit` → `undo-edit` (similar redo) since they're no longer mode-gated. Trade-off: source-mode undo is per-onChange (~per keystroke) instead of CM heuristic-grouped. Tests 369 → 373.
 3. **1.3.0 — JSON Schema Validation** — `ajv@8` added as runtime dep. New pure `src/core/schema.ts` (compileSchema + PathError; JSON-Pointer → JsonPath conversion handles `~0`/`~1`). New `SchemaBanner` component, `TreeView.setValidationErrors` for inline `.json-row-error` markers. JsonFileView.setSchema() + async tryLoadCompanionSchema() (best-effort, silent on vault unavailability). Two new settings: master switch + suffix. Tests 373 → 402. Bundle 37 KB → 163 KB (Ajv is the bulk; acceptable cost).
 
-Hosting flow per release: feature branch with multiple semantically-grouped commits → `merge --no-ff` into main with a multi-paragraph merge commit → tag (no `v` prefix) → push to both `origin` (Codeberg) and `github`. GitHub Actions release workflow triggers off the tag on the GitHub side. Test vault `10_Pallas` updated after each release (Cmd+R reload for visual smoke pending — out of CC's autonomy).
+Hosting flow per release: feature branch with multiple semantically-grouped commits → `merge --no-ff` into main with a multi-paragraph merge commit → tag (no `v` prefix) → push to both `origin` (Forgejo) and `github`. GitHub Actions release workflow triggers off the tag on the GitHub side. Test vault `10_Pallas` updated after each release (Cmd+R reload for visual smoke pending — out of CC's autonomy).
 
 Final state: coverage 94.1% statements / 85.6% branches / 95.8% functions. No `Unreleased` content on main. The 1.x roadmap that was decomposed during the 1.0.0 session is now fully shipped. Backlog rewritten: only Community Submission, visual smoke test, marketing screenshots remain — all manual / external.
 
@@ -347,11 +347,11 @@ Scope-decomposition decision in 1.0.0: original roadmap entry listed 5 features 
 
 All four releases pushed to both remotes, GitHub Actions release workflows triggered automatically, test vault 10_Pallas updated to 1.0.0 after each release. ~70 commits, ~2.5h compressed work.
 
-### 2026-05-27 — Public-docs overhaul + Codeberg metadata
+### 2026-05-27 — Public-docs overhaul + Forgejo metadata
 
-- User asked to align repo metadata + docs with current best practices, using `video-to-3d-gaussian-splat` as the style reference. Codeberg PAT provided inline for API + push autonomy.
+- User asked to align repo metadata + docs with current best practices, using `video-to-3d-gaussian-splat` as the style reference. Forgejo PAT provided inline for API + push autonomy.
 - Mirrored the reference's documentation surface (badges, status callout, sectioned README, CHANGELOG/CONTRIBUTING/SECURITY, issue + PR templates for both forges).
-- Codeberg API: `PATCH /repos/jkaindl/json-editor` set description + `has_issues=true` + `has_wiki=false`; `PUT /topics` set 12 topics (obsidian, obsidian-plugin, obsidian-md, json, json-editor, json-viewer, tree-view, codemirror, typescript, markdown, plugin, editor).
+- Forgejo API: `PATCH /repos/jkaindl/json-editor` set description + `has_issues=true` + `has_wiki=false`; `PUT /topics` set 12 topics (obsidian, obsidian-plugin, obsidian-md, json, json-editor, json-viewer, tree-view, codemirror, typescript, markdown, plugin, editor).
 - 4 commits, all pushed to both remotes (`ba8dd2e` docs, `1f15479` templates, `ae97ee3` npm metadata, `f90fe29` release.yml). Tests still 133/133, build clean.
 - **Open:** GitHub repo metadata (description + topics) — `gh` not installed, no GitHub PAT provided. README and summary list the exact fields to set manually or with a future PAT.
 
@@ -367,7 +367,7 @@ All four releases pushed to both remotes, GitHub Actions release workflows trigg
 
 - Created from scratch: brainstorm → spec → 15-task plan → subagent-driven execution → final review → tag `0.1.0` → install in test-vault → user confirmed it works
 - Second iteration: brainstorm → spec → 9-task plan → subagent-driven execution → final review (caught Critical+Important issues, all fixed) → tag `0.1.1` → install in test-vault
-- Codeberg + GitHub repos created and pushed; SSH-key-based auth; GitHub Actions release workflow runs green on tag push
+- Forgejo + GitHub repos created and pushed; SSH-key-based auth; GitHub Actions release workflow runs green on tag push
 - Time: long single session spanning two calendar days
 
 ## Dach-Kontext (obsidian-plugins)

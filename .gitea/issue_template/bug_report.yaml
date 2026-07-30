@@ -12,7 +12,7 @@ body:
         Thanks for taking the time to file a bug. Please fill in as much as you can.
 
         **Security-sensitive issues** do not belong here — see
-        [`SECURITY.md`](https://codeberg.org/jkaindl/json-editor/src/branch/main/SECURITY.md).
+        [`SECURITY.md`](https://git.jkaindl.de/jkaindl/json-editor/src/branch/main/SECURITY.md).
   - type: input
     id: plugin-version
     attributes:
@@ -86,7 +86,7 @@ body:
     attributes:
       label: Pre-flight checks
       options:
-        - label: I checked [existing issues](https://codeberg.org/jkaindl/json-editor/issues) for duplicates.
+        - label: I checked [existing issues](https://git.jkaindl.de/jkaindl/json-editor/issues) for duplicates.
           required: true
         - label: This is not a security issue (otherwise → SECURITY.md).
           required: true

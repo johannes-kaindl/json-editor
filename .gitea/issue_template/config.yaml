@@ -3,10 +3,10 @@
 blank_issues_enabled: true
 contact_links:
   - name: Security report
-    url: https://codeberg.org/jkaindl/json-editor/src/branch/main/SECURITY.md
+    url: https://git.jkaindl.de/jkaindl/json-editor/src/branch/main/SECURITY.md
     about: Security-sensitive issues — please do not file publicly. See SECURITY.md.
   - name: Contributing guide
-    url: https://codeberg.org/jkaindl/json-editor/src/branch/main/CONTRIBUTING.md
+    url: https://git.jkaindl.de/jkaindl/json-editor/src/branch/main/CONTRIBUTING.md
     about: Local setup, test conventions, PR checklist.
   - name: GitHub mirror
     url: https://github.com/johannes-kaindl/json-editor/issues

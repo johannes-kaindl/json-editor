@@ -50,7 +50,7 @@ body:
     attributes:
       label: Pre-flight checks
       options:
-        - label: I checked [existing issues](https://codeberg.org/jkaindl/json-editor/issues) for duplicates.
+        - label: I checked [existing issues](https://git.jkaindl.de/jkaindl/json-editor/issues) for duplicates.
           required: true
         - label: My proposal fits the plugin's scope (JSON viewing/editing inside Obsidian).
           required: true

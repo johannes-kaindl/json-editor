@@ -330,17 +330,17 @@ The original 1.0.0 roadmap conflated all five into one release. Scope-decomposed
 - **Settings tab** — default open mode, indent style (2 / 4 / tab), tree marker style (modern / classic), auto-collapse depth.
 - **GitHub Actions release workflow** — tag push triggers build, test, and GitHub release with `main.js`, `manifest.json`, and `styles.css` as assets.
 
-[Unreleased]: https://codeberg.org/jkaindl/json-editor/compare/1.7.0...HEAD
-[1.7.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.7.0
-[1.6.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.6.0
-[1.5.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.5.0
-[1.4.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.4.0
-[1.3.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.3.0
-[1.2.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.2.0
-[1.1.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.1.0
-[1.0.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/1.0.0
-[0.3.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.3.0
-[0.2.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.2.0
-[0.1.2]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.1.2
-[0.1.1]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.1.1
-[0.1.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.1.0
+[Unreleased]: https://git.jkaindl.de/jkaindl/json-editor/compare/1.7.0...HEAD
+[1.7.0]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/1.7.0
+[1.6.0]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/1.6.0
+[1.5.0]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/1.5.0
+[1.4.0]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/1.4.0
+[1.3.0]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/1.3.0
+[1.2.0]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/1.2.0
+[1.1.0]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/1.1.0
+[1.0.0]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/1.0.0
+[0.3.0]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/0.3.0
+[0.2.0]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/0.2.0
+[0.1.2]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/0.1.2
+[0.1.1]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/0.1.1
+[0.1.0]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/0.1.0

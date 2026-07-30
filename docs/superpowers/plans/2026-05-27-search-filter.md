@@ -1252,8 +1252,8 @@ Replace `## [Unreleased]` block with:
 Update link footer:
 
 ```markdown
-[Unreleased]: https://codeberg.org/jkaindl/json-editor/compare/0.2.0...HEAD
-[0.2.0]: https://codeberg.org/jkaindl/json-editor/releases/tag/0.2.0
+[Unreleased]: https://git.jkaindl.de/jkaindl/json-editor/compare/0.2.0...HEAD
+[0.2.0]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/0.2.0
 ```
 
 - [ ] **Step 3: README**
@@ -1261,7 +1261,7 @@ Update link footer:
 Update badge:
 
 ```markdown
-[![Codeberg Release](https://img.shields.io/badge/codeberg-v0.2.0-green)](https://codeberg.org/jkaindl/json-editor/releases)
+[![Codeberg Release](https://img.shields.io/badge/codeberg-v0.2.0-green)](https://git.jkaindl.de/jkaindl/json-editor/releases)
 ```
 
 Update Status callout to mention 0.2.0.

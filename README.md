@@ -2,7 +2,7 @@
 
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![Docs: CC BY-SA 4.0](https://img.shields.io/badge/docs-CC%20BY--SA%204.0-lightgrey.svg)](LICENSE-DOCS)
-[![Release](https://img.shields.io/gitea/v/release/jkaindl/json-editor?gitea_url=https%3A%2F%2Fcodeberg.org&label=release)](https://codeberg.org/jkaindl/json-editor/releases)
+[![Release](https://img.shields.io/gitea/v/release/jkaindl/json-editor?gitea_url=https%3A%2F%2Fgit.jkaindl.de&label=release)](https://git.jkaindl.de/jkaindl/json-editor/releases)
 [![Obsidian](https://img.shields.io/badge/obsidian-1.5.7%2B-purple)](https://obsidian.md)
 
 View and edit `.json` and `.jsonc` files in Obsidian with a Tree↔Source toggle. Renders `` ```json `` and `` ```jsonc `` code blocks inside Markdown notes as collapsible, theme-aware trees. Comments in `.jsonc` files are preserved when you edit.
@@ -61,7 +61,7 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 ### From source
 
 ```bash
-git clone https://codeberg.org/jkaindl/json-editor.git
+git clone https://git.jkaindl.de/jkaindl/json-editor.git
 cd json-editor
 npm install
 npm run build
@@ -217,22 +217,22 @@ This project is mirrored across two forges:
 
 | Remote | URL | Role |
 |---|---|---|
-| Codeberg | <https://codeberg.org/jkaindl/json-editor> | **Primary** — source development, issues, PRs |
+| Forgejo | <https://git.jkaindl.de/jkaindl/json-editor> | **Primary** — source development, issues, PRs |
 | GitHub | <https://github.com/johannes-kaindl/json-editor> | Release mirror for Obsidian Community Plugin submission |
 
-Issues and pull requests are preferred on **Codeberg**. GitHub exists because the Obsidian Community Plugin Directory only links to GitHub releases.
+Issues and pull requests are preferred on **Forgejo**. GitHub exists because the Obsidian Community Plugin Directory only links to GitHub releases.
 
 ---
 
 ## Contributing
 
-Bug reports and pull requests are welcome on Codeberg. For larger changes, please open an issue first to discuss the approach. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full workflow — commit conventions, branch naming, TDD requirements, and review notes.
+Bug reports and pull requests are welcome on Forgejo. For larger changes, please open an issue first to discuss the approach. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full workflow — commit conventions, branch naming, TDD requirements, and review notes.
 
 ---
 
 ## Project status
 
-Actively maintained by a single maintainer ([@jkaindl](https://codeberg.org/jkaindl) / [@johannes-kaindl](https://github.com/johannes-kaindl)). Built for personal use, released because it might be useful to others.
+Actively maintained by a single maintainer ([@jkaindl](https://git.jkaindl.de/jkaindl) / [@johannes-kaindl](https://github.com/johannes-kaindl)). Built for personal use, released because it might be useful to others.
 
 **Shipped** (see [`CHANGELOG.md`](CHANGELOG.md)): structural tree editing & undo/redo (1.0.0), drag-and-drop reorder + type-switching (1.1.0), unified cross-mode undo/redo (1.2.0), JSON Schema validation (1.3.0, opt-in since 1.5.0), data-integrity & crash hardening (1.5.0), guideline alignment + large-file guard + source-mode search (1.6.0), submission-prep + plugin rename to `json-editor` (1.7.0), mobile interaction model + toolbar polish (1.8.0), pop-out window correctness + community-review cleanup (1.8.1–1.8.2).
 

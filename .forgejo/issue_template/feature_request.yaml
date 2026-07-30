@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Before opening, please skim the [roadmap in the README](https://codeberg.org/jkaindl/json-editor#project-status) and existing issues — your idea may already be tracked.
+        Before opening, please skim the [roadmap in the README](https://git.jkaindl.de/jkaindl/json-editor#project-status) and existing issues — your idea may already be tracked.
   - type: textarea
     id: problem
     attributes:

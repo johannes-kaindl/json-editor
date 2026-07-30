@@ -11,7 +11,7 @@ Only the latest published release is supported with security fixes. Older versio
 
 ## Reporting a vulnerability
 
-Please **do not** file security issues as public GitHub or Codeberg issues.
+Please **do not** file security issues as public GitHub or Forgejo issues.
 
 Instead, report privately by email to **v6t2b9@googlemail.com** with:
 
@@ -20,7 +20,7 @@ Instead, report privately by email to **v6t2b9@googlemail.com** with:
 3. The plugin version and Obsidian version where you observed the issue.
 4. Any suggested mitigation, if you have one.
 
-I aim to acknowledge reports within **7 days** and to ship a fix or coordinated disclosure within **30 days** for confirmed issues. If you do not get a reply within 7 days, please open a non-sensitive Codeberg issue saying you sent a security email (without disclosing the details) so I can chase it.
+I aim to acknowledge reports within **7 days** and to ship a fix or coordinated disclosure within **30 days** for confirmed issues. If you do not get a reply within 7 days, please open a non-sensitive Forgejo issue saying you sent a security email (without disclosing the details) so I can chase it.
 
 ## Threat model
 
