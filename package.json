@@ -19,7 +19,7 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -p tsconfig.build.json -noEmit -skipLibCheck && node esbuild.config.mjs production",
-    "test": "node scripts/check-no-abs-paths.mjs && vitest run",
+    "test": "node scripts/check-no-abs-paths.mjs && node scripts/check-no-nul-bytes.mjs && vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "biome check .",
