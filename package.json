@@ -23,6 +23,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "biome check .",
+    "gate": "npm run typecheck && npm test && npm run lint && npm run build",
     "lint:obsidian": "eslint src",
     "lint:portal": "eslint src --config eslint.portal.config.mjs",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
