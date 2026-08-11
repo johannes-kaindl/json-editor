@@ -10,4 +10,4 @@ contact_links:
     about: Local setup, test conventions, PR checklist.
   - name: GitHub mirror
     url: https://github.com/johannes-kaindl/json-editor/issues
-    about: This project is also mirrored on GitHub — Codeberg is primary, but GitHub issues are read.
+    about: This project is also mirrored on GitHub — git.jkaindl.de is primary, but GitHub issues are read.

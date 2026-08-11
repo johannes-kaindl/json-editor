@@ -1,6 +1,6 @@
 // scripts/release.mjs
-// Ein-Befehl-Release (PROF-OBS-09): bump → changelog → commit → tag → push (Codeberg) →
-// build → Codeberg-Release → GitHub-Mirror (Dual-Push). Der Tag auf GitHub triggert die
+// Ein-Befehl-Release (PROF-OBS-09): bump → changelog → commit → tag → push (Forgejo) →
+// build → Forgejo-Release → GitHub-Mirror (Dual-Push). Der Tag auf GitHub triggert die
 // release.yml-Action → Obsidian-Community-Store-Release.
 //   npm run release 0.8.0               # vollständiger Release
 //   npm run release -- 0.8.0 --dry-run  # nur loggen, nichts schreiben/pushen
@@ -51,37 +51,37 @@ const repoMatch = originUrl.match(/git\.jkaindl\.de[/:]([^/]+)\/(.+?)(?:\.git)?$
 if (!repoMatch) die(`origin ist kein git.jkaindl.de-Remote: ${originUrl}`);
 const repo = `${repoMatch[1]}/${repoMatch[2]}`;
 
-// 2.–6. Nur wenn der Tag noch nicht existiert; sonst Resume (direkt Build + Codeberg-Release).
+// 2.–6. Nur wenn der Tag noch nicht existiert; sonst Resume (direkt Build + Forgejo-Release).
 if (!tagExists) {
   run("node", ["scripts/version-bump.mjs", target]);          // 2. 3-File-Bump
   rewriteChangelog(target);                                    // 3. CHANGELOG
   run("git", ["add", "package.json", "manifest.json", "versions.json", "CHANGELOG.md"]); // 4. stage
   run("git", ["commit", "-m", `chore(release): ${target}`]);  //    commit (kein Trailer)
   run("git", ["tag", "-a", target, "-m", target]);            // 5. annotierter Tag
-  run("git", ["push", "origin", "HEAD", "--follow-tags"]);    // 6. Push nach Codeberg
+  run("git", ["push", "origin", "HEAD", "--follow-tags"]);    // 6. Push nach Forgejo
 } else {
-  console.log(`release: Tag ${target} existiert bereits → Resume (nur Build + Codeberg-Release).`);
+  console.log(`release: Tag ${target} existiert bereits → Resume (nur Build + Forgejo-Release).`);
 }
 
 // 7. Build.
 run("npm", ["run", "build"]);
 
-// 8. Codeberg-Release.
+// 8. Forgejo-Release.
 const notes = changelogSection(target);
 const assets = ["main.js", "manifest.json", "styles.css"]
   .filter((f) => existsSync(f))
   .map((name) => ({ name, body: readFileSync(name) }));
 if (dryRun) {
-  console.log(`[dry-run] Codeberg-Release ${repo} ${target} mit Assets: ${assets.map((a) => a.name).join(", ")}`);
+  console.log(`[dry-run] Forgejo-Release ${repo} ${target} mit Assets: ${assets.map((a) => a.name).join(", ")}`);
 } else {
   const token = readFileSync(tokenPath, "utf8").trim();
   const out = await createForgeRelease({ fetch, token, repo, tag: target, notes, assets });
-  console.log(`release: Codeberg-Release ${out.htmlUrl}`);
+  console.log(`release: Forgejo-Release ${out.htmlUrl}`);
 }
 
-// 9. GitHub-Mirror (Dual-Push): Codeberg (origin) ist die Quelle, GitHub ist Downstream —
+// 9. GitHub-Mirror (Dual-Push): Forgejo (origin) ist die Quelle, GitHub ist Downstream —
 // der Tag dort triggert die release.yml-Action → Community-Store-Release. Non-fatal: schlägt
-// der Push fehl, bleibt der Codeberg-Release gültig und der Store-Release wird per Hinweis
+// der Push fehl, bleibt der Forgejo-Release gültig und der Store-Release wird per Hinweis
 // manuell nachgezogen. Steht außerhalb des !tagExists-Guards → läuft auch im Resume-Pfad.
 mirrorToGithub(target, defaultBranch);
 

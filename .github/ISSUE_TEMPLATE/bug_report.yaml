@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        > Issues are primarily tracked on Codeberg: <https://git.jkaindl.de/jkaindl/json-editor/issues>. You can file here too, but Codeberg gets the faster response.
+        > Issues are primarily tracked on git.jkaindl.de: <https://git.jkaindl.de/jkaindl/json-editor/issues>. You can file here too, but git.jkaindl.de gets the faster response.
 
         Thanks for taking the time to file a bug. Please fill in as much as you can.
   - type: input

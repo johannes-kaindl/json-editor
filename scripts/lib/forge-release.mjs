@@ -13,7 +13,7 @@ const API = "https://git.jkaindl.de/api/v1";
 const defaultSleep = (attempt) => new Promise((r) => setTimeout(r, Math.min(1000 * 2 ** (attempt - 1), 8000)));
 
 /** Ruft `doFetch()` und wiederholt bei transientem 5xx ODER geworfenem Netzfehler — der
- *  Codeberg-Release-POST-Endpoint liefert sporadisch HTTP 500 (belegt: 0.10.0/0.10.1/0.11.0),
+ *  Forgejo-Release-POST-Endpoint liefert sporadisch HTTP 500 (belegt: 0.10.0/0.10.1/0.11.0),
  *  ist beim nächsten Versuch aber ok. 4xx (echte Fehler) werden NICHT wiederholt. Nach `retries`
  *  Versuchen fällt die letzte Antwort/der letzte Fehler durch → der Resume-Pfad in release.mjs greift. */
 async function fetchWithRetry(doFetch, retries, sleep) {
@@ -55,7 +55,7 @@ export async function createForgeRelease({ fetch, token, repo, tag, notes, asset
       body: JSON.stringify({ tag_name: tag, name: tag, body: notes, draft: false, prerelease: false }),
     }), retries, sleep);
     if (!created.ok) {
-      throw new Error(`Codeberg-Release anlegen fehlgeschlagen (${created.status}): ${await created.text()}`);
+      throw new Error(`Forgejo-Release anlegen fehlgeschlagen (${created.status}): ${await created.text()}`);
     }
     release = await created.json();
   }

@@ -1,5 +1,5 @@
 <!--
-Issues and PRs are primarily handled on Codeberg:
+Issues and PRs are primarily handled on git.jkaindl.de:
 https://git.jkaindl.de/jkaindl/json-editor
 
 PRs against the GitHub mirror are welcome but will usually be ported across.
