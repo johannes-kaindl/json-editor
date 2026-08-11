@@ -31,8 +31,8 @@ Deliberately small surface: vanilla TypeScript, two runtime dependencies (`@cfwo
 - **2026-06-13:** `1.6.0` — Phase-2 guideline+UX release (audit Sections 2+3+4.1); 10 commits, multi-agent review + fixes
 - **2026-06-13:** `1.5.0` — Phase-1 blocker release (audit Section 1 + 2.8); 8 commits, multi-agent review + 2 rounds of fixes
 - **2026-05-27:** `0.1.2` → `1.3.0` released in one autonomous run (entire 1.x feature roadmap)
-- **Unreleased on `main`:** nothing pending. `1.10.2` is live on both remotes (3 assets + attestation; `release.yml` and `test.yml` both green). **Portal-eslint stays clean (`npm run lint:portal` = 0 problems)** — `eslint.portal.config.mjs` mirrors the community.obsidian.md portal reviewer; run it before submission-affecting changes. The listing itself is still the one open external item: submitted 2026-06-16, automated scan passed with no errors, **awaiting maintainer review** — and note that a new release does *not* start a review by itself, it has to be triggered as a rescan in the Developer Dashboard.
-- **Roadmap (next — only the submission remains):** **GATE — Community Plugin listing** via the `community.obsidian.md` Developer Dashboard (repo `johannes-kaindl/json-editor`; the portal scan is the install gate; the legacy obsidianmd/obsidian-releases PR path is retired). Maintainer-only step. Deferred follow-ups: `prefer-active-doc` popout polish (~70 lint warnings), broader A11y (§5; breadcrumb keyboard-access already fixed in 1.8.0), README screenshots (`docs/CAPTURE.md` §5, parked), bilingual `README.de.md` (CORE-META-09), 2.x feature ideas (§6: schema autocompletion, multi-select, .jsonl; §3.3–3.13) plus full positional fidelity for free-standing comments on `.jsonc` reorder. Older open: cross-container drag-drop, `$schema` URL fetching, real pointer-events touch-drag.
+- **Unreleased on `main`:** nothing pending. `1.10.2` is live on both remotes (3 assets + attestation; `release.yml` and `test.yml` both green). **Portal-eslint stays clean (`npm run lint:portal` = 0 problems)** — `eslint.portal.config.mjs` mirrors the community.obsidian.md portal reviewer; run it before submission-affecting changes. **The plugin is listed in the Community Plugin Directory (since 2026-07-12) and passes the automated review**; ~520 installs as of 2026-08-11. Note that a new release does *not* re-run the review by itself — it has to be triggered as a rescan in the Developer Dashboard.
+- **Roadmap (next):** No external gate is left — the listing is live. Open items are all discretionary: README screenshots (`docs/CAPTURE.md` §5, parked, CORE-META-03), `prefer-active-doc` popout polish (~70 lint warnings), broader A11y (§5; breadcrumb keyboard-access already fixed in 1.8.0), full positional fidelity for free-standing comments on `.jsonc` reorder, and the 2.x feature ideas (§6: schema autocompletion, multi-select, `.jsonl`; §3.3–3.13). Older open: cross-container drag-drop, `$schema` URL fetching, real pointer-events touch-drag. **Worth considering:** the `manifest.json` `description` is the storefront line in the directory and still describes JSON only — it does not mention `.jsonc` comment-preserving editing, the biggest differentiator since 1.10.0.
 - **Tests:** 640 Vitest tests, all green; `npm test`
 - **Coverage:** 95.65% statements / 85.84% branches / 96.99% functions; `npm run test:coverage`
 - **Build:** `npm run build` clean. Bundle is ~106 KB.
@@ -50,7 +50,7 @@ Asymmetric: Forgejo is primary for source development; GitHub serves as a releas
 | Remote | URL | Role |
 |---|---|---|
 | `origin` | `git@git.jkaindl.de:jkaindl/json-editor.git` | Primary, FOSS-ethics canonical |
-| `github` | `git@github.com:johannes-kaindl/json-editor.git` | Release mirror for Obsidian submission |
+| `github` | `git@github.com:johannes-kaindl/json-editor.git` | Release mirror — the Community Plugin Directory reads releases from GitHub only |
 
 Auth: SSH key (`~/.ssh/id_ed25519`) registered with both accounts.
 
@@ -206,27 +206,13 @@ E2E checklist: `docs/superpowers/plans/2026-05-20-manual-e2e.md`.
 
 The 1.x roadmap is shipped. Remaining items are external/manual or future-version ideas.
 
-> **⚠ Stand 2026-06-13:** Die 8 Blocker aus dem Gap-Audit sind in `1.5.0`/`1.6.0` gefixt (`docs/superpowers/specs/2026-06-12-gap-audit.md`). Offen vor der Submission: das Doku-Paket (Phase 3, in Arbeit auf `feat/docs-id-rename`) + ID-Rename auf `json-editor` (Audit 1.1, im Branch erledigt) + ein Release, das die neue ID trägt. Der früher übliche PR-Weg über `obsidianmd/obsidian-releases` wurde im Mai 2026 eingestellt — die Submission läuft jetzt über das **Community-Hub-Developer-Dashboard (community.obsidian.md)** mit automatischem Installierbarkeits-Scan als Gate. ID ist first-come-first-served; „JSON Viewer" ist seit 2026-06 gelistet — Zeitfenster beachten.
+> **✓ Stand 2026-08-11:** Der Gap-Audit-Sprint ist abgeschlossen (`docs/superpowers/specs/2026-06-12-gap-audit.md`), und **die Submission ist durch**: eingereicht am 2026-06-16 über das Developer-Dashboard (`community.obsidian.md`), **seit 2026-07-12 im Community-Plugin-Verzeichnis gelistet**, automatische Prüfung bestanden, ~520 Installationen (Stand 2026-08-11). Der Eintrag steht in `obsidianmd/obsidian-releases`' `community-plugins.json` — verifizierbar ohne Login:
+> `curl -s https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json | python3 -c "import json,sys; print([p for p in json.load(sys.stdin) if p['id']=='json-editor'])"`
+> Die dort geführte Beschreibung trägt den Zusatz „This plugin has not been manually reviewed by Obsidian staff" — das ist die Standardkennzeichnung für den automatischen Pfad, kein Mangel.
 
 In priority order:
 
-1. **Obsidian Community Plugin Submission (Community-Hub portal).** The legacy PR-against-`obsidianmd/obsidian-releases` flow was retired May 2026 ("New pull request creation is restricted"). Submit via the **Developer Dashboard** at **community.obsidian.md**:
-   1. Sign in with the GitHub account that owns the release repo (`johannes-kaindl/json-editor`).
-   2. Developer Dashboard → **Submit a plugin** → enter the repo. The portal reads `manifest.json` from the repo root + the latest GitHub Release.
-   3. The portal runs an **automatic install-gate scan** (the old PR install-validator): valid/consistent `id`/`name`/`version`/`minAppVersion`, release tag == `manifest.json.version` with **no `v` prefix**, `main.js`+`manifest.json`(+`styles.css`) attached as release assets, `versions.json` covers the version, and the guideline checks (no `innerHTML`, no default hotkeys, sentence-case UI, `id` not starting with `obsidian-`, …). A green scan is the gate to listing.
-   4. There is **no hand-edited `community-plugins.json`** anymore — the portal manages the registry from `manifest.json`:
-      ```json
-      {
-        "id": "json-editor",
-        "name": "JSON Editor",
-        "minAppVersion": "1.5.7",
-        "description": "View and edit JSON files with a Tree/Source toggle. Renders JSON code blocks in Markdown notes.",
-        "author": "Johannes Kaindl",
-        "authorUrl": "https://github.com/johannes-kaindl",
-        "isDesktopOnly": false
-      }
-      ```
-   Pre-checks done: repo public ✓, LICENSE ✓, README ✓, Release w/ asset ✓, manifest valid ✓, CHANGELOG ✓, SECURITY ✓, CONTRIBUTING ✓, templates ✓, ID-rename to `json-editor` ✓ (branch), THIRD-PARTY-NOTICES ✓. **Still required:** merge + a release that ships the renamed `id`, then a visual + mobile smoke test.
+1. ~~**Obsidian Community Plugin Submission**~~ — **erledigt.** Gelistet seit 2026-07-12. Für künftige Releases gilt: eine neue Version wird über das GitHub-Release automatisch erfasst, **der Review läuft aber nicht von selbst an** — im Developer-Dashboard einen Rescan anstoßen. Ein durchgefallener Review nimmt das Plugin binnen 24 h aus der Suche, deshalb bleibt `npm run lint:portal` (spiegelt den Portal-Reviewer) der billige Vorab-Check. Die Plugin-`id` `json-editor` ist nach dem Listing **unveränderlich**.
 
 2. **Visual + mobile smoke test in real Obsidian** — deploy via `npm run deploy` and verify the 1.1–1.6 surfaces:
    - 1.1.0: hover row → drag-handle, drag to reorder, T-button → type-menu, Cmd+Z undoes both

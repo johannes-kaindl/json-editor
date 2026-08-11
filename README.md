@@ -68,7 +68,11 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 
 ## Install
 
-### Manually (current)
+### From the Community Plugin Directory (recommended)
+
+Listed since 12 July 2026. In Obsidian: **Settings → Community plugins → Browse → search "JSON Editor" → Install → Enable**. Updates then arrive through Obsidian like any other community plugin.
+
+### Manually
 
 1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/johannes-kaindl/json-editor/releases/latest).
 2. Drop the three files into your vault's `.obsidian/plugins/json-editor/` directory.
@@ -83,10 +87,6 @@ npm install
 npm run build
 # copy main.js, manifest.json, styles.css to <vault>/.obsidian/plugins/json-editor/
 ```
-
-### Community Plugin Directory
-
-Submission to the official Obsidian Community Plugin Directory is pending — see [Project status](#project-status). Once accepted, install via **Settings → Community plugins → Browse → "JSON Editor"**.
 
 ---
 
@@ -254,7 +254,7 @@ This project is mirrored across two forges:
 | Remote | URL | Role |
 |---|---|---|
 | Forgejo | <https://git.jkaindl.de/jkaindl/json-editor> | **Primary** — source development, issues, PRs |
-| GitHub | <https://github.com/johannes-kaindl/json-editor> | Release mirror for Obsidian Community Plugin submission |
+| GitHub | <https://github.com/johannes-kaindl/json-editor> | Release mirror — the Community Plugin Directory reads releases from GitHub only |
 
 Issues and pull requests are preferred on **Forgejo**. GitHub exists because the Obsidian Community Plugin Directory only links to GitHub releases.
 
@@ -269,6 +269,8 @@ Bug reports and pull requests are welcome on Forgejo. For larger changes, please
 ## Project status
 
 Actively maintained by a single maintainer ([@jkaindl](https://git.jkaindl.de/jkaindl) / [@johannes-kaindl](https://github.com/johannes-kaindl)). Built for personal use, released because it might be useful to others.
+
+**In the Community Plugin Directory since 12 July 2026**, passing the automated review. As the directory notes on every such entry, that is the automated check — the plugin has not been manually reviewed by Obsidian staff.
 
 **Shipped** (see [`CHANGELOG.md`](CHANGELOG.md)): structural tree editing & undo/redo (1.0.0), drag-and-drop reorder + type-switching (1.1.0), unified cross-mode undo/redo (1.2.0), JSON Schema validation (1.3.0, opt-in since 1.5.0), data-integrity & crash hardening (1.5.0), guideline alignment + large-file guard + source-mode search (1.6.0), submission-prep + plugin rename to `json-editor` (1.7.0), mobile interaction model + toolbar polish (1.8.0), pop-out window correctness + community-review cleanup (1.8.1–1.8.2), eval-free schema validation with a ~52% smaller bundle (1.9.0), `.jsonc` support with comment-preserving tree editing (1.10.0–1.10.1), tree-rendering polish (1.10.2).
 

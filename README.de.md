@@ -67,7 +67,11 @@ Alles bleibt in deinem Vault. Das Plugin nutzt Obsidians eigene CSS-Variablen un
 
 ## Installation
 
-### Von Hand (aktuell)
+### Aus dem Community-Plugin-Verzeichnis (empfohlen)
+
+Gelistet seit dem 12. Juli 2026. In Obsidian: **Einstellungen → Community-Plugins → Durchsuchen → nach „JSON Editor" suchen → Installieren → Aktivieren**. Aktualisierungen kommen danach wie bei jedem anderen Community-Plugin über Obsidian.
+
+### Von Hand
 
 1. `main.js`, `manifest.json` und `styles.css` aus dem [neuesten Release](https://github.com/johannes-kaindl/json-editor/releases/latest) herunterladen.
 2. Die drei Dateien nach `.obsidian/plugins/json-editor/` in deinem Vault legen.
@@ -82,10 +86,6 @@ npm install
 npm run build
 # main.js, manifest.json, styles.css nach <vault>/.obsidian/plugins/json-editor/ kopieren
 ```
-
-### Community-Plugin-Verzeichnis
-
-Die Einreichung im offiziellen Obsidian-Community-Plugin-Verzeichnis läuft noch — siehe [Projektstatus](#projektstatus). Nach der Aufnahme: **Einstellungen → Community-Plugins → Durchsuchen → „JSON Editor"**.
 
 ---
 
@@ -195,7 +195,7 @@ Das Projekt liegt gespiegelt auf zwei Forges:
 | Remote | URL | Rolle |
 |---|---|---|
 | Forgejo | <https://git.jkaindl.de/jkaindl/json-editor> | **Primär** — Entwicklung, Issues, Pull Requests |
-| GitHub | <https://github.com/johannes-kaindl/json-editor> | Release-Spiegel für die Einreichung im Obsidian-Community-Verzeichnis |
+| GitHub | <https://github.com/johannes-kaindl/json-editor> | Release-Spiegel — das Community-Verzeichnis liest Releases ausschließlich von GitHub |
 
 Issues und Pull Requests bitte bevorzugt auf **Forgejo**. GitHub existiert, weil das Obsidian-Community-Plugin-Verzeichnis ausschließlich auf GitHub-Releases verweist.
 
@@ -210,6 +210,8 @@ Fehlerberichte und Pull Requests sind auf Forgejo willkommen. Bei größeren Än
 ## Projektstatus
 
 Aktiv gepflegt von einem einzelnen Maintainer ([@jkaindl](https://git.jkaindl.de/jkaindl) / [@johannes-kaindl](https://github.com/johannes-kaindl)). Für den Eigenbedarf gebaut, veröffentlicht, weil es anderen nützen könnte.
+
+**Seit dem 12. Juli 2026 im Community-Plugin-Verzeichnis**, mit bestandener automatischer Prüfung. Wie das Verzeichnis bei jedem solchen Eintrag vermerkt, ist das die automatische Prüfung — eine manuelle Durchsicht durch Obsidian-Mitarbeiter hat nicht stattgefunden.
 
 **Ausgeliefert** (siehe [`CHANGELOG.md`](CHANGELOG.md)): strukturelles Bearbeiten im Baum samt Rückgängig/Wiederholen (1.0.0), Umsortieren per Drag-and-Drop und Typwechsel (1.1.0), modusübergreifendes Rückgängig (1.2.0), JSON-Schema-Validierung (1.3.0, zuschaltbar seit 1.5.0), Härtung von Datenintegrität und Absturzverhalten (1.5.0), Richtlinien-Angleichung, Großdatei-Schutz und Quelltext-Suche (1.6.0), Vorbereitung der Einreichung samt Umbenennung auf `json-editor` (1.7.0), Bedienmodell für Mobilgeräte (1.8.0), Korrektheit in abgedockten Fenstern (1.8.1–1.8.2), eval-freie Schema-Validierung mit rund 52 % kleinerem Bundle (1.9.0), `.jsonc`-Unterstützung mit kommentar-erhaltendem Bearbeiten (1.10.0–1.10.1), Feinschliff am Baum-Rendering (1.10.2).
 
