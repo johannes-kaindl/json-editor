@@ -32,3 +32,14 @@ describe("styles.css .json-content (blocker 1.7)", () => {
     expect(collapsed).toMatch(/max-height:\s*0|opacity:\s*0/);
   });
 });
+
+// A collapsed subtree must not reserve layout width: `max-height: 0` hides the
+// children vertically but the box keeps the intrinsic width of its (invisible)
+// content, which pushed everything after the container — notably the separator
+// comma — an arbitrary distance to the right.
+describe("styles.css collapsed subtree takes no layout space", () => {
+  it("removes the collapsed content from layout entirely", () => {
+    const collapsed = ruleBlock(".json-content.collapsed");
+    expect(collapsed).toMatch(/display:\s*none/);
+  });
+});

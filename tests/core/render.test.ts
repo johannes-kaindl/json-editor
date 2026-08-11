@@ -241,4 +241,44 @@ describe("renderTree", () => {
     const childClassesOf = (el: HTMLElement) => Array.from(el.children).map((c) => c.className);
     expect(childClassesOf(objEl)).toEqual(childClassesOf(arrEl));
   });
+  // The separator comma used to be a bare text node appended to the flex row
+  // *after* the value. For container values that put it behind the container's
+  // full (even when collapsed) box, so it floated far to the right of the
+  // collapse chip. It is now a `.json-comma` span docked to the value itself.
+  describe("separator commas", () => {
+    it("renders separators as .json-comma spans, not bare text nodes", () => {
+      const el = renderTree({ a: 1, b: 2 }, {});
+      const row = el.querySelectorAll(".json-row")[0] as HTMLElement;
+      const bareCommas = Array.from(row.childNodes).filter(
+        (n) => n.nodeType === 3 && n.textContent === ",",
+      );
+      expect(bareCommas).toHaveLength(0);
+      expect(row.querySelector(".json-comma")?.textContent).toBe(",");
+    });
+
+    it("docks the comma inside the container when the value is a container", () => {
+      const el = renderTree({ a: { x: 1 }, b: 2 }, {});
+      const row = el.querySelectorAll(".json-row")[0] as HTMLElement;
+      const container = row.querySelector(".json-container") as HTMLElement;
+      expect(container.lastElementChild?.className).toBe("json-comma");
+      // ...and nothing trails the container inside the row itself.
+      expect(row.lastElementChild).toBe(container);
+    });
+
+    it("keeps the comma next to the value for primitives", () => {
+      const el = renderTree({ a: 1, b: 2 }, {});
+      const row = el.querySelectorAll(".json-row")[0] as HTMLElement;
+      expect(row.lastElementChild?.className).toBe("json-comma");
+      expect(row.lastElementChild?.previousElementSibling?.className).toBe("json-number");
+    });
+
+    it("omits the comma after the last item", () => {
+      const el = renderTree({ a: 1, b: { x: 1 } }, {});
+      const rows = el.querySelectorAll(".json-row");
+      const lastTopRow = rows[1] as HTMLElement;
+      const container = lastTopRow.querySelector(".json-container") as HTMLElement;
+      expect(container.querySelector(":scope > .json-comma")).toBeNull();
+      expect(lastTopRow.querySelector(":scope > .json-comma")).toBeNull();
+    });
+  });
 });

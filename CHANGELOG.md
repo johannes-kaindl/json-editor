@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+- **Separator commas no longer float away from their value in the tree.** The trailing `,` of a non-last entry was a bare text node in the flex row, placed after the value's entire box — and a collapsed container still reserved the full width of its hidden children, so the comma drifted an arbitrary distance to the right of the collapse chip, at a different offset on every row. The comma is now a `.json-comma` element docked to the value itself (inside the container, so it follows the collapse chip when collapsed and the closing bracket when expanded), and a collapsed subtree is removed from layout entirely rather than merely flattened. Commas are also rendered in the muted foreground colour so they read as syntax rather than data.
+
 ## [1.10.1] — 2026-07-11
 
 ### Fixed

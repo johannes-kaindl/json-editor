@@ -243,6 +243,12 @@
   transition: opacity var(--jv-dur-fast) var(--jv-ease);
 }
 .json-content.collapsed {
+  /* `display: none` (not just max-height: 0) so a collapsed subtree reserves no
+     layout space at all — a zero-height box still carries the intrinsic *width*
+     of its hidden children, which pushed the trailing comma far to the right of
+     the collapse chip. Costs the fade-out, which the snap-open direction had
+     already given up (see the note above). */
+  display: none;
   max-height: 0;
   opacity: 0;
 }
@@ -282,6 +288,12 @@
 /* When collapsed, the chip stands in for the brackets + children. */
 .json-container.is-collapsed > .json-bracket {
   display: none;
+}
+
+/* Separator comma — docked to the value (inside the container for container
+   values, see appendSeparatorComma in core/render.ts) so it never floats. */
+.json-comma {
+  color: var(--jv-fg-muted);
 }
 
 /* ─── Row ─────────────────────────────────────────────────────────── */

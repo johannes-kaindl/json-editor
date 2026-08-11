@@ -151,7 +151,7 @@ function renderContainer(
     row.appendChild(keyOrIndexElement(opts.doc, item.segment, kind));
     row.appendChild(opts.doc.createTextNode(": "));
     renderValue(row, item.value, itemPath, depth + 1, opts);
-    if (i < items.length - 1) row.appendChild(opts.doc.createTextNode(","));
+    if (i < items.length - 1) appendSeparatorComma(row, opts.doc);
     content.appendChild(row);
   });
 
@@ -161,6 +161,25 @@ function renderContainer(
   closeBracket.textContent = close;
   container.appendChild(closeBracket);
   parent.appendChild(container);
+}
+
+/**
+ * Appends the trailing "," of a non-last entry.
+ *
+ * The comma docks to the value element rather than to the row: `.json-row` is a
+ * flex container, so a bare text node would become an anonymous flex item sitting
+ * *after* the value's whole box. For a container value that box spans the full
+ * width of its children — even when collapsed — which left the comma floating an
+ * arbitrary distance to the right of the collapse chip. Inside the container the
+ * comma follows the chip (collapsed) or the closing bracket (expanded).
+ */
+function appendSeparatorComma(row: HTMLElement, doc: Document): void {
+  const comma = doc.createElement("span");
+  comma.className = "json-comma";
+  comma.textContent = ",";
+  const value = row.lastElementChild;
+  if (value?.classList.contains("json-container")) value.appendChild(comma);
+  else row.appendChild(comma);
 }
 
 function bracketsFor(kind: ContainerKind): { open: string; close: string } {
