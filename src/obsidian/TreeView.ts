@@ -17,6 +17,8 @@ export interface TreeViewOptions {
    *  maps this to the .json (serialize) or .jsonc (source-text) mutation path. */
   onValueEdit?: (path: JsonPath, newVal: JsonValue) => void;
   onPathClick?: (path: JsonPath) => void;
+  /** Fired when the user changed the collapsed state of a single container. */
+  onCollapseChange?: () => void;
   onValueHover?: (target: HTMLElement, path: JsonPath, value: JsonValue) => void;
   onBeforeRender?: () => void;
   /**
@@ -164,6 +166,28 @@ export class TreeView {
     return found;
   }
 
+  /** Path strings of all currently collapsed containers, in document order. */
+  collapsedPaths(): string[] {
+    const treeRoot = this.container.querySelector<HTMLElement>(".json-tree-root");
+    if (!treeRoot) return [];
+    const out: string[] = [];
+    treeRoot.querySelectorAll<HTMLElement>(".json-container.is-collapsed").forEach((c) => {
+      out.push(pathToString(this.detectContainerPath(c, treeRoot)));
+    });
+    return out;
+  }
+
+  /** Collapse exactly the listed containers and expand all others. */
+  applyCollapsedPaths(paths: string[]): void {
+    const wanted = new Set(paths);
+    const treeRoot = this.container.querySelector<HTMLElement>(".json-tree-root");
+    if (!treeRoot) return;
+    treeRoot.querySelectorAll<HTMLElement>(".json-container").forEach((c) => {
+      const key = pathToString(this.detectContainerPath(c, treeRoot));
+      this.toggleContainer(c, !wanted.has(key));
+    });
+  }
+
   /** Visit every container element below the tree root. */
   private eachContainer(fn: (c: HTMLElement) => void): void {
     const treeRoot = this.container.querySelector<HTMLElement>(".json-tree-root");
@@ -205,6 +229,7 @@ export class TreeView {
       autoCollapseDepth: this.opts.autoCollapseDepth,
       onValueClick: (path, value) => this.openEditor(path, value),
       onPathClick: (path) => this.opts.onPathClick?.(path),
+      onCollapse: () => this.opts.onCollapseChange?.(),
       onValueHover: (target, path, value) => {
         if (this.editing) return;
         this.opts.onValueHover?.(target, path, value);
