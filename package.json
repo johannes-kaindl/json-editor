@@ -1,6 +1,6 @@
 {
   "name": "json-editor",
-  "version": "1.10.2",
+  "version": "1.10.3",
   "description": "View and edit JSON and JSONC files in a tree or source view. Comments and formatting in JSONC survive editing. Renders JSON code blocks in Markdown notes.",
   "main": "main.js",
   "author": {
