@@ -891,3 +891,10 @@ body.is-mobile .json-large-file-load {
 .json-collapse-toggle-btn {
   flex: 0 0 auto;
 }
+
+/* The one match the user is standing on, distinct from the other hits. */
+.json-row.json-match-active {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -2px;
+  border-radius: var(--radius-s);
+}

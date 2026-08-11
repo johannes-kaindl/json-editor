@@ -55,6 +55,10 @@ export class TreeView {
   private activeRow: HTMLElement | null = null;
   private dragSourcePath: JsonPath | null = null;
   private validationErrors: Map<string, string> = new Map();
+  private matchPaths: string[] = [];
+  private matchIndex = -1;
+  /** Collapse state as it was before the current search run started. */
+  private preFilterCollapsed: string[] | null = null;
 
   constructor(
     private container: HTMLElement,
@@ -107,11 +111,24 @@ export class TreeView {
     if (!treeRoot) return { matchCount: 0 };
 
     treeRoot.classList.remove("json-filter-active");
-    treeRoot.querySelectorAll(".json-match, .json-on-path").forEach((el) => {
-      el.classList.remove("json-match", "json-on-path");
+    treeRoot.querySelectorAll(".json-match, .json-on-path, .json-match-active").forEach((el) => {
+      el.classList.remove("json-match", "json-on-path", "json-match-active");
     });
 
-    if (query.trim() === "") return { matchCount: 0 };
+    if (query.trim() === "") {
+      // Give back what the search opened. Without this every search silently
+      // costs the user their collapse state — and since 1.11 the stored one too.
+      if (this.preFilterCollapsed !== null) {
+        this.applyCollapsedPaths(this.preFilterCollapsed);
+        this.preFilterCollapsed = null;
+      }
+      this.matchPaths = [];
+      this.matchIndex = -1;
+      return { matchCount: 0 };
+    }
+
+    // Snapshot once per search run, not per keystroke.
+    if (this.preFilterCollapsed === null) this.preFilterCollapsed = this.collapsedPaths();
 
     const result = findMatches(this.current, query, { matchKeys: true, matchValues: true });
 
@@ -130,7 +147,38 @@ export class TreeView {
     treeRoot.classList.add("json-filter-active");
     this.openContainersWithMatches(treeRoot);
 
+    // findMatches walks depth-first in document order and a Set keeps insertion
+    // order, so this is already the correct jump list — no sorting needed.
+    this.matchPaths = [...result.matches].filter((p) => p !== "root");
+    this.matchIndex = -1;
+
     return { matchCount: result.matches.size };
+  }
+
+  /**
+   * Move to the next (delta 1) or previous (delta -1) match, wrapping around.
+   * Returns the new position, or null when there is nothing to jump to.
+   */
+  focusMatch(delta: 1 | -1): { index: number; total: number } | null {
+    const total = this.matchPaths.length;
+    if (total === 0) return null;
+    // From the "nothing focused yet" state, forward means the first match and
+    // backward means the last — the plain modulo would land on total-2 instead.
+    this.matchIndex =
+      this.matchIndex === -1 && delta === -1
+        ? total - 1
+        : (this.matchIndex + delta + total) % total;
+    const pathStr = this.matchPaths[this.matchIndex];
+    const treeRoot = this.container.querySelector<HTMLElement>(".json-tree-root");
+    treeRoot?.querySelectorAll(".json-match-active").forEach((el) => {
+      el.classList.remove("json-match-active");
+    });
+    const row = treeRoot?.querySelector<HTMLElement>(
+      `.json-row[data-path="${cssEscapeAttr(pathStr)}"]`,
+    );
+    row?.classList.add("json-match-active");
+    this.scrollToPath(this.parsePathStrSafe(pathStr));
+    return { index: this.matchIndex, total };
   }
 
   /** Collapse every container in the tree. */

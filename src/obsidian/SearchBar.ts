@@ -1,6 +1,8 @@
 import { activeDoc } from "./dom";
 export interface SearchBarOptions {
   onQueryChange: (query: string) => void;
+  /** Enter / Shift+Enter — jump to the next / previous match. */
+  onNavigate?: (delta: 1 | -1) => void;
 }
 
 export class SearchBar {
@@ -53,7 +55,7 @@ export class SearchBar {
     this.countEl.hidden = true;
   }
 
-  setMatchInfo(info: { matchCount: number } | null): void {
+  setMatchInfo(info: { matchCount: number; activeIndex?: number } | null): void {
     if (info === null) {
       this.countEl.hidden = true;
       this.countEl.classList.remove("is-empty");
@@ -63,10 +65,14 @@ export class SearchBar {
     if (info.matchCount === 0) {
       this.countEl.textContent = "No matches";
       this.countEl.classList.add("is-empty");
-    } else {
+      return;
+    }
+    this.countEl.classList.remove("is-empty");
+    if (info.activeIndex === undefined) {
       const noun = info.matchCount === 1 ? "match" : "matches";
       this.countEl.textContent = `${info.matchCount} ${noun}`;
-      this.countEl.classList.remove("is-empty");
+    } else {
+      this.countEl.textContent = `${info.activeIndex + 1}/${info.matchCount}`;
     }
   }
 
@@ -89,6 +95,11 @@ export class SearchBar {
       this.input.focus();
     });
     this.input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        this.opts.onNavigate?.(e.shiftKey ? -1 : 1);
+        return;
+      }
       if (e.key === "Escape") {
         e.preventDefault();
         if (this.input.value === "") {

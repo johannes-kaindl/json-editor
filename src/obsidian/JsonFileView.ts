@@ -313,6 +313,10 @@ export class JsonFileView extends TextFileView {
 
     this.searchBar = new SearchBar({
       onQueryChange: (q) => this.onQueryChange(q),
+      onNavigate: (delta) => {
+        const pos = this.treeView?.focusMatch(delta);
+        if (pos) this.searchBar.setMatchInfo({ matchCount: pos.total, activeIndex: pos.index });
+      },
     });
 
     this.toolbarEl = activeDoc().createElement("div");

@@ -120,3 +120,33 @@ describe("SearchBar", () => {
     expect(clear.hidden).toBe(true);
   });
 });
+
+describe("SearchBar match navigation", () => {
+  it("reports a forward jump on Enter and a backward jump on Shift+Enter", () => {
+    const deltas: number[] = [];
+    const bar = new SearchBar({ onQueryChange: () => {}, onNavigate: (d) => deltas.push(d) });
+    const input = bar.getElement().querySelector("input") as HTMLInputElement;
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Enter", shiftKey: true, bubbles: true }),
+    );
+    expect(deltas).toEqual([1, -1]);
+  });
+
+  it("shows the position instead of the plain count once a match is active", () => {
+    const bar = new SearchBar({ onQueryChange: () => {} });
+    const count = bar.getElement().querySelector(".json-search-count") as HTMLElement;
+    bar.setMatchInfo({ matchCount: 17 });
+    expect(count.textContent).toBe("17 matches");
+    bar.setMatchInfo({ matchCount: 17, activeIndex: 2 });
+    expect(count.textContent).toBe("3/17");
+  });
+
+  it("still says 'No matches' for an empty result, even with a position given", () => {
+    const bar = new SearchBar({ onQueryChange: () => {} });
+    const count = bar.getElement().querySelector(".json-search-count") as HTMLElement;
+    bar.setMatchInfo({ matchCount: 0, activeIndex: 0 });
+    expect(count.textContent).toBe("No matches");
+    expect(count.classList.contains("is-empty")).toBe(true);
+  });
+});
