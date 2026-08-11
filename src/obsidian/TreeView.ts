@@ -131,6 +131,46 @@ export class TreeView {
     return { matchCount: result.matches.size };
   }
 
+  /** Collapse every container in the tree. */
+  collapseAll(): void {
+    this.eachContainer((c) => this.toggleContainer(c, false));
+  }
+
+  /** Expand every container in the tree. */
+  expandAll(): void {
+    this.eachContainer((c) => this.toggleContainer(c, true));
+  }
+
+  /**
+   * Restore the state a freshly-rendered tree would have: containers deeper than
+   * the configured autoCollapseDepth collapsed, everything else expanded. With no
+   * depth configured this expands everything, matching core/render.ts.
+   */
+  collapseToDefaultDepth(): void {
+    const limit = this.opts.autoCollapseDepth;
+    this.eachContainer((c) => {
+      const depth = Number(c.dataset.depth ?? 0);
+      const shouldCollapse = limit !== undefined && depth > limit;
+      this.toggleContainer(c, !shouldCollapse);
+    });
+  }
+
+  /** True while at least one container is expanded — drives the toolbar toggle. */
+  hasExpandedContainers(): boolean {
+    let found = false;
+    this.eachContainer((c) => {
+      if (!c.classList.contains("is-collapsed")) found = true;
+    });
+    return found;
+  }
+
+  /** Visit every container element below the tree root. */
+  private eachContainer(fn: (c: HTMLElement) => void): void {
+    const treeRoot = this.container.querySelector<HTMLElement>(".json-tree-root");
+    if (!treeRoot) return;
+    treeRoot.querySelectorAll<HTMLElement>(".json-container").forEach(fn);
+  }
+
   private openContainersWithMatches(treeRoot: HTMLElement): void {
     treeRoot
       .querySelectorAll<HTMLElement>(
