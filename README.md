@@ -1,15 +1,19 @@
 # JSON Editor for Obsidian
 
+**View and edit `.json` and `.jsonc` files inside Obsidian, with a Tree↔Source toggle and comments that survive editing.**
+
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![Docs: CC BY-SA 4.0](https://img.shields.io/badge/docs-CC%20BY--SA%204.0-lightgrey.svg)](LICENSE-DOCS)
 [![Release](https://img.shields.io/gitea/v/release/jkaindl/json-editor?gitea_url=https%3A%2F%2Fgit.jkaindl.de&label=release)](https://git.jkaindl.de/jkaindl/json-editor/releases)
 [![Obsidian](https://img.shields.io/badge/obsidian-1.5.7%2B-purple)](https://obsidian.md)
 
-View and edit `.json` and `.jsonc` files in Obsidian with a Tree↔Source toggle. Renders `` ```json `` and `` ```jsonc `` code blocks inside Markdown notes as collapsible, theme-aware trees. Comments in `.jsonc` files are preserved when you edit.
+Renders `` ```json `` and `` ```jsonc `` code blocks inside Markdown notes as collapsible, theme-aware trees, too. Every structural edit on a `.jsonc` file is applied as a targeted text edit, so your comments and formatting stay exactly where you put them.
+
+*Auch auf Deutsch verfügbar: [`README.de.md`](README.de.md).*
 
 **Target platform:** Obsidian 1.5.7+ on desktop and mobile. No external services, no remote resources, no telemetry.
 
-> **Status: 1.9.0 released.** Tree mode is a full structural editor — add / delete / rename keys, add / delete items, reorder rows (drag-and-drop or `Alt`+`↑`/`↓`), and switch a value's JSON type. Undo/redo (`Cmd/Ctrl+Z` / `Cmd/Ctrl+Shift+Z`) is unified across tree and source modes. On mobile, a long-press action menu, touch-sized controls and toolbar undo/redo make tree editing fully usable by touch. Optional JSON Schema validation (opt-in) and a large-file guard round out the editor. See [`CHANGELOG.md`](CHANGELOG.md) for the full per-release log.
+> **Status: 1.10.2 released.** Tree mode is a full structural editor — add / delete / rename keys, add / delete items, reorder rows (drag-and-drop or `Alt`+`↑`/`↓`), and switch a value's JSON type. Undo/redo (`Cmd/Ctrl+Z` / `Cmd/Ctrl+Shift+Z`) is unified across tree and source modes. On mobile, a long-press action menu, touch-sized controls and toolbar undo/redo make tree editing fully usable by touch. Optional JSON Schema validation (opt-in) and a large-file guard round out the editor. See [`CHANGELOG.md`](CHANGELOG.md) for the full per-release log.
 
 ---
 
@@ -47,6 +51,18 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 - **Embedded code blocks** — `` ```json `` and `` ```jsonc `` fences in any Markdown note render as a titled card with a collapsible tree (the `` ```jsonc `` variant tolerates comments). Blocks over 20 lines auto-collapse. Invalid JSON renders as a styled error card with line/column info, not a crash.
 - **Settings** — default mode, indent (2 / 4 / tab), tree marker style (modern / classic), auto-collapse depth, JSON Schema validation (opt-in), companion-schema suffix.
 - **No telemetry, no remote resources.** All assets ship with the plugin.
+
+---
+
+## Requirements
+
+| | |
+|---|---|
+| **Obsidian** | 1.5.7 or newer (`minAppVersion`) — the view-local keymap the plugin uses was added in 1.5.7. |
+| **Platform** | Desktop and mobile. Not desktop-only; the tree has a dedicated touch interaction model (long-press menu instead of hover buttons, `Alt`+arrow reorder). |
+| **Dependencies** | None to install. The two runtime libraries (`@cfworker/json-schema`, `jsonc-parser`) are bundled into `main.js`. |
+| **Network** | None. No telemetry, no remote resources, no schema fetching over the network — everything resolves inside the vault. |
+| **Building from source** | Node.js 20+ and npm (see [Development](#development)). |
 
 ---
 
@@ -100,7 +116,7 @@ Hover and drag-and-drop don't exist on touch, so the row actions are consolidate
 
 ---
 
-## Settings
+## Configuration
 
 | Setting | Default | Effect |
 |---|---|---|
@@ -112,6 +128,23 @@ Hover and drag-and-drop don't exist on touch, so the row actions are consolidate
 | Companion schema suffix | `.schema.json` | Suffix used to locate the sibling schema (`data.json` → `data.schema.json`). |
 
 Settings live under **Settings → Community plugins → JSON Editor**.
+
+---
+
+## How it works
+
+**Two layers.** The rendering and editing logic is plain TypeScript with no Obsidian imports (`src/core/`); a thin adapter (`src/obsidian/`) binds it to the Obsidian API. That boundary is why the core is unit-testable in isolation — and why the same tree renderer serves both the file view and the code blocks in your notes.
+
+**Opening a file.** The text is parsed into a plain JavaScript value and rendered as a DOM tree — no virtual DOM, no framework. Before that, two guards run: a render budget (very large files open in source mode with a *Load tree anyway* banner) and a lossy-number scan (a file with integers beyond 2^53 opens read-only, so an edit cannot silently corrupt 64-bit IDs).
+
+**Editing.** Every structural operation — edit a value, add, delete, rename, change type, reorder — is a pure, immutable function on the parsed value. Which route the result takes back to disk depends on the file type:
+
+- **`.json`** — the edited value is re-serialized with your indent setting. Clean and total, but it rewrites the whole document (see the object-key-order caveat below).
+- **`.jsonc`** — re-serializing would throw your comments away, so nothing is re-serialized. The edit is translated into a **targeted text edit on the source** via [`jsonc-parser`](https://github.com/microsoft/node-jsonc-parser), leaving every byte you didn't touch alone. Comments and formatting survive; an unedited open→save is byte-identical.
+
+**Undo.** Both modes push the pre-edit *text* onto one shared 100-deep stack, so undo works across a mode switch — edit in the tree, switch to source, and `Cmd/Ctrl+Z` still steps back through what you did.
+
+**Schema validation** (off by default) looks for a sibling `data.schema.json` next to `data.json` and validates with the eval-free `@cfworker/json-schema` — a tree-walking validator, no `new Function`, no `eval`. It is opt-in because auto-loading a schema file from a shared vault is a trust decision, and a hostile regex inside one is a denial-of-service vector; pattern and size guards cover the rest.
 
 ---
 
@@ -131,7 +164,7 @@ This plugin registers itself as the editor for the `.json` file extension. Obsid
 
 ```bash
 npm install                                # use --legacy-peer-deps if needed; .npmrc handles it
-npm test                                   # 537 Vitest tests, ~3s
+npm test                                   # 640 Vitest tests, ~3s
 npm run dev                                # esbuild watch mode
 npm run build                              # production build (tsc-check + esbuild)
 npm run lint                               # Biome (format + general lint)
@@ -153,6 +186,8 @@ json-editor/
 │   │   ├── types.ts           JsonValue, JsonPath, ParseResult, RenderOptions
 │   │   ├── parse.ts           parse(text) → ParseResult (line/col errors)
 │   │   ├── serialize.ts       serialize(value, opts) → string
+│   │   ├── jsonc.ts           comment-preserving JSONC edit engine (text-in/text-out,
+│   │   │                      wraps jsonc-parser; used only on the .jsonc path)
 │   │   ├── edit.ts            structural ops (add/delete/rename/move/changeType), immutable
 │   │   ├── history.ts         generic undo/redo stack (unified text history)
 │   │   ├── render.ts          renderTree(value, opts) → HTMLElement
@@ -181,7 +216,7 @@ json-editor/
 │   │   └── Tooltip.ts         singleton hover-tooltip
 │   └── main.ts                plugin entry — registers view (guarded .json claim),
 │                              codeblock processor, settings, and commands
-├── tests/                     core/ + obsidian/ + toolchain/ (601 tests)
+├── tests/                     core/ + obsidian/ + toolchain/ (640 tests)
 │   └── __mocks__/obsidian.ts  Vitest-only mock (resolved via vitest.config + tsconfig.test.json)
 ├── docs/superpowers/          design specs and implementation plans (one per release)
 ├── .github/workflows/         release.yml + test.yml (CI: tests, lint:obsidian, build)
@@ -203,6 +238,7 @@ json-editor/
 
 ## Documentation
 
+- [`README.de.md`](README.de.md) — deutsche Fassung dieser Datei (the English README is authoritative).
 - [`CHANGELOG.md`](CHANGELOG.md) — per-release notes (Keep-A-Changelog format).
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — bug reports, pull requests, commit conventions, TDD workflow.
 - [`SECURITY.md`](SECURITY.md) — how to report a security issue.
@@ -234,7 +270,7 @@ Bug reports and pull requests are welcome on Forgejo. For larger changes, please
 
 Actively maintained by a single maintainer ([@jkaindl](https://git.jkaindl.de/jkaindl) / [@johannes-kaindl](https://github.com/johannes-kaindl)). Built for personal use, released because it might be useful to others.
 
-**Shipped** (see [`CHANGELOG.md`](CHANGELOG.md)): structural tree editing & undo/redo (1.0.0), drag-and-drop reorder + type-switching (1.1.0), unified cross-mode undo/redo (1.2.0), JSON Schema validation (1.3.0, opt-in since 1.5.0), data-integrity & crash hardening (1.5.0), guideline alignment + large-file guard + source-mode search (1.6.0), submission-prep + plugin rename to `json-editor` (1.7.0), mobile interaction model + toolbar polish (1.8.0), pop-out window correctness + community-review cleanup (1.8.1–1.8.2).
+**Shipped** (see [`CHANGELOG.md`](CHANGELOG.md)): structural tree editing & undo/redo (1.0.0), drag-and-drop reorder + type-switching (1.1.0), unified cross-mode undo/redo (1.2.0), JSON Schema validation (1.3.0, opt-in since 1.5.0), data-integrity & crash hardening (1.5.0), guideline alignment + large-file guard + source-mode search (1.6.0), submission-prep + plugin rename to `json-editor` (1.7.0), mobile interaction model + toolbar polish (1.8.0), pop-out window correctness + community-review cleanup (1.8.1–1.8.2), eval-free schema validation with a ~52% smaller bundle (1.9.0), `.jsonc` support with comment-preserving tree editing (1.10.0–1.10.1), tree-rendering polish (1.10.2).
 
 **Roadmap (rough, 2.x ideas):**
 1. **Tree search match navigation** — next/prev jumps and match highlighting, beyond the current strict filter.
@@ -249,7 +285,7 @@ Actively maintained by a single maintainer ([@jkaindl](https://git.jkaindl.de/jk
 - **Contributing:** external contributions are accepted under the [Contributor License Agreement](CLA.md), which keeps the dual-licensing model possible.
 - **Documentation/text:** Creative Commons Attribution-ShareAlike 4.0 (CC BY-SA 4.0) — see [`LICENSE-DOCS`](LICENSE-DOCS).
 
-**Dependency licenses (bundled in `main.js`):** This plugin statically bundles [@cfworker/json-schema](https://github.com/cfworker/cfworker) (MIT) for JSON Schema validation, plus the source-mode JSON grammar [@codemirror/lang-json](https://github.com/codemirror/lang-json) (MIT) and [@lezer/json](https://github.com/lezer-parser/json) (MIT). All are AGPL-3.0-compatible. Full license texts and copyright notices are in [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md). The remaining `@codemirror/*` and `@lezer/{common,highlight,lr}` packages, and the Obsidian plugin API, are **not bundled** — they are provided by Obsidian at runtime (marked `external` in `esbuild.config.mjs`).
+**Dependency licenses (bundled in `main.js`):** This plugin statically bundles [@cfworker/json-schema](https://github.com/cfworker/cfworker) (MIT) for JSON Schema validation and [jsonc-parser](https://github.com/microsoft/node-jsonc-parser) (MIT) for comment-preserving `.jsonc` editing, plus the source-mode JSON grammar [@codemirror/lang-json](https://github.com/codemirror/lang-json) (MIT) and [@lezer/json](https://github.com/lezer-parser/json) (MIT). All are AGPL-3.0-compatible. Full license texts and copyright notices are in [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md). The remaining `@codemirror/*` and `@lezer/{common,highlight,lr}` packages, and the Obsidian plugin API, are **not bundled** — they are provided by Obsidian at runtime (marked `external` in `esbuild.config.mjs`).
 
 ---
 

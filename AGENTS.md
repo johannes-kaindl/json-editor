@@ -17,22 +17,26 @@ Deliberately small surface: vanilla TypeScript, two runtime dependencies (`@cfwo
 
 ## Current state
 
-- **Latest release:** `1.9.0` (Eval-free schema validation + a clean community-review report. Replaced Ajv with the eval-free `@cfworker/json-schema` → no `new Function`/`eval`, so the portal's "dynamic code execution" disclosure is gone and the bundle dropped ~176 KB → ~85 KB; drove the portal's type-aware `no-unsafe-*`/`no-unnecessary-type-assertion` warnings to **0** via the `tsconfig.json` mock-alias root-fix (`npm run lint:portal` = 0). `format` is now enforced (the old Ajv build ran without ajv-formats). `minAppVersion` 1.5.7). Live on both remotes; CI green.
+- **Latest release:** `1.10.2` (Tree rendering: the separator comma now docks to its value instead of floating. It used to be a bare text node in the flex row, placed after the value's whole box — and a collapsed container still reserved the full width of its hidden children, so the comma drifted an arbitrary distance right of the collapse chip, differently on every row.)
+- **2026-08-11:** `1.10.2` — separator-comma docking + collapsed subtree removed from layout; Codeberg→Forgejo naming sweep (release tooling, issue/PR templates, `release.yml` back in sync with `tools/release-template/`)
+- **2026-07-11:** `1.10.1` — `.jsonc` comments no longer false-trigger the lossy-number guard (found by a GUI smoke test, not by the unit suite)
+- **2026-07-11:** `1.10.0` — `.jsonc` support with comment-preserving tree editing (`jsonc-parser`; second runtime dep) + ```` ```jsonc ```` code blocks
+- **2026-07-11:** `1.9.1` — maintenance: vendored `mergeSettings`, unified one-command release toolkit, CI actions v4→v5
 - **2026-06-16:** `1.9.0` — eval-free `@cfworker/json-schema` swap + portal-eslint root-fix (Review → pass); adversarial review (19 verified findings) + 9 new regression tests
 - **2026-06-16:** `1.8.2` — typed `activeDoc()` wrapper, fixes 1.8.1's portal `no-unsafe` regression
 - **2026-06-16:** `1.8.1` — review-cleanup patch (popout/lint/attestations); addresses the community-review recommendations
-- **2026-06-16:** `1.8.1` — review-cleanup patch (popout/lint/attestations); 6 commits, addresses the community-review recommendations
-- **Latest feature release:** `1.8.0` (Mobile interaction model — long-press RowMenu, Alt+Arrow reorder, mobile undo/redo, 44px touch targets — plus toolbar/a11y polish, `Cmd/Ctrl+E` tree/source toggle via the view scope, and a hidden-attribute CSS fix).
+- **Latest feature release:** `1.10.0` (`.jsonc` support — comment-preserving tree editing via a dual mutation path: the new pure `core/jsonc.ts` maps every structural edit onto a targeted source-text edit, so comments and formatting survive. `.json` behaviour is byte-for-byte unchanged.)
 - **2026-06-15:** `1.8.0` — mobile interaction model + native UI/a11y polish; merged, tagged, pushed; mobile-model review + pre-publish + submission-readiness workflows, all findings addressed
 - **2026-06-13:** `1.7.0` — Phase-3 rename + docs (audit 1.1, 2.4–2.7, 2.15, 6.9); 3 commits, submission-readiness review + fixes
 - **2026-06-13:** `1.6.0` — Phase-2 guideline+UX release (audit Sections 2+3+4.1); 10 commits, multi-agent review + fixes
 - **2026-06-13:** `1.5.0` — Phase-1 blocker release (audit Section 1 + 2.8); 8 commits, multi-agent review + 2 rounds of fixes
 - **2026-05-27:** `0.1.2` → `1.3.0` released in one autonomous run (entire 1.x feature roadmap)
-- **Unreleased on `main`:** nothing pending. **`1.9.0` is live on both remotes (release: 3 assets + attestation, CI green).** Submission passed the automated scan with no errors; in human review. Mobile verified on a real iPhone. **Portal-eslint is now clean (`npm run lint:portal` = 0 problems).** The fix removed the `obsidian` → mock `paths` alias from `tsconfig.json` (so the portal's type-aware eslint resolves the *real* obsidian types instead of the loose Vitest mock that was driving the `no-unsafe-*` cascade); the Vitest mock moved to `tests/__mocks__/obsidian.ts` and a new `tsconfig.test.json` aliases it for editor typing of the tests; the `@typescript-eslint/no-unnecessary-type-assertion` rule is re-enabled (12 now-unnecessary assertions removed); and the one `querySelector as HTMLElement` was rewritten to the generic `querySelector<HTMLElement>`. **`eslint.portal.config.mjs` + `npm run lint:portal` is the committed regression guard** that mirrors the community.obsidian.md portal reviewer — run it before submission-affecting changes.
-- **Roadmap (next — only the submission remains):** **GATE — Community Plugin submission** via the `community.obsidian.md` Developer Dashboard (repo `johannes-kaindl/json-editor`; the portal scan is the install gate; the legacy obsidianmd/obsidian-releases PR path is retired but still operational). ID is first-come-first-served — do it promptly. Submission-readiness workflow (2026-06-15) confirmed the repo is compliant (104 checks). Deferred follow-ups: `prefer-active-doc` popout polish (~70 lint warnings), broader A11y (§5; breadcrumb keyboard-access already fixed in 1.8.0), 2.x feature ideas (§6: schema autocompletion, multi-select, .jsonl; §3.3–3.13). Older open: cross-container drag-drop, `$schema` URL fetching, real pointer-events touch-drag.
-- **Tests:** 537 Vitest tests, all green; `npm test`
-- **Coverage:** 94.10% statements / 85.56% branches / 95.78% functions; `npm run test:coverage`
-- **Build:** `npm run build` clean. Bundle is ~85 KB.
+- **Unreleased on `main`:** nothing pending. `1.10.2` is live on both remotes (3 assets + attestation; `release.yml` and `test.yml` both green). **Portal-eslint stays clean (`npm run lint:portal` = 0 problems)** — `eslint.portal.config.mjs` mirrors the community.obsidian.md portal reviewer; run it before submission-affecting changes. The listing itself is still the one open external item: submitted 2026-06-16, automated scan passed with no errors, **awaiting maintainer review** — and note that a new release does *not* start a review by itself, it has to be triggered as a rescan in the Developer Dashboard.
+- **Roadmap (next — only the submission remains):** **GATE — Community Plugin listing** via the `community.obsidian.md` Developer Dashboard (repo `johannes-kaindl/json-editor`; the portal scan is the install gate; the legacy obsidianmd/obsidian-releases PR path is retired). Maintainer-only step. Deferred follow-ups: `prefer-active-doc` popout polish (~70 lint warnings), broader A11y (§5; breadcrumb keyboard-access already fixed in 1.8.0), README screenshots (`docs/CAPTURE.md` §5, parked), bilingual `README.de.md` (CORE-META-09), 2.x feature ideas (§6: schema autocompletion, multi-select, .jsonl; §3.3–3.13) plus full positional fidelity for free-standing comments on `.jsonc` reorder. Older open: cross-container drag-drop, `$schema` URL fetching, real pointer-events touch-drag.
+- **Tests:** 640 Vitest tests, all green; `npm test`
+- **Coverage:** 95.65% statements / 85.84% branches / 96.99% functions; `npm run test:coverage`
+- **Build:** `npm run build` clean. Bundle is ~106 KB.
+- **Gate:** `npm run gate` = `typecheck` + `test` + `lint` (biome) + `build`. `test` additionally runs `check-no-abs-paths.mjs` + `check-no-nul-bytes.mjs`. The GitHub release workflow calls `npm run gate`.
 - **Predecessor:** `0.1.0` (v1.0 — core viewer/editor)
 - **Branch:** `main` is canonical; feature branches `feat/<name>` per release, merged via `--no-ff`
 - **Coverage tooling:** `@vitest/coverage-v8` set up (added in 0.3.0); `npm run test:coverage` for html report in `coverage/`
@@ -266,11 +270,24 @@ In priority order:
 ## Abweichungen von der Leitkonvention
 
 - `CORE-META-03` — Hero/Feature-Screenshots (`docs/images/`): **Phase-2b** (requires capturing in a running Obsidian GUI).
-- `CORE-META-09` — bilingual `README.de.md`: **Phase-2b** (translation pass pending).
 
 ## Session history
 
 Append new entries at the top. Each entry = one working session.
+
+### 2026-08-11 — `1.10.2`: Trailing-comma docking + Codeberg→Forgejo naming sweep
+
+User-reported visual defect: in the tree, the separator commas of collapsed rows "hang in mid-air", each at a different distance right of the collapse chip — distracting and confusing. Two overlapping causes: (1) `.json-row` is `display: flex` and the comma was a bare text node, so it became an anonymous flex item placed after the *whole box* of the value; (2) `.json-content.collapsed` hid children via `max-height: 0`, and a zero-height box still carries the intrinsic **width** of its hidden children — so the comma was pushed right by exactly that width, which differs per row.
+
+Fix (TDD, tests red first): `appendSeparatorComma()` in `core/render.ts` makes the comma a `.json-comma` element **docked to the value** — inside the container for container values, where it follows the collapse chip (collapsed) or the closing bracket (expanded); `.json-content.collapsed` gets `display: none` so a collapsed subtree reserves no layout space at all (costs the fade-out, which the snap-open direction had already given up); `.json-comma` renders in `--jv-fg-muted` so commas read as syntax, not data. 5 new tests (4 render + 1 CSS guard against the width regression). Ratified with the user against two alternatives (drop commas entirely / dim them) before implementing.
+
+Then, at the user's request, the loose ends: **the Codeberg exit (`cc7b0c1`) had only rewritten URLs, not the name.** "Codeberg" was still in the user-facing issue/PR templates (pointing at `git.jkaindl.de` — a wrong forge name in front of contributors), in the release tooling's log output (`release.mjs` announced "Codeberg-Release" while posting to Forgejo), and in `release.yml` — where it was the *sole* reason for the workspace-audit `template_drift` finding. Sweep: user-facing text → `git.jkaindl.de`, internal tooling → `Forgejo`, `release.yml` restored from `tools/release-template/` (drift check now reports `json_viewer: synchron`). Deliberately left alone: `CHANGELOG.md` (historical record) and `docs/superpowers/` (frozen legacy). Also closed the README's three missing mandatory sections (`readme_lint`) and brought this file back from `1.9.0` to the current state — it had missed four releases.
+
+### 2026-07-11/13 — `1.9.1` + `1.10.0`/`1.10.1`: `.jsonc` support (reconstructed entry)
+
+*Recovered from the cockpit focus text — this session never got a history entry here.*
+
+Three releases. **`1.9.1`** maintenance: vendored `mergeSettings` from `obsidian-kit` shipped for real, unified one-command release toolkit (`scripts/release.mjs`), CI actions v4→v5 (Node-20 deprecation). **`1.10.0`** `.jsonc` support: brainstorm → spec → plan → strict TDD (11 tasks). Full comment-preserving tree editing via Microsoft's `jsonc-parser` (second runtime dep, eval-free). Architecture: a **dual mutation path** — new pure `core/jsonc.ts` plus an `isJsonc` flag in `JsonFileView`; only the mutation path diverges, `.json` stays byte-identical. Rename via key-token edit, reorder via CST rebuild (documented limit: free-standing comment lines keep their absolute position — nothing is ever lost). ```` ```jsonc ```` code blocks render read-only. **`1.10.1`**: a **GUI smoke test in real Obsidian** caught what 633 unit tests did not — hyphens in `.jsonc` comments hit the lossy-number guard (`Number("-")` = `NaN`), which disabled tree editing on safe files; the detector now skips comments. The 1.10.1 release CI first failed on Biome formatting (missed locally because the log was read with `tail -1`) → tag force-moved with the user's authorisation, then green.
 
 ### 2026-06-16 — `1.9.0`: Eval-free validator swap + portal-eslint root-fix, released
 
