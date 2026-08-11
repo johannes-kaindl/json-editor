@@ -886,3 +886,8 @@ body.is-mobile .json-inline-edit[type="checkbox"] {
 body.is-mobile .json-large-file-load {
   min-height: 44px;
 }
+
+/* Collapse-all toggle sits with the other toolbar icon buttons. */
+.json-collapse-toggle-btn {
+  flex: 0 0 auto;
+}

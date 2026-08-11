@@ -66,6 +66,7 @@ export class JsonFileView extends TextFileView {
 
   private toolbarEl!: HTMLDivElement;
   private toggleEl!: HTMLDivElement;
+  private collapseBtn: HTMLButtonElement | null = null;
   private undoBtn: HTMLButtonElement | null = null;
   private redoBtn: HTMLButtonElement | null = null;
   private treePillEl!: HTMLButtonElement;
@@ -305,6 +306,14 @@ export class JsonFileView extends TextFileView {
     this.toolbarEl.appendChild(this.breadcrumb.getElement());
     this.toolbarEl.appendChild(this.searchBar.getElement());
     this.toolbarEl.appendChild(this.toggleEl);
+    // One button, both directions — the idiom of Obsidian's own file explorer.
+    this.collapseBtn = this.makeToolbarIconButton(
+      "json-collapse-toggle-btn",
+      "chevrons-down-up",
+      "Collapse all",
+      () => this.toggleCollapseAll(),
+    );
+    this.toolbarEl.appendChild(this.collapseBtn);
     // Mobile has no hardware Mod+Z (audit 4.5): expose undo/redo in the toolbar.
     if (Platform.isMobile) {
       this.undoBtn = this.makeToolbarIconButton("json-undo-btn", "rotate-ccw", "Undo", () =>
@@ -485,6 +494,7 @@ export class JsonFileView extends TextFileView {
         onError: (err) => new Notice(err.message),
       });
       this.treeView.setValue(this.currentValue);
+      this.refreshCollapseButton();
     } else {
       this.sourceView = new SourceView(this.bodyEl, {
         onChange: (text) => this.handleSourceChange(text),
@@ -508,6 +518,36 @@ export class JsonFileView extends TextFileView {
       const result = this.treeView.applyFilter(query);
       this.searchBar.setMatchInfo(query.trim() === "" ? null : { matchCount: result.matchCount });
     }
+  }
+
+  collapseAll(): void {
+    this.treeView?.collapseAll();
+    this.refreshCollapseButton();
+  }
+
+  expandAll(): void {
+    this.treeView?.expandAll();
+    this.refreshCollapseButton();
+  }
+
+  collapseToDefaultDepth(): void {
+    this.treeView?.collapseToDefaultDepth();
+    this.refreshCollapseButton();
+  }
+
+  /** One button, both directions — the idiom of Obsidian's own file explorer. */
+  toggleCollapseAll(): void {
+    if (this.treeView?.hasExpandedContainers()) this.collapseAll();
+    else this.expandAll();
+  }
+
+  private refreshCollapseButton(): void {
+    if (!this.collapseBtn) return;
+    const expanded = this.treeView?.hasExpandedContainers() ?? false;
+    const label = expanded ? "Collapse all" : "Expand all";
+    this.collapseBtn.setAttribute("aria-label", label);
+    this.collapseBtn.title = label;
+    setIcon(this.collapseBtn, expanded ? "chevrons-down-up" : "chevrons-up-down");
   }
 
   focusSearch(): void {
@@ -730,6 +770,7 @@ export class JsonFileView extends TextFileView {
     this.requestSave();
     if (this.treeView) {
       this.treeView.setValue(newValue);
+      this.refreshCollapseButton();
       if (this.currentQuery !== "") {
         const result = this.treeView.applyFilter(this.currentQuery);
         this.searchBar.setMatchInfo({ matchCount: result.matchCount });

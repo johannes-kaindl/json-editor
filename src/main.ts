@@ -77,6 +77,41 @@ export default class JsonEditorPlugin extends Plugin {
       },
     });
 
+    // No default hotkeys (audit 2.1) — these stay palette-only until the user
+    // binds them, so they never shadow a core Obsidian binding.
+    this.addCommand({
+      id: "collapse-all",
+      name: "Collapse all",
+      checkCallback: (checking: boolean) => {
+        const view = this.app.workspace.getActiveViewOfType(JsonFileView);
+        if (!view) return false;
+        if (!checking) view.collapseAll();
+        return true;
+      },
+    });
+
+    this.addCommand({
+      id: "expand-all",
+      name: "Expand all",
+      checkCallback: (checking: boolean) => {
+        const view = this.app.workspace.getActiveViewOfType(JsonFileView);
+        if (!view) return false;
+        if (!checking) view.expandAll();
+        return true;
+      },
+    });
+
+    this.addCommand({
+      id: "collapse-to-default-depth",
+      name: "Collapse to default depth",
+      checkCallback: (checking: boolean) => {
+        const view = this.app.workspace.getActiveViewOfType(JsonFileView);
+        if (!view) return false;
+        if (!checking) view.collapseToDefaultDepth();
+        return true;
+      },
+    });
+
     // Claim the .json file extension LAST and guard it: registerExtensions
     // throws hard if another plugin already handles .json. An uncaught throw
     // would abort onload and take down everything registered above, so we
