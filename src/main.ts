@@ -127,6 +127,17 @@ export default class JsonEditorPlugin extends Plugin {
       },
     });
 
+    this.addCommand({
+      id: "go-to-path",
+      name: "Go to path",
+      checkCallback: (checking: boolean) => {
+        const view = this.app.workspace.getActiveViewOfType(JsonFileView);
+        if (!view) return false;
+        if (!checking) view.openGoToPath(this.app);
+        return true;
+      },
+    });
+
     // Claim the .json file extension LAST and guard it: registerExtensions
     // throws hard if another plugin already handles .json. An uncaught throw
     // would abort onload and take down everything registered above, so we

@@ -1,5 +1,5 @@
 import { type JsonType, computeInsertionIndex, editValue, jsonTypeOf } from "../core/edit";
-import { pathToString } from "../core/path";
+import { parsePathStr, pathToString } from "../core/path";
 import { renderTree } from "../core/render";
 import { findMatches } from "../core/search";
 import type { JsonPath, JsonValue, MarkerStyle } from "../core/types";
@@ -956,58 +956,6 @@ function locateValueByPathStr(root: JsonValue, pathStr: string): JsonValue {
     }
   }
   return current;
-}
-
-function parsePathStr(pathStr: string): JsonPath {
-  if (pathStr === "root") return [];
-  const segments: JsonPath = [];
-  let i = 0;
-  let buf = "";
-  const flushString = () => {
-    if (buf.length > 0) {
-      segments.push(buf);
-      buf = "";
-    }
-  };
-  while (i < pathStr.length) {
-    const c = pathStr[i];
-    if (c === ".") {
-      flushString();
-      i++;
-    } else if (c === "[") {
-      flushString();
-      // Quoted-key form: ["..."]. Scan for the closing `"]` and respect
-      // escaped quotes (\"). A bare `]` inside the key value would otherwise
-      // be misread as the structural close and corrupt the segment.
-      if (pathStr[i + 1] === '"') {
-        let j = i + 2;
-        let raw = "";
-        while (j < pathStr.length) {
-          if (pathStr[j] === "\\" && pathStr[j + 1] === '"') {
-            raw += '"';
-            j += 2;
-          } else if (pathStr[j] === '"' && pathStr[j + 1] === "]") {
-            break;
-          } else {
-            raw += pathStr[j];
-            j++;
-          }
-        }
-        segments.push(raw);
-        i = j + 2; // skip `"]`
-      } else {
-        const close = pathStr.indexOf("]", i);
-        const inner = pathStr.slice(i + 1, close);
-        segments.push(Number.parseInt(inner, 10));
-        i = close + 1;
-      }
-    } else {
-      buf += c;
-      i++;
-    }
-  }
-  flushString();
-  return segments;
 }
 
 function cssEscapeAttr(v: string): string {

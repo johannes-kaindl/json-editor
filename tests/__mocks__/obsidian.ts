@@ -296,3 +296,20 @@ export class Menu {
     return this;
   }
 }
+
+export class SuggestModal<T> {
+  app: unknown;
+  limit = 50;
+  emptyStateText = "";
+  constructor(app: unknown) {
+    this.app = app;
+  }
+  setPlaceholder(_text: string): void {}
+  open(): void {}
+  close(): void {}
+  getSuggestions(_query: string): T[] {
+    return [];
+  }
+  renderSuggestion(_item: T, _el: HTMLElement): void {}
+  onChooseSuggestion(_item: T, _evt: MouseEvent | KeyboardEvent): void {}
+}

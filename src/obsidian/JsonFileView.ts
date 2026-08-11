@@ -1,4 +1,5 @@
 import {
+  type App,
   Notice,
   Platform,
   Scope,
@@ -33,13 +34,15 @@ import {
   jsoncRenameKey,
 } from "../core/jsonc";
 import { parse } from "../core/parse";
-import { pathToString } from "../core/path";
+import { parsePathStr, pathToString } from "../core/path";
+import { collectPaths } from "../core/paths";
 import { exceedsRenderBudget } from "../core/render-budget";
 import { hasNumberRoundtripLoss } from "../core/roundtrip";
 import { type CompiledSchema, type PathError, compileSchema } from "../core/schema";
 import { serialize } from "../core/serialize";
 import type { JsonPath, JsonValue } from "../core/types";
 import { Breadcrumb } from "./Breadcrumb";
+import { GoToPathModal } from "./GoToPathModal";
 import { LargeFileBanner } from "./LargeFileBanner";
 import { LossBanner } from "./LossBanner";
 import { openRowMenu } from "./RowMenu";
@@ -601,6 +604,18 @@ export class JsonFileView extends TextFileView {
     this.collapseBtn.setAttribute("aria-label", label);
     this.collapseBtn.title = label;
     setIcon(this.collapseBtn, expanded ? "chevrons-down-up" : "chevrons-up-down");
+  }
+
+  /** Open the path picker. The app comes from the plugin, which owns it. */
+  openGoToPath(app: App): void {
+    if (this.mode !== "tree" || this.currentValue === null) return;
+    const { paths, truncated } = collectPaths(this.currentValue);
+    if (paths.length === 0) return;
+    new GoToPathModal(app, paths, truncated, (pathStr) => {
+      const path = parsePathStr(pathStr);
+      this.treeView?.scrollToPath(path);
+      this.breadcrumb.setPath(path);
+    }).open();
   }
 
   focusSearch(): void {

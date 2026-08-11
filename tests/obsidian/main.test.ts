@@ -32,7 +32,7 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
     expect(plugin.postprocessors.json).toBeDefined(); // codeblock processor survived
     expect(plugin.postprocessors.jsonc).toBeDefined(); // jsonc codeblock survived too
     expect(plugin.settingTabs.length).toBe(1);
-    expect(plugin.commands.length).toBe(7);
+    expect(plugin.commands.length).toBe(8);
   });
 
   it("shows an explanatory Notice naming the .json conflict on collision", async () => {
