@@ -898,3 +898,22 @@ body.is-mobile .json-large-file-load {
   outline-offset: -2px;
   border-radius: var(--radius-s);
 }
+
+/* Shortened long values: the chip reads as chrome, not as data. */
+.json-more-chip {
+  margin-left: var(--size-4-1);
+  padding: 0 var(--size-4-1);
+  color: var(--jv-fg-muted, var(--text-muted));
+  font-size: var(--font-smaller);
+  cursor: pointer;
+  border-radius: var(--radius-s);
+}
+
+.json-more-chip:hover {
+  color: var(--text-accent);
+}
+
+.json-more-chip:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
+}

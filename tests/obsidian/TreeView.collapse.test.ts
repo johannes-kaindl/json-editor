@@ -1,5 +1,18 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { TRUNCATE_AT } from "../../src/core/render";
 import { TreeView } from "../../src/obsidian/TreeView";
+
+/** Captured clipboard writes — copyJsonValue goes through navigator.clipboard. */
+const writes: string[] = [];
+Object.defineProperty(navigator, "clipboard", {
+  configurable: true,
+  value: {
+    writeText: (text: string) => {
+      writes.push(text);
+      return Promise.resolve();
+    },
+  },
+});
 
 const NESTED = { a: { b: { c: 1 } }, d: [1, 2] };
 
@@ -80,5 +93,39 @@ describe("TreeView collapse commands", () => {
       view.collapseToDefaultDepth();
     }).not.toThrow();
     expect(view.hasExpandedContainers()).toBe(false);
+  });
+});
+
+describe("TreeView with truncated values (data integrity)", () => {
+  const long = "y".repeat(TRUNCATE_AT + 30);
+
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("gives the copy button the full value, not the shortened display text", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const view = new TreeView(container, {});
+    view.setValue({ s: long });
+    const row = [...container.querySelectorAll<HTMLElement>(".json-row")].find(
+      (r) => r.getAttribute("data-path") === "s",
+    );
+    const copyBtn = row?.querySelector<HTMLButtonElement>(".json-copy-btn");
+    expect(copyBtn).not.toBeNull();
+    // The button captured the value at render time — assert on what it holds.
+    expect(row?.querySelector(".json-string")?.textContent?.length).toBeLessThan(long.length);
+    copyBtn?.click();
+    expect(writes.at(-1)).toBe(JSON.stringify(long, null, 2));
+  });
+
+  it("opens the inline editor prefilled with the full value", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const view = new TreeView(container, {});
+    view.setValue({ s: long });
+    container.querySelector<HTMLElement>(".json-string")?.click();
+    const input = container.querySelector<HTMLInputElement>("input[type='text']");
+    expect(input?.value).toBe(long);
   });
 });

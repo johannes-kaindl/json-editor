@@ -1,6 +1,13 @@
 import { pathToString } from "./path";
 import type { JsonPath, JsonValue, RenderOptions } from "./types";
 
+/**
+ * Strings longer than this are shown shortened with an expand chip. A tree row is
+ * one line, so roughly a screen width is the useful bound — svelte-jsoneditor's
+ * 1000 bytes assume a wrapping value area, which this layout does not have.
+ */
+export const TRUNCATE_AT = 200;
+
 type ContainerKind = "object" | "array";
 
 interface ContainerItem {
@@ -37,7 +44,14 @@ function renderValue(
     return;
   }
   if (typeof value === "string") {
-    parent.appendChild(makePrimitive(`"${value}"`, "json-string", path, value, opts));
+    const truncated = value.length > TRUNCATE_AT;
+    // Only the DISPLAY text is shortened — `value` stays whole, which is what
+    // onValueClick (inline editor) and the copy button receive.
+    const shown = truncated ? `${value.slice(0, TRUNCATE_AT)}…` : value;
+    const el = makePrimitive(`"${shown}"`, "json-string", path, value, opts);
+    if (truncated) el.classList.add("json-truncated");
+    parent.appendChild(el);
+    if (truncated) parent.appendChild(makeExpandChip(el, value, opts));
     return;
   }
   if (Array.isArray(value)) {
@@ -180,6 +194,31 @@ function appendSeparatorComma(row: HTMLElement, doc: Document): void {
   const value = row.lastElementChild;
   if (value?.classList.contains("json-container")) value.appendChild(comma);
   else row.appendChild(comma);
+}
+
+/** The "show more" affordance for a shortened string. */
+function makeExpandChip(target: HTMLElement, full: string, opts: RenderOptions): HTMLElement {
+  const chip = opts.doc.createElement("span");
+  chip.className = "json-more-chip";
+  chip.textContent = "… show more";
+  chip.setAttribute("role", "button");
+  chip.setAttribute("tabindex", "0");
+  chip.setAttribute("aria-label", "Show the full value");
+  const reveal = (e: Event): void => {
+    // Without this the click bubbles into the value span and opens the editor.
+    e.stopPropagation();
+    target.textContent = `"${full}"`;
+    target.classList.remove("json-truncated");
+    chip.remove();
+  };
+  chip.addEventListener("click", reveal);
+  chip.addEventListener("keydown", (e: KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      reveal(e);
+    }
+  });
+  return chip;
 }
 
 function bracketsFor(kind: ContainerKind): { open: string; close: string } {
