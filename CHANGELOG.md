@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+- **Plugin description now mentions `.jsonc`.** The `manifest.json` description is the line shown under the plugin name in the Community Plugin Directory, and it still described JSON only — comment-preserving `.jsonc` editing, shipped in 1.10.0, was missing from it entirely. It now reads *"View and edit JSON and JSONC files in a tree or source view. Comments and formatting in JSONC survive editing. Renders JSON code blocks in Markdown notes."* The `/` in the old wording is also gone: `eslint-plugin-obsidianmd`'s `validate-manifest` rule restricts the description to `[A-Za-z0-9\s.,!?'"-]`, which excludes slashes. (That rule does not appear to run against `manifest.json` in the reviewer's default configuration — this is precaution, not a fix for an active finding.)
+
 ## [1.10.2] — 2026-08-11
 
 ### Fixed
