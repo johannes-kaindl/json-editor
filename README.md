@@ -13,7 +13,7 @@ Renders `` ```json `` and `` ```jsonc `` code blocks inside Markdown notes as co
 
 **Target platform:** Obsidian 1.5.7+ on desktop and mobile. No external services, no remote resources, no telemetry.
 
-> **Status: 1.10.2 released.** Tree mode is a full structural editor — add / delete / rename keys, add / delete items, reorder rows (drag-and-drop or `Alt`+`↑`/`↓`), and switch a value's JSON type. Undo/redo (`Cmd/Ctrl+Z` / `Cmd/Ctrl+Shift+Z`) is unified across tree and source modes. On mobile, a long-press action menu, touch-sized controls and toolbar undo/redo make tree editing fully usable by touch. Optional JSON Schema validation (opt-in) and a large-file guard round out the editor. See [`CHANGELOG.md`](CHANGELOG.md) for the full per-release log.
+> **Status: 1.11.1 released.** Tree mode is a full structural editor — add / delete / rename keys, add / delete items, reorder rows (drag-and-drop or `Alt`+`↑`/`↓`), and switch a value's JSON type. Undo/redo (`Cmd/Ctrl+Z` / `Cmd/Ctrl+Shift+Z`) is unified across tree and source modes. On mobile, a long-press action menu, touch-sized controls and toolbar undo/redo make tree editing fully usable by touch. Optional JSON Schema validation (opt-in) and a large-file guard round out the editor. See [`CHANGELOG.md`](CHANGELOG.md) for the full per-release log.
 
 ---
 
@@ -277,7 +277,7 @@ Actively maintained by a single maintainer ([@jkaindl](https://git.jkaindl.de/jk
 
 **In the Community Plugin Directory since 12 July 2026**, passing the automated review. As the directory notes on every such entry, that is the automated check — the plugin has not been manually reviewed by Obsidian staff.
 
-**Shipped** (see [`CHANGELOG.md`](CHANGELOG.md)): structural tree editing & undo/redo (1.0.0), drag-and-drop reorder + type-switching (1.1.0), unified cross-mode undo/redo (1.2.0), JSON Schema validation (1.3.0, opt-in since 1.5.0), data-integrity & crash hardening (1.5.0), guideline alignment + large-file guard + source-mode search (1.6.0), submission-prep + plugin rename to `json-editor` (1.7.0), mobile interaction model + toolbar polish (1.8.0), pop-out window correctness + community-review cleanup (1.8.1–1.8.2), eval-free schema validation with a ~52% smaller bundle (1.9.0), `.jsonc` support with comment-preserving tree editing (1.10.0–1.10.1), tree-rendering polish (1.10.2).
+**Shipped** (see [`CHANGELOG.md`](CHANGELOG.md)): structural tree editing & undo/redo (1.0.0), drag-and-drop reorder + type-switching (1.1.0), unified cross-mode undo/redo (1.2.0), JSON Schema validation (1.3.0, opt-in since 1.5.0), data-integrity & crash hardening (1.5.0), guideline alignment + large-file guard + source-mode search (1.6.0), submission-prep + plugin rename to `json-editor` (1.7.0), mobile interaction model + toolbar polish (1.8.0), pop-out window correctness + community-review cleanup (1.8.1–1.8.2), eval-free schema validation with a ~52% smaller bundle (1.9.0), `.jsonc` support with comment-preserving tree editing (1.10.0–1.10.1), tree-rendering polish (1.10.2), storefront description (1.10.3), tree navigation & comfort — collapse-all, remembered collapse state, match-to-match search, go-to-path, shortened long values (1.11.0), portal-review hygiene: zero reviewer warnings, declarative settings (1.11.1).
 
 **Roadmap (rough, 2.x ideas):**
 1. **Tree search match navigation** — next/prev jumps and match highlighting, beyond the current strict filter.
