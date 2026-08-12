@@ -191,16 +191,24 @@ function appendSeparatorComma(row: HTMLElement, doc: Document): void {
   const comma = doc.createElement("span");
   comma.className = "json-comma";
   comma.textContent = ",";
-  const value = row.lastElementChild;
-  if (value?.classList.contains("json-container")) value.appendChild(comma);
-  else row.appendChild(comma);
+  // A truncated string appends a "show more" chip after the value, so the row's
+  // last element is not necessarily the value. Skip the chip — it is chrome, and
+  // docking the comma behind it would strand it exactly as before 1.10.2.
+  let value = row.lastElementChild;
+  if (value?.classList.contains("json-more-chip")) value = value.previousElementSibling;
+  if (!value) {
+    row.appendChild(comma);
+    return;
+  }
+  if (value.classList.contains("json-container")) value.appendChild(comma);
+  else value.after(comma);
 }
 
 /** The "show more" affordance for a shortened string. */
 function makeExpandChip(target: HTMLElement, full: string, opts: RenderOptions): HTMLElement {
   const chip = opts.doc.createElement("span");
   chip.className = "json-more-chip";
-  chip.textContent = "… show more";
+  chip.textContent = "Show more";
   chip.setAttribute("role", "button");
   chip.setAttribute("tabindex", "0");
   chip.setAttribute("aria-label", "Show the full value");

@@ -526,6 +526,8 @@ export class JsonFileView extends TextFileView {
     }
 
     this.searchBar.getElement().hidden = this.mode !== "tree";
+    // Same rule for the collapse toggle: source mode has no tree to collapse.
+    if (this.collapseBtn) this.collapseBtn.hidden = this.mode !== "tree";
     if (this.mode === "tree" && this.treeView && this.currentQuery !== "") {
       const result = this.treeView.applyFilter(this.currentQuery);
       this.searchBar.setMatchInfo({ matchCount: result.matchCount });

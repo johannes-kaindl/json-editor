@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Very long string values are shortened** at 200 characters with a *… show more* chip. The truncation affects the display only: editing and copying still operate on the full value, which two regression tests hold shut.
 
 ### Fixed
+- **Scrolling to a path inside a collapsed branch now opens the way there.** `scrollToPath` only called `scrollIntoView`, which does nothing on a hidden element — and since 1.10.2 made a collapsed subtree `display: none` rather than `max-height: 0`, that turned into a complete no-op. The visible consequence was a **breadcrumb whose segments appeared to do nothing** whenever the target branch was closed. Every caller benefits: breadcrumb, "Go to path", and search-match navigation.
 - **Clearing the search gives the collapse state back.** Searching opens every container holding a match, and that used to be permanent — the tree stayed expanded after the search was cleared. The state from before the search is now snapshotted once per search run and restored when the query is emptied.
 
 ### Changed

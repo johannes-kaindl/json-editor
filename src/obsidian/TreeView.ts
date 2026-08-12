@@ -101,9 +101,23 @@ export class TreeView {
     const selector = `.json-row[data-path="${cssEscapeAttr(pathToString(path))}"]`;
     const row = this.container.querySelector<HTMLElement>(selector);
     if (!row) return;
+    // A collapsed subtree is `display: none` (since 1.10.2), and scrollIntoView
+    // does nothing on a hidden element — so scrolling to a row inside a closed
+    // branch used to silently do nothing at all. Open the way there first.
+    this.expandAncestorsOf(row);
     row.scrollIntoView({ block: "center", behavior: "smooth" });
     row.classList.add("json-row-flash");
     window.setTimeout(() => row.classList.remove("json-row-flash"), FLASH_MS);
+  }
+
+  /** Expand every container between the tree root and `row`, so the row is
+   *  actually visible. Untouched branches stay as they were. */
+  private expandAncestorsOf(row: HTMLElement): void {
+    let el: HTMLElement | null = row.parentElement;
+    while (el && !el.classList.contains("json-tree-root")) {
+      if (el.classList.contains("json-container")) this.toggleContainer(el, true);
+      el = el.parentElement;
+    }
   }
 
   applyFilter(query: string): { matchCount: number } {

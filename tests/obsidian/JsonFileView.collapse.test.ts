@@ -66,3 +66,26 @@ describe("JsonFileView collapse toolbar", () => {
     expect(deep.every((c) => c.classList.contains("is-collapsed"))).toBe(true);
   });
 });
+
+describe("collapse button visibility", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("is hidden in source mode — there is no tree to collapse there", () => {
+    const v = new JsonFileView(fakeLeaf(), { ...DEFAULT_SETTINGS, defaultMode: "source" });
+    document.body.appendChild(v.contentEl);
+    v.setViewData(JSON.stringify({ a: { b: 1 } }), false);
+    const btn = v.contentEl.querySelector<HTMLButtonElement>(".json-collapse-toggle-btn");
+    expect(btn?.hidden).toBe(true);
+  });
+
+  it("reappears when switching back to tree mode", () => {
+    const v = new JsonFileView(fakeLeaf(), { ...DEFAULT_SETTINGS, defaultMode: "source" });
+    document.body.appendChild(v.contentEl);
+    v.setViewData(JSON.stringify({ a: { b: 1 } }), false);
+    v.toggleMode();
+    const btn = v.contentEl.querySelector<HTMLButtonElement>(".json-collapse-toggle-btn");
+    expect(btn?.hidden).toBe(false);
+  });
+});

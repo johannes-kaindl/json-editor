@@ -739,7 +739,8 @@
 .json-loss-banner[hidden],
 .json-search-bar[hidden],
 .json-search-count[hidden],
-.json-search-clear[hidden] {
+.json-search-clear[hidden],
+.json-collapse-toggle-btn[hidden] {
   display: none;
 }
 
@@ -899,18 +900,29 @@ body.is-mobile .json-large-file-load {
   border-radius: var(--radius-s);
 }
 
-/* Shortened long values: the chip reads as chrome, not as data. */
+/* Shortened long values: the chip must read as a button, not as more data.
+   It carries a border and background for that reason, and never wraps — as a
+   bare inline span it broke across three lines beside the value. */
 .json-more-chip {
-  margin-left: var(--size-4-1);
-  padding: 0 var(--size-4-1);
-  color: var(--jv-fg-muted, var(--text-muted));
-  font-size: var(--font-smaller);
-  cursor: pointer;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  margin-left: var(--size-4-2);
+  padding: 0 var(--size-4-2);
+  white-space: nowrap;
+  color: var(--text-muted);
+  background-color: var(--background-modifier-hover);
+  border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-s);
+  font-size: var(--font-smaller);
+  line-height: 1.6;
+  cursor: pointer;
+  user-select: none;
 }
 
 .json-more-chip:hover {
-  color: var(--text-accent);
+  color: var(--text-normal);
+  background-color: var(--background-modifier-active-hover);
+  border-color: var(--background-modifier-border-hover);
 }
 
 .json-more-chip:focus-visible {
