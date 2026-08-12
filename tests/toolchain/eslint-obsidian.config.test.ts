@@ -15,13 +15,13 @@ describe("eslint-plugin-obsidianmd gate (audit 2.14)", () => {
     expect(cfg).toMatch(/obsidianmd\.configs\.recommended/);
   });
 
-  it("package.json defines a lint:obsidian script running eslint", () => {
+  it("package.json defines a lint script running eslint (Store-Scanner-Paritaet: eslint is now the main lint gate, biome moved to lint:biome)", () => {
     const pkg = JSON.parse(read("package.json")) as { scripts: Record<string, string> };
-    expect(pkg.scripts["lint:obsidian"]).toBeDefined();
-    expect(pkg.scripts["lint:obsidian"]).toMatch(/eslint/);
+    expect(pkg.scripts.lint).toBeDefined();
+    expect(pkg.scripts.lint).toMatch(/eslint/);
   });
 
   it("CI runs the obsidian lint step", () => {
-    expect(read(".github/workflows/test.yml")).toMatch(/lint:obsidian/);
+    expect(read(".github/workflows/test.yml")).toMatch(/npm run lint(?!:)/);
   });
 });

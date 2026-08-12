@@ -30,7 +30,7 @@ jobs:
         run: npm test
 
       - name: Lint (Obsidian guidelines)
-        run: npm run lint:obsidian
+        run: npm run lint
 
       - name: Build production bundle
         run: npm run build

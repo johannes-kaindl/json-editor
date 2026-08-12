@@ -1,41 +1,30 @@
+// Kanonischer Kern — Quelle: obsidian-plugins/tools/release-template/eslint.config.mjs.
+// NIE von Hand editieren: tools/template_drift_check.py prueft Byte-Gleichheit gegen das
+// Template; Aenderungen passieren IM Template und rollen per Vendoring in alle Repos.
+//
+// Das ist der lokale Spiegel des Community-Store-Scanners — dieselbe Regelquelle
+// (eslint-plugin-obsidianmd), damit `npm run lint` == Store-Scan gilt. Repo-eigene
+// Abweichungen (parserOptions aufs richtige tsconfig, begruendete file-scoped
+// Overrides) gehoeren AUSSCHLIESSLICH nach ./eslint.overrides.mjs. Inline-
+// `eslint-disable` blockt scripts/check-no-inline-disables.mjs im lint-Script.
 import obsidianmd from "eslint-plugin-obsidianmd";
+import overrides from "./eslint.overrides.mjs";
 
-// ESLint v9 flat config — runs ONLY the official Obsidian plugin guideline
-// rules over the production source. Biome remains the formatter/general linter
-// (npm run lint); this is an additive guideline gate (npm run lint:obsidian).
 export default [
   {
     ignores: [
       "main.js",
-      "coverage/**",
       "node_modules/**",
+      "coverage/**",
       "tests/**",
+      "docs/**",
+      "scripts/**",
       ".remember/**",
-      "_archiv/**",
-      "design/**",
       "*.config.mjs",
       "*.config.ts",
       "*.config.js",
     ],
   },
   ...obsidianmd.configs.recommended,
-  {
-    files: ["src/**/*.ts"],
-    languageOptions: {
-      parserOptions: {
-        // Type-check against the REAL obsidian types (build config, no mock
-        // alias) — otherwise the mock's `App = Record<string, unknown>` makes
-        // every app.* access report as no-unsafe-*.
-        project: ["./tsconfig.build.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-    rules: {
-      // The suggested `.instanceOf()` is an Obsidian HTMLElement augmentation
-      // that does not exist in the happy-dom test runtime (would throw), and
-      // the tree's nodes all live in a single document/realm, so standard
-      // `instanceof` is safe here.
-      "obsidianmd/prefer-instanceof": "off",
-    },
-  },
+  ...overrides,
 ];
