@@ -40,7 +40,14 @@
     }
   },
   "files": {
-    "ignore": ["dist", "node_modules", "main.js", "scripts", "src/vendor"]
+    "ignore": [
+      "dist",
+      "node_modules",
+      "main.js",
+      "scripts",
+      "src/vendor",
+      "tests/setup/dom-shim.ts"
+    ]
   },
   "overrides": [
     {

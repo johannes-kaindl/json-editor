@@ -17,49 +17,18 @@ if (typeof nodeProto.instanceOf !== "function") {
   };
 }
 
-// Obsidian augments Document/Window/HTMLElement with its own DOM helpers
-// (`createEl`, `createDiv`, `createSpan`, `setText`, and `document.win`). Plugin
-// code is required to use them (obsidianmd/prefer-create-el) instead of
-// `document.createElement`, so the test DOM has to provide them. happy-dom does
-// not, and the kit's mock builds fake element objects rather than real nodes —
-// which our DOM-structure tests cannot use. Hence a real-prototype polyfill.
-type ElOpts = {
-  cls?: string | string[];
-  text?: string;
-  type?: string;
-  href?: string;
-  title?: string;
-  placeholder?: string;
-  value?: string;
-  attr?: Record<string, string | number | boolean | null>;
-};
+// Obsidian's element helpers (createEl/createDiv/createSpan/createFragment) under
+// happy-dom — adopted rather than rewritten; see the file's provenance header.
+import "./setup/dom-shim";
 
-function applyElOpts(el: HTMLElement, o?: ElOpts): HTMLElement {
-  if (!o) return el;
-  if (o.cls) el.className = Array.isArray(o.cls) ? o.cls.join(" ") : o.cls;
-  if (o.text !== undefined) el.textContent = o.text;
-  if (o.title !== undefined) el.title = o.title;
-  if (o.type !== undefined) (el as HTMLInputElement).type = o.type;
-  if (o.href !== undefined) (el as HTMLAnchorElement).href = o.href;
-  if (o.value !== undefined) (el as HTMLInputElement).value = o.value;
-  if (o.placeholder !== undefined) (el as HTMLInputElement).placeholder = o.placeholder;
-  if (o.attr) {
-    for (const [k, v] of Object.entries(o.attr)) {
-      if (v !== null) el.setAttribute(k, String(v));
-    }
-  }
-  return el;
-}
-
-const win = globalThis.window as unknown as Record<string, unknown>;
-win.createEl = (tag: string, o?: ElOpts) => applyElOpts(globalThis.document.createElement(tag), o);
-win.createDiv = (o?: ElOpts) => applyElOpts(globalThis.document.createElement("div"), o);
-win.createSpan = (o?: ElOpts) => applyElOpts(globalThis.document.createElement("span"), o);
-
-// `document.win` is how Obsidian gets from a Document back to its Window — the
-// pop-out-safe route the lint rule asks plugins to take. Define it on the actual
-// prototype of the test document: happy-dom's document is an HTMLDocument whose
-// chain does NOT pass through globalThis.Document, so patching that misses.
+// Two things json_viewer needs that the shim does not carry, kept here so the
+// adopted copy stays identical to its source:
+//  - `document.win`: how Obsidian goes from a Document back to its Window. It is
+//    the pop-out-safe route `obsidianmd/prefer-create-el` asks for, and
+//    src/obsidian/dom.ts builds its element factory on it. Note the prototype:
+//    happy-dom's document is an HTMLDocument whose chain does NOT pass through
+//    globalThis.Document, so patching that one silently misses.
+//  - `setText`: used by GoToPathModal's suggestion rendering.
 Object.defineProperty(Object.getPrototypeOf(globalThis.document), "win", {
   configurable: true,
   get(this: Document) {
@@ -67,27 +36,13 @@ Object.defineProperty(Object.getPrototypeOf(globalThis.document), "win", {
   },
 });
 
-const elProto = Object.getPrototypeOf(
-  globalThis.document.createElement("div"),
-) as unknown as Record<string, unknown>;
-// On an element the helpers create AND append — that is the whole point of them.
-elProto.createEl = function createEl(this: HTMLElement, tag: string, o?: ElOpts) {
-  const child = applyElOpts(this.ownerDocument.createElement(tag), o);
-  this.appendChild(child);
-  return child;
-};
-elProto.createDiv = function createDiv(this: HTMLElement, o?: ElOpts) {
-  return (this as unknown as { createEl: (t: string, o?: ElOpts) => HTMLElement }).createEl(
-    "div",
-    o,
-  );
-};
-elProto.createSpan = function createSpan(this: HTMLElement, o?: ElOpts) {
-  return (this as unknown as { createEl: (t: string, o?: ElOpts) => HTMLElement }).createEl(
-    "span",
-    o,
-  );
-};
+const winProto = globalThis.window as unknown as Record<string, unknown>;
+for (const name of ["createEl", "createDiv", "createSpan"] as const) {
+  const g = globalThis as unknown as Record<string, unknown>;
+  if (typeof g[name] === "function") winProto[name] = g[name];
+}
+
+const elProto = globalThis.HTMLElement.prototype as unknown as Record<string, unknown>;
 if (typeof elProto.setText !== "function") {
   elProto.setText = function setText(this: HTMLElement, text: string) {
     this.textContent = text;
