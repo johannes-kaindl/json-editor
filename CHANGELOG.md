@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.11.1] — 2026-08-12
+
 ### Fixed
 - **The portal-review guard was blind in two independent ways, and both are closed.** `npm run lint:portal` exists to mirror what the community.obsidian.md reviewer sees, and it reported zero problems while the reviewer reported 66 warnings. First, eslint exits 0 on warnings, so a green exit code said nothing — the script now runs with `--max-warnings 0`. Second, the guard mirrors whichever version of `eslint-plugin-obsidianmd` happens to be installed, and ours sat on 0.3.0 while the reviewer had 0.4.1; it is now current. A stale mirror is worse than no mirror, because it manufactures confidence.
 
