@@ -1,5 +1,6 @@
-import { type App, PluginSettingTab, Setting } from "obsidian";
+import { type App, PluginSettingTab, type SettingDefinitionItem } from "obsidian";
 import type { Plugin } from "obsidian";
+import { type SettingControlHost, renderSettingDefinitions } from "../vendor/kit/settings_walker";
 
 export interface JsonEditorSettings {
   defaultMode: "tree" | "source";
@@ -33,7 +34,14 @@ interface PluginWithSettings extends Plugin {
   saveSettings(): Promise<void>;
 }
 
-export class JsonEditorSettingsTab extends PluginSettingTab {
+/**
+ * Settings are declared once, as data, and consumed twice: Obsidian >= 1.13 reads
+ * `getSettingDefinitions()` directly (which is what makes them appear in settings
+ * search), while older versions call `display()`, where the shared walker draws
+ * the same declaration with the classic Setting API. One source, two paths — the
+ * kit pattern lifted from nine independent copies across the plugin family.
+ */
+export class JsonEditorSettingsTab extends PluginSettingTab implements SettingControlHost {
   constructor(
     app: App,
     private settingsPlugin: PluginWithSettings,
@@ -41,91 +49,115 @@ export class JsonEditorSettingsTab extends PluginSettingTab {
     super(app, settingsPlugin);
   }
 
+  getSettingDefinitions(): SettingDefinitionItem[] {
+    return [
+      {
+        name: "Default mode",
+        desc: "Which view opens by default when a .json file is opened.",
+        control: {
+          type: "dropdown",
+          key: "defaultMode",
+          options: { tree: "Tree", source: "Source" },
+        },
+      },
+      {
+        name: "Indent",
+        desc: "Spaces or tab used when serializing JSON from tree edits.",
+        control: {
+          type: "dropdown",
+          key: "indent",
+          options: { "2": "Two spaces", "4": "Four spaces", tab: "Tab" },
+        },
+      },
+      {
+        name: "Tree marker style",
+        desc: "Visual style of the tree: modern (no markers) or classic (┐├┘).",
+        control: {
+          type: "dropdown",
+          key: "markerStyle",
+          options: { modern: "Modern (clean indent)", classic: "Classic (┐├┘)" },
+        },
+      },
+      {
+        name: "Auto-collapse depth",
+        desc: "Nodes strictly deeper than this depth start collapsed. 0 = collapse all but root.",
+        control: { type: "text", key: "autoCollapseDepth" },
+      },
+      {
+        name: "Validate against JSON schema",
+        desc: "Off by default. When enabled, the plugin automatically loads a sibling schema file next to the current .json file (e.g. data.json → data.schema.json) and highlights validation errors in real time. Enabling this auto-loads schema files from your vault — only turn it on if you trust those files.",
+        control: { type: "toggle", key: "validateAgainstSchema" },
+      },
+      {
+        name: "Companion schema suffix",
+        desc: "Suffix used to find the sibling schema file. Default '.schema.json' resolves data.json → data.schema.json.",
+        control: { type: "text", key: "companionSchemaSuffix" },
+      },
+    ] as SettingDefinitionItem[];
+  }
+
+  /** Fallback path for Obsidian < 1.13, drawing the same declaration. */
   display(): void {
     this.containerEl.replaceChildren();
+    renderSettingDefinitions(this.containerEl, this.getSettingDefinitions(), this, this.app);
+  }
+
+  getControlValue(key: string): unknown {
     const s = this.settingsPlugin.settings;
+    switch (key) {
+      case "defaultMode":
+        return s.defaultMode;
+      // The control speaks "tab"; the setting stores an actual tab character.
+      case "indent":
+        return s.indent === "\t" ? "tab" : String(s.indent);
+      case "markerStyle":
+        return s.markerStyle;
+      case "autoCollapseDepth":
+        return String(s.autoCollapseDepth);
+      case "validateAgainstSchema":
+        return s.validateAgainstSchema;
+      case "companionSchemaSuffix":
+        return s.companionSchemaSuffix;
+      default:
+        return undefined;
+    }
+  }
 
-    new Setting(this.containerEl)
-      .setName("Default mode")
-      .setDesc("Which view opens by default when a .json file is opened.")
-      .addDropdown((dd) => {
-        dd.addOption("tree", "Tree");
-        dd.addOption("source", "Source");
-        dd.setValue(s.defaultMode);
-        dd.onChange((v) => {
-          s.defaultMode = v as "tree" | "source";
-          void this.settingsPlugin.saveSettings();
-        });
-      });
-
-    new Setting(this.containerEl)
-      .setName("Indent")
-      .setDesc("Spaces or tab used when serializing JSON from tree edits.")
-      .addDropdown((dd) => {
-        dd.addOption("2", "Two spaces");
-        dd.addOption("4", "Four spaces");
-        dd.addOption("tab", "Tab");
-        dd.setValue(s.indent === "\t" ? "tab" : String(s.indent));
-        dd.onChange((v) => {
-          s.indent = v === "tab" ? "\t" : (Number.parseInt(v, 10) as 2 | 4);
-          void this.settingsPlugin.saveSettings();
-        });
-      });
-
-    new Setting(this.containerEl)
-      .setName("Tree marker style")
-      .setDesc("Visual style of the tree: modern (no markers) or classic (┐├┘).")
-      .addDropdown((dd) => {
-        dd.addOption("modern", "Modern (clean indent)");
-        dd.addOption("classic", "Classic (┐├┘)");
-        dd.setValue(s.markerStyle);
-        dd.onChange((v) => {
-          s.markerStyle = v as "modern" | "classic";
-          void this.settingsPlugin.saveSettings();
-        });
-      });
-
-    new Setting(this.containerEl)
-      .setName("Auto-collapse depth")
-      .setDesc("Nodes strictly deeper than this depth start collapsed. 0 = collapse all but root.")
-      .addText((text) => {
-        text.setValue(String(s.autoCollapseDepth));
-        text.onChange((v) => {
-          const n = Number.parseInt(v, 10);
-          if (Number.isFinite(n) && n >= 0) {
-            s.autoCollapseDepth = n;
-            void this.settingsPlugin.saveSettings();
-          }
-        });
-      });
-
-    new Setting(this.containerEl)
-      .setName("Validate against JSON schema")
-      .setDesc(
-        "Off by default. When enabled, the plugin automatically loads a sibling schema file next to the current .json file (e.g. data.json → data.schema.json) and highlights validation errors in real time. Enabling this auto-loads schema files from your vault — only turn it on if you trust those files.",
-      )
-      .addToggle((toggle) => {
-        toggle.setValue(s.validateAgainstSchema);
-        toggle.onChange((v) => {
-          s.validateAgainstSchema = v;
-          void this.settingsPlugin.saveSettings();
-        });
-      });
-
-    new Setting(this.containerEl)
-      .setName("Companion schema suffix")
-      .setDesc(
-        "Suffix used to find the sibling schema file. Default '.schema.json' resolves data.json → data.schema.json.",
-      )
-      .addText((text) => {
-        text.setValue(s.companionSchemaSuffix);
-        text.onChange((v) => {
-          const trimmed = v.trim();
-          if (isValidCompanionSuffix(trimmed)) {
-            s.companionSchemaSuffix = trimmed;
-            void this.settingsPlugin.saveSettings();
-          }
-        });
-      });
+  /**
+   * Invalid input is dropped rather than stored — a negative depth or a suffix
+   * containing a path separator would be applied to every file that opens
+   * afterwards, so the setting keeps its previous value instead.
+   */
+  setControlValue(key: string, value: unknown): void {
+    const s = this.settingsPlugin.settings;
+    switch (key) {
+      case "defaultMode":
+        s.defaultMode = value as "tree" | "source";
+        break;
+      case "indent":
+        s.indent = value === "tab" ? "\t" : (Number.parseInt(String(value), 10) as 2 | 4);
+        break;
+      case "markerStyle":
+        s.markerStyle = value as "modern" | "classic";
+        break;
+      case "autoCollapseDepth": {
+        const n = Number.parseInt(String(value), 10);
+        if (!Number.isFinite(n) || n < 0) return;
+        s.autoCollapseDepth = n;
+        break;
+      }
+      case "validateAgainstSchema":
+        s.validateAgainstSchema = Boolean(value);
+        break;
+      case "companionSchemaSuffix": {
+        const trimmed = String(value).trim();
+        if (!isValidCompanionSuffix(trimmed)) return;
+        s.companionSchemaSuffix = trimmed;
+        break;
+      }
+      default:
+        return;
+    }
+    void this.settingsPlugin.saveSettings();
   }
 }

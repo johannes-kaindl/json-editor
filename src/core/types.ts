@@ -21,6 +21,14 @@ export interface RenderOptions {
    * works correctly in pop-out windows. Tests pass the happy-dom `document`.
    */
   doc: Document;
+  /**
+   * Element factory. The core must not call `document.createElement` itself:
+   * Obsidian requires plugins to build DOM through its own `createEl` helpers
+   * (obsidianmd/prefer-create-el), and the core must stay Obsidian-free. The
+   * adapter therefore injects Obsidian's helper; tests inject the plain one.
+   * `doc` remains for `createElementNS`, which has no createEl equivalent.
+   */
+  makeEl: <K extends keyof HTMLElementTagNameMap>(tag: K) => HTMLElementTagNameMap[K];
   readonly?: boolean;
   markerStyle?: MarkerStyle;
   autoCollapseDepth?: number;

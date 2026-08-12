@@ -16,7 +16,7 @@ interface ContainerItem {
 }
 
 export function renderTree(value: JsonValue, opts: RenderOptions): HTMLElement {
-  const root = opts.doc.createElement("div");
+  const root = opts.makeEl("div");
   root.className = "json-tree-root";
   root.setAttribute("role", "tree");
   root.setAttribute("aria-label", "JSON content");
@@ -71,7 +71,7 @@ function makePrimitive(
   value: JsonValue,
   opts: RenderOptions,
 ): HTMLElement {
-  const span = opts.doc.createElement("span");
+  const span = opts.makeEl("span");
   span.className = cls;
   span.textContent = text;
   if (!opts.readonly && opts.onValueClick && value !== null) {
@@ -101,7 +101,7 @@ function renderContainer(
 ): void {
   const { open, close } = bracketsFor(kind);
 
-  const container = opts.doc.createElement("div");
+  const container = opts.makeEl("div");
   container.className = "json-container";
   if (items.length === 0) container.classList.add("is-empty");
   container.dataset.depth = String(depth);
@@ -110,22 +110,22 @@ function renderContainer(
   // toggle is a direct child of container so toggle.parentElement === container,
   // which also contains json-content as a direct child — this is what the toggle
   // test (and the keyboard-nav toggleContainer helper) expects.
-  const toggle = opts.doc.createElement("span");
+  const toggle = opts.makeEl("span");
   toggle.className = "json-collapse-toggle";
   toggle.appendChild(makeChevron(opts.doc));
   container.appendChild(toggle);
 
-  const openBracket = opts.doc.createElement("span");
+  const openBracket = opts.makeEl("span");
   openBracket.className = "json-bracket";
   openBracket.textContent = open;
   container.appendChild(openBracket);
 
-  const chip = opts.doc.createElement("span");
+  const chip = opts.makeEl("span");
   chip.className = "json-collapse-chip";
   chip.textContent = collapseChipLabel(items.length, kind);
   container.appendChild(chip);
 
-  const content = opts.doc.createElement("div");
+  const content = opts.makeEl("div");
   content.className = "json-content";
   content.setAttribute("role", "group");
   const shouldCollapse = opts.autoCollapseDepth !== undefined && depth > opts.autoCollapseDepth;
@@ -148,7 +148,7 @@ function renderContainer(
   });
 
   items.forEach((item, i) => {
-    const row = opts.doc.createElement("div");
+    const row = opts.makeEl("div");
     row.className = "json-row";
     row.setAttribute("role", "treeitem");
     const itemPath = [...path, item.segment];
@@ -157,20 +157,20 @@ function renderContainer(
       row.addEventListener("click", () => opts.onPathClick?.(itemPath), true);
     }
     if (opts.markerStyle === "classic") {
-      const marker = opts.doc.createElement("span");
+      const marker = opts.makeEl("span");
       marker.className = "json-marker";
       marker.textContent = markerFor(i, items.length);
       row.appendChild(marker);
     }
-    row.appendChild(keyOrIndexElement(opts.doc, item.segment, kind));
+    row.appendChild(keyOrIndexElement(opts.makeEl, item.segment, kind));
     row.appendChild(opts.doc.createTextNode(": "));
     renderValue(row, item.value, itemPath, depth + 1, opts);
-    if (i < items.length - 1) appendSeparatorComma(row, opts.doc);
+    if (i < items.length - 1) appendSeparatorComma(row, opts.makeEl);
     content.appendChild(row);
   });
 
   container.appendChild(content);
-  const closeBracket = opts.doc.createElement("span");
+  const closeBracket = opts.makeEl("span");
   closeBracket.className = "json-bracket";
   closeBracket.textContent = close;
   container.appendChild(closeBracket);
@@ -187,8 +187,8 @@ function renderContainer(
  * arbitrary distance to the right of the collapse chip. Inside the container the
  * comma follows the chip (collapsed) or the closing bracket (expanded).
  */
-function appendSeparatorComma(row: HTMLElement, doc: Document): void {
-  const comma = doc.createElement("span");
+function appendSeparatorComma(row: HTMLElement, makeEl: RenderOptions["makeEl"]): void {
+  const comma = makeEl("span");
   comma.className = "json-comma";
   comma.textContent = ",";
   // A truncated string appends a "show more" chip after the value, so the row's
@@ -206,7 +206,7 @@ function appendSeparatorComma(row: HTMLElement, doc: Document): void {
 
 /** The "show more" affordance for a shortened string. */
 function makeExpandChip(target: HTMLElement, full: string, opts: RenderOptions): HTMLElement {
-  const chip = opts.doc.createElement("span");
+  const chip = opts.makeEl("span");
   chip.className = "json-more-chip";
   chip.textContent = "Show more";
   chip.setAttribute("role", "button");
@@ -234,17 +234,17 @@ function bracketsFor(kind: ContainerKind): { open: string; close: string } {
 }
 
 function keyOrIndexElement(
-  doc: Document,
+  makeEl: RenderOptions["makeEl"],
   segment: string | number,
   kind: ContainerKind,
 ): HTMLElement {
   if (kind === "object") {
-    const keyEl = doc.createElement("span");
+    const keyEl = makeEl("span");
     keyEl.className = "json-key";
     keyEl.textContent = `"${segment}"`;
     return keyEl;
   }
-  const idx = doc.createElement("span");
+  const idx = makeEl("span");
   idx.className = "json-index";
   idx.textContent = String(segment);
   return idx;

@@ -3,6 +3,7 @@ import { jsoncParse } from "../core/jsonc";
 import { parse } from "../core/parse";
 import { renderTree } from "../core/render";
 import type { JsonEditorSettings } from "./SettingsTab";
+import { elementFactory, makeEl } from "./dom";
 
 export type CodeblockLang = "json" | "jsonc";
 
@@ -19,12 +20,12 @@ export function renderJsonCodeblock(
     return;
   }
   const doc = el.ownerDocument;
-  const card = doc.createElement("div");
+  const card = makeEl("div", doc);
   card.className = "json-codeblock";
 
-  const head = doc.createElement("div");
+  const head = makeEl("div", doc);
   head.className = "json-codeblock-head";
-  const label = doc.createElement("span");
+  const label = makeEl("span", doc);
   label.className = "json-codeblock-label";
   label.textContent = lang === "jsonc" ? "JSONC" : "JSON";
   head.appendChild(label);
@@ -35,6 +36,7 @@ export function renderJsonCodeblock(
   const autoCollapseDepth = lineCount > 20 ? -1 : settings.autoCollapseDepth;
   const tree = renderTree(parsed.value, {
     doc,
+    makeEl: elementFactory(doc),
     readonly: true,
     markerStyle: settings.markerStyle,
     autoCollapseDepth,
@@ -44,7 +46,7 @@ export function renderJsonCodeblock(
 }
 
 function makeCopyButton(doc: Document, source: string): HTMLButtonElement {
-  const btn = doc.createElement("button");
+  const btn = makeEl("button", doc);
   btn.className = "json-codeblock-copy";
   btn.type = "button";
   btn.textContent = "Copy";
@@ -71,18 +73,18 @@ function makeCopyButton(doc: Document, source: string): HTMLButtonElement {
 
 function renderFallback(el: HTMLElement, errorMessage: string, lang: CodeblockLang): void {
   const doc = el.ownerDocument;
-  const card = doc.createElement("div");
+  const card = makeEl("div", doc);
   card.className = "json-codeblock is-error";
 
-  const head = doc.createElement("div");
+  const head = makeEl("div", doc);
   head.className = "json-codeblock-head";
-  const label = doc.createElement("span");
+  const label = makeEl("span", doc);
   label.className = "json-codeblock-label";
   label.textContent = `${lang === "jsonc" ? "JSONC" : "JSON"} · error`;
   head.appendChild(label);
   card.appendChild(head);
 
-  const body = doc.createElement("div");
+  const body = makeEl("div", doc);
   body.className = "json-codeblock-error";
   body.textContent = `Invalid ${lang === "jsonc" ? "JSONC" : "JSON"}: ${errorMessage}`;
   card.appendChild(body);

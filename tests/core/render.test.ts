@@ -5,7 +5,11 @@ import type { JsonValue, RenderOptions } from "../../src/core/types";
 // renderTree now takes an injected Document (so core/render stays Obsidian-free
 // and pop-out-safe). Inject the happy-dom document so the call sites stay unchanged.
 const renderTree = (value: JsonValue, opts: Omit<RenderOptions, "doc"> = {}) =>
-  renderTreeRaw(value, { ...opts, doc: document });
+  renderTreeRaw(value, {
+    makeEl: (tag: string) => document.createElement(tag),
+    ...opts,
+    doc: document,
+  });
 
 describe("renderTree", () => {
   beforeEach(() => {

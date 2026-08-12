@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+- **The portal-review guard was blind in two independent ways, and both are closed.** `npm run lint:portal` exists to mirror what the community.obsidian.md reviewer sees, and it reported zero problems while the reviewer reported 66 warnings. First, eslint exits 0 on warnings, so a green exit code said nothing — the script now runs with `--max-warnings 0`. Second, the guard mirrors whichever version of `eslint-plugin-obsidianmd` happens to be installed, and ours sat on 0.3.0 while the reviewer had 0.4.1; it is now current. A stale mirror is worse than no mirror, because it manufactures confidence.
+
+### Changed
+- **All DOM creation now goes through Obsidian's own element helpers** (`obsidianmd/prefer-create-el`, 65 sites). The adapter layer builds through a small `makeEl` helper bound to the owning document, which keeps pop-out windows correct. `src/core/render.ts` cannot use them — it must stay free of Obsidian — so it receives an element factory through `RenderOptions.makeEl` instead: the core no longer calls `document.createElement` at all, and the two-layer boundary is intact. A test asserts both halves of that.
+- **Settings are now declared as data and consumed twice.** `JsonEditorSettingsTab` implements `getSettingDefinitions()`, which is what makes each setting findable in Obsidian 1.13's settings search; `display()` draws the same declaration through the shared kit walker for older versions. The walker is vendored from `obsidian-kit` (itself lifted from nine independent copies across the plugin family) rather than written again. No setting changed its meaning, and input validation — negative depths, path separators in the companion suffix — still rejects rather than stores.
+- `obsidian` type definitions raised to 1.13.1, which is where the declarative settings types live. `minAppVersion` stays at 1.5.7: nothing new is *called*, only implemented for hosts that ask.
+
 ## [1.11.0] — 2026-08-12
 
 ### Added

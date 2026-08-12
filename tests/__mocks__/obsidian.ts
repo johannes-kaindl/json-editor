@@ -178,6 +178,10 @@ export class Setting {
 export class TextComponent {
   inputEl: HTMLInputElement = document.createElement("input");
   changeHandlers: Array<(v: string) => void> = [];
+  setPlaceholder(text: string): this {
+    this.inputEl.placeholder = text;
+    return this;
+  }
   setValue(v: string): this {
     this.inputEl.value = v;
     return this;

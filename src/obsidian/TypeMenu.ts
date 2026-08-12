@@ -1,5 +1,5 @@
 import type { JsonType } from "../core/edit";
-import { activeDoc } from "./dom";
+import { makeEl } from "./dom";
 
 export interface TypeMenuOptions {
   currentType: JsonType;
@@ -22,12 +22,12 @@ let activeMenu: { el: HTMLElement; close: () => void } | null = null;
 export function openTypeMenu(anchor: HTMLElement, opts: TypeMenuOptions): void {
   closeActiveMenu();
 
-  const menu = activeDoc().createElement("div");
+  const menu = makeEl("div");
   menu.className = "json-type-menu";
   menu.setAttribute("role", "menu");
 
   for (const t of TYPES) {
-    const opt = activeDoc().createElement("button");
+    const opt = makeEl("button");
     opt.type = "button";
     opt.className = "json-type-option";
     opt.dataset.type = t;

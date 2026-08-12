@@ -1,4 +1,4 @@
-import { activeDoc } from "./dom";
+import { makeEl } from "./dom";
 /**
  * Warn banner shown when the open file contains number literals that JSON
  * cannot round-trip faithfully (blocker 1.4). Kept separate from the
@@ -9,7 +9,7 @@ export class LossBanner {
   private el: HTMLDivElement;
 
   constructor() {
-    this.el = activeDoc().createElement("div");
+    this.el = makeEl("div");
     this.el.className = "json-lossy-banner";
     this.el.hidden = true;
   }

@@ -10,6 +10,14 @@
 // portal flips the public Review badge to "Caution".
 //
 // Run: npm run lint:portal   (expected: 0 problems)
+//
+// TWO WAYS THIS GUARD WENT BLIND ONCE — both fixed, both worth remembering:
+//  1. eslint exits 0 on warnings. The script therefore carries `--max-warnings 0`;
+//     without it a green exit code says nothing about what the reviewer sees.
+//  2. The guard mirrors whatever version of eslint-plugin-obsidianmd is installed,
+//     not the one the portal runs. It sat on 0.3.0 while the reviewer had 0.4.1 and
+//     reported 66 warnings we could not see. Keep the dependency current; a stale
+//     mirror is worse than no mirror, because it manufactures false confidence.
 import obsidianmd from "eslint-plugin-obsidianmd";
 
 export default [

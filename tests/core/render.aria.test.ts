@@ -4,7 +4,11 @@ import type { JsonValue, RenderOptions } from "../../src/core/types";
 
 // renderTree now takes an injected Document; inject happy-dom's so calls stay unchanged.
 const renderTree = (value: JsonValue, opts: Omit<RenderOptions, "doc"> = {}) =>
-  renderTreeRaw(value, { ...opts, doc: document });
+  renderTreeRaw(value, {
+    makeEl: (tag: string) => document.createElement(tag),
+    ...opts,
+    doc: document,
+  });
 
 describe("renderTree ARIA roles", () => {
   it("tree root has role='tree' with aria-label", () => {

@@ -7,7 +7,7 @@ import { createAddAffordance } from "./AddAffordance";
 import { createCopyButton } from "./CopyButton";
 import { createRowActions } from "./RowActions";
 import { openTypeMenu } from "./TypeMenu";
-import { activeDoc } from "./dom";
+import { activeDoc, elementFactory, makeEl } from "./dom";
 
 export interface TreeViewOptions {
   readonly?: boolean;
@@ -289,6 +289,9 @@ export class TreeView {
     this.activeRow = null;
     const el = renderTree(this.current, {
       doc: this.container.ownerDocument,
+      // Obsidian requires its own element helpers (obsidianmd/prefer-create-el);
+      // core/render stays Obsidian-free and takes the factory from here.
+      makeEl: elementFactory(this.container.ownerDocument),
       readonly: this.opts.readonly,
       markerStyle: this.opts.markerStyle ?? "modern",
       autoCollapseDepth: this.opts.autoCollapseDepth,
@@ -393,7 +396,7 @@ export class TreeView {
         return;
       }
 
-      const handle = activeDoc().createElement("span");
+      const handle = makeEl("span");
       handle.className = "json-drag-handle";
       handle.setAttribute("aria-hidden", "true");
       handle.textContent = "⋮⋮";
@@ -595,7 +598,7 @@ export class TreeView {
     if (!keyEl) return;
     this.editing = true;
 
-    const input = activeDoc().createElement("input");
+    const input = makeEl("input");
     input.type = "text";
     input.className = "json-inline-edit json-key-rename";
     input.value = currentKey;
@@ -985,7 +988,7 @@ function replaceWithInput(
   initial: string,
   onDone: (rawValue: string, committed: boolean) => void,
 ): void {
-  const input = activeDoc().createElement("input");
+  const input = makeEl("input");
   input.type = type;
   input.value = initial;
   input.className = "json-inline-edit";
@@ -1020,7 +1023,7 @@ function replaceWithCheckbox(
   initial: boolean,
   onDone: (newValue: boolean, committed: boolean) => void,
 ): void {
-  const input = activeDoc().createElement("input");
+  const input = makeEl("input");
   input.type = "checkbox";
   input.checked = initial;
   input.className = "json-inline-edit";

@@ -1,4 +1,4 @@
-import { activeDoc } from "./dom";
+import { activeDoc, makeEl } from "./dom";
 export interface SearchBarOptions {
   onQueryChange: (query: string) => void;
   /** Enter / Shift+Enter — jump to the next / previous match. */
@@ -12,24 +12,24 @@ export class SearchBar {
   private countEl: HTMLSpanElement;
 
   constructor(private opts: SearchBarOptions) {
-    this.el = activeDoc().createElement("div");
+    this.el = makeEl("div");
     this.el.className = "json-search-bar";
 
     this.el.appendChild(this.makeIcon());
 
-    this.input = activeDoc().createElement("input");
+    this.input = makeEl("input");
     this.input.type = "text";
     this.input.className = "json-search-input";
     this.input.placeholder = "Search keys and values…";
     this.input.spellcheck = false;
     this.el.appendChild(this.input);
 
-    this.countEl = activeDoc().createElement("span");
+    this.countEl = makeEl("span");
     this.countEl.className = "json-search-count";
     this.countEl.hidden = true;
     this.el.appendChild(this.countEl);
 
-    this.clearBtn = activeDoc().createElement("button");
+    this.clearBtn = makeEl("button");
     this.clearBtn.className = "json-search-clear";
     this.clearBtn.type = "button";
     this.clearBtn.setAttribute("aria-label", "Clear search");

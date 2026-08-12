@@ -5,7 +5,12 @@ import type { JsonValue, RenderOptions } from "../../src/core/types";
 const long = "x".repeat(TRUNCATE_AT + 50);
 
 function render(value: JsonValue, extra: Partial<RenderOptions> = {}): HTMLElement {
-  return renderTree(value, { doc: document, markerStyle: "modern", ...extra } as RenderOptions);
+  return renderTree(value, {
+    doc: document,
+    makeEl: (tag: string) => document.createElement(tag),
+    markerStyle: "modern",
+    ...extra,
+  } as RenderOptions);
 }
 
 describe("long string truncation", () => {
