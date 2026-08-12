@@ -1,6 +1,13 @@
 import { pathToString } from "./path";
 import type { JsonPath, JsonValue, RenderOptions } from "./types";
 
+/**
+ * Strings longer than this are shown shortened with an expand chip. A tree row
+ * should stay one line: at 200 the value still wrapped across four lines in the
+ * real UI, which defeated the point. 120 is about one line at the default width.
+ */
+export const TRUNCATE_AT = 120;
+
 type ContainerKind = "object" | "array";
 
 interface ContainerItem {
@@ -37,7 +44,14 @@ function renderValue(
     return;
   }
   if (typeof value === "string") {
-    parent.appendChild(makePrimitive(`"${value}"`, "json-string", path, value, opts));
+    const truncated = value.length > TRUNCATE_AT;
+    // Only the DISPLAY text is shortened — `value` stays whole, which is what
+    // onValueClick (inline editor) and the copy button receive.
+    const shown = truncated ? `${value.slice(0, TRUNCATE_AT)}…` : value;
+    const el = makePrimitive(`"${shown}"`, "json-string", path, value, opts);
+    if (truncated) el.classList.add("json-truncated");
+    parent.appendChild(el);
+    if (truncated) parent.appendChild(makeExpandChip(el, value, opts));
     return;
   }
   if (Array.isArray(value)) {
@@ -177,9 +191,42 @@ function appendSeparatorComma(row: HTMLElement, doc: Document): void {
   const comma = doc.createElement("span");
   comma.className = "json-comma";
   comma.textContent = ",";
-  const value = row.lastElementChild;
-  if (value?.classList.contains("json-container")) value.appendChild(comma);
-  else row.appendChild(comma);
+  // A truncated string appends a "show more" chip after the value, so the row's
+  // last element is not necessarily the value. Skip the chip — it is chrome, and
+  // docking the comma behind it would strand it exactly as before 1.10.2.
+  let value = row.lastElementChild;
+  if (value?.classList.contains("json-more-chip")) value = value.previousElementSibling;
+  if (!value) {
+    row.appendChild(comma);
+    return;
+  }
+  if (value.classList.contains("json-container")) value.appendChild(comma);
+  else value.after(comma);
+}
+
+/** The "show more" affordance for a shortened string. */
+function makeExpandChip(target: HTMLElement, full: string, opts: RenderOptions): HTMLElement {
+  const chip = opts.doc.createElement("span");
+  chip.className = "json-more-chip";
+  chip.textContent = "Show more";
+  chip.setAttribute("role", "button");
+  chip.setAttribute("tabindex", "0");
+  chip.setAttribute("aria-label", "Show the full value");
+  const reveal = (e: Event): void => {
+    // Without this the click bubbles into the value span and opens the editor.
+    e.stopPropagation();
+    target.textContent = `"${full}"`;
+    target.classList.remove("json-truncated");
+    chip.remove();
+  };
+  chip.addEventListener("click", reveal);
+  chip.addEventListener("keydown", (e: KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      reveal(e);
+    }
+  });
+  return chip;
 }
 
 function bracketsFor(kind: ContainerKind): { open: string; close: string } {

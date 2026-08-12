@@ -739,7 +739,8 @@
 .json-loss-banner[hidden],
 .json-search-bar[hidden],
 .json-search-count[hidden],
-.json-search-clear[hidden] {
+.json-search-clear[hidden],
+.json-collapse-toggle-btn[hidden] {
   display: none;
 }
 
@@ -885,4 +886,65 @@ body.is-mobile .json-inline-edit[type="checkbox"] {
 }
 body.is-mobile .json-large-file-load {
   min-height: 44px;
+}
+
+/* Collapse-all toggle sits with the other toolbar icon buttons. */
+.json-collapse-toggle-btn {
+  flex: 0 0 auto;
+}
+
+/* The one match the user is standing on, distinct from the other hits. */
+.json-row.json-match-active {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -2px;
+  border-radius: var(--radius-s);
+}
+
+/* Shortened long values: the chip must read as a button, not as more data.
+   It carries a border and background for that reason, and never wraps — as a
+   bare inline span it broke across three lines beside the value. */
+.json-more-chip {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  margin-left: var(--size-4-2);
+  padding: 0 var(--size-4-2);
+  white-space: nowrap;
+  color: var(--text-muted);
+  background-color: var(--background-modifier-hover);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  font-size: var(--font-smaller);
+  line-height: 1.6;
+  cursor: pointer;
+  user-select: none;
+}
+
+.json-more-chip:hover {
+  color: var(--text-normal);
+  background-color: var(--background-modifier-active-hover);
+  border-color: var(--background-modifier-border-hover);
+}
+
+.json-more-chip:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
+}
+
+/* Source mode: CodeMirror ships a light-grey gutter of its own, which reads as a
+   harsh white stripe in a dark theme and ignores the vault's colours entirely.
+   Bind it to Obsidian's own variables so it follows whatever theme is active. */
+.json-editor-body .cm-gutters {
+  background-color: transparent;
+  border-right: 1px solid var(--background-modifier-border);
+  color: var(--text-faint);
+}
+
+.json-editor-body .cm-activeLineGutter {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-muted);
+}
+
+.json-editor-body .cm-editor,
+.json-editor-body .cm-scroller {
+  background-color: transparent;
 }

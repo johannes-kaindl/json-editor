@@ -19,6 +19,9 @@ const TOGGLED_WITH_DISPLAY = [
   "json-search-count",
   "json-search-clear",
   "json-tooltip",
+  // Obsidian's own `clickable-icon` class sets display:flex, so this button
+  // needs the override just as much as the ones above.
+  "json-collapse-toggle-btn",
 ];
 
 describe("hidden-toggled elements have a [hidden] override", () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { pathToString } from "../../src/core/path";
+import { parsePathStr, pathToString } from "../../src/core/path";
+import type { JsonPath } from "../../src/core/types";
 
 describe("pathToString", () => {
   it("returns 'root' for empty path", () => {
@@ -43,5 +44,18 @@ describe("pathToString", () => {
     expect(pathToString(["api", "v2", "users", 5, "addresses", 0, "street name"])).toBe(
       'api.v2.users[5].addresses[0]["street name"]',
     );
+  });
+});
+
+describe("parsePathStr", () => {
+  it("is the inverse of pathToString", () => {
+    const cases: JsonPath[] = [[], ["a"], ["a", "b"], ["xs", 0], ["odd key", 2], ['q"x']];
+    for (const path of cases) {
+      expect(parsePathStr(pathToString(path))).toEqual(path);
+    }
+  });
+
+  it("maps the root sentinel back to the empty path", () => {
+    expect(parsePathStr("root")).toEqual([]);
   });
 });

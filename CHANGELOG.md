@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- **Collapse all / Expand all.** One toolbar button toggles between the two (the idiom of Obsidian's own file explorer), plus the commands *Collapse all*, *Expand all* and *Collapse to default depth* — the last one restores the state a freshly-opened file would have, per the `autoCollapseDepth` setting. No default hotkeys; bind your own if you want them.
+- **The collapse state now survives closing a file.** It is remembered per file path for the 50 most recently opened files, written debounced, and beats the depth default on reopen.
+- **Jump between search matches.** <kbd>Enter</kbd> goes to the next hit, <kbd>Shift</kbd>+<kbd>Enter</kbd> to the previous, wrapping around; the active hit is outlined and scrolled into view, and the counter shows the position (`3/17`) instead of just the total.
+- **Go to path.** A new command opens a quick-switcher style picker over every path in the file; choosing one scrolls to that row and updates the breadcrumb. Deliberately a picker rather than an editable breadcrumb — you cannot type a path you do not know exists. Very large files are capped at 5000 paths, and the picker says so instead of pretending the list is complete.
+- **Very long string values are shortened** at 120 characters with a *Show more* chip. The truncation affects the display only: editing and copying still operate on the full value, which two regression tests hold shut.
+
+### Fixed
+- **Source mode no longer shows a bright grey gutter.** CodeMirror ships its own light gutter styling, which ignored the vault theme and read as a harsh white stripe in dark themes. The gutter now takes its colours from Obsidian's variables, so it follows whatever theme is active.
+- **Scrolling to a path inside a collapsed branch now opens the way there.** `scrollToPath` only called `scrollIntoView`, which does nothing on a hidden element — and since 1.10.2 made a collapsed subtree `display: none` rather than `max-height: 0`, that turned into a complete no-op. The visible consequence was a **breadcrumb whose segments appeared to do nothing** whenever the target branch was closed. Every caller benefits: breadcrumb, "Go to path", and search-match navigation.
+- **Clearing the search gives the collapse state back.** Searching opens every container holding a match, and that used to be permanent — the tree stayed expanded after the search was cleared. The state from before the search is now snapshotted once per search run and restored when the query is emptied.
+
+### Changed
+- `parsePathStr` moved from `src/obsidian/TreeView.ts` (module-private) to `src/core/path.ts`, next to its counterpart `pathToString`. It is pure, it belongs there, and it gained the inverse-property test it never had while it was a private helper. No behaviour change.
+
 ## [1.10.3] — 2026-08-11
 
 ### Changed

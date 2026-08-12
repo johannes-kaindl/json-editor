@@ -1,4 +1,5 @@
 import {
+  type App,
   Notice,
   Platform,
   Scope,
@@ -33,13 +34,15 @@ import {
   jsoncRenameKey,
 } from "../core/jsonc";
 import { parse } from "../core/parse";
-import { pathToString } from "../core/path";
+import { parsePathStr, pathToString } from "../core/path";
+import { collectPaths } from "../core/paths";
 import { exceedsRenderBudget } from "../core/render-budget";
 import { hasNumberRoundtripLoss } from "../core/roundtrip";
 import { type CompiledSchema, type PathError, compileSchema } from "../core/schema";
 import { serialize } from "../core/serialize";
 import type { JsonPath, JsonValue } from "../core/types";
 import { Breadcrumb } from "./Breadcrumb";
+import { GoToPathModal } from "./GoToPathModal";
 import { LargeFileBanner } from "./LargeFileBanner";
 import { LossBanner } from "./LossBanner";
 import { openRowMenu } from "./RowMenu";
@@ -52,6 +55,16 @@ import { TreeView } from "./TreeView";
 import { closeActiveMenu } from "./TypeMenu";
 import { copyJsonPath, copyJsonValue } from "./clipboard";
 import { activeDoc } from "./dom";
+
+/**
+ * Storage port for the per-file collapse state. Storage-agnostic on purpose —
+ * the plugin wires it to data.json, tests wire it to a Map.
+ * Form uebernommen aus obsidian-kit/src/obsidian/collapsible.ts, 2026-08-11
+ */
+export interface CollapseStore {
+  get(filePath: string): string[] | undefined;
+  set(filePath: string, collapsedPaths: string[]): void;
+}
 
 export const JSON_VIEW_TYPE = "json-editor-view";
 
@@ -66,6 +79,8 @@ export class JsonFileView extends TextFileView {
 
   private toolbarEl!: HTMLDivElement;
   private toggleEl!: HTMLDivElement;
+  private collapseBtn: HTMLButtonElement | null = null;
+  private collapseSaveTimer: number | null = null;
   private undoBtn: HTMLButtonElement | null = null;
   private redoBtn: HTMLButtonElement | null = null;
   private treePillEl!: HTMLButtonElement;
@@ -93,6 +108,7 @@ export class JsonFileView extends TextFileView {
   constructor(
     leaf: WorkspaceLeaf,
     private settings: JsonEditorSettings,
+    private collapseStore?: CollapseStore,
   ) {
     super(leaf);
     this.mode = settings.defaultMode;
@@ -262,6 +278,8 @@ export class JsonFileView extends TextFileView {
    * the schema/query/mode reset (blocker 2.8) in one place.
    */
   private resetPerFileState(): void {
+    // Still on the OLD file here — write its pending state before switching.
+    this.flushCollapseSave();
     this.fileGeneration++;
     this.history.clear();
     this.currentSchema = null;
@@ -298,6 +316,10 @@ export class JsonFileView extends TextFileView {
 
     this.searchBar = new SearchBar({
       onQueryChange: (q) => this.onQueryChange(q),
+      onNavigate: (delta) => {
+        const pos = this.treeView?.focusMatch(delta);
+        if (pos) this.searchBar.setMatchInfo({ matchCount: pos.total, activeIndex: pos.index });
+      },
     });
 
     this.toolbarEl = activeDoc().createElement("div");
@@ -305,6 +327,14 @@ export class JsonFileView extends TextFileView {
     this.toolbarEl.appendChild(this.breadcrumb.getElement());
     this.toolbarEl.appendChild(this.searchBar.getElement());
     this.toolbarEl.appendChild(this.toggleEl);
+    // One button, both directions — the idiom of Obsidian's own file explorer.
+    this.collapseBtn = this.makeToolbarIconButton(
+      "json-collapse-toggle-btn",
+      "chevrons-down-up",
+      "Collapse all",
+      () => this.toggleCollapseAll(),
+    );
+    this.toolbarEl.appendChild(this.collapseBtn);
     // Mobile has no hardware Mod+Z (audit 4.5): expose undo/redo in the toolbar.
     if (Platform.isMobile) {
       this.undoBtn = this.makeToolbarIconButton("json-undo-btn", "rotate-ccw", "Undo", () =>
@@ -465,6 +495,7 @@ export class JsonFileView extends TextFileView {
       this.treeView = new TreeView(this.bodyEl, {
         readonly: this.lossyRoundtrip,
         touchMode: Platform.isMobile,
+        onCollapseChange: () => this.scheduleCollapseSave(),
         markerStyle: this.settings.markerStyle,
         autoCollapseDepth: this.settings.autoCollapseDepth,
         onValueEdit: (path, newVal) => this.handleValueEdit(path, newVal),
@@ -485,6 +516,8 @@ export class JsonFileView extends TextFileView {
         onError: (err) => new Notice(err.message),
       });
       this.treeView.setValue(this.currentValue);
+      this.restoreCollapseState();
+      this.refreshCollapseButton();
     } else {
       this.sourceView = new SourceView(this.bodyEl, {
         onChange: (text) => this.handleSourceChange(text),
@@ -493,6 +526,8 @@ export class JsonFileView extends TextFileView {
     }
 
     this.searchBar.getElement().hidden = this.mode !== "tree";
+    // Same rule for the collapse toggle: source mode has no tree to collapse.
+    if (this.collapseBtn) this.collapseBtn.hidden = this.mode !== "tree";
     if (this.mode === "tree" && this.treeView && this.currentQuery !== "") {
       const result = this.treeView.applyFilter(this.currentQuery);
       this.searchBar.setMatchInfo({ matchCount: result.matchCount });
@@ -508,6 +543,81 @@ export class JsonFileView extends TextFileView {
       const result = this.treeView.applyFilter(query);
       this.searchBar.setMatchInfo(query.trim() === "" ? null : { matchCount: result.matchCount });
     }
+  }
+
+  collapseAll(): void {
+    this.treeView?.collapseAll();
+    this.refreshCollapseButton();
+    this.scheduleCollapseSave();
+  }
+
+  expandAll(): void {
+    this.treeView?.expandAll();
+    this.refreshCollapseButton();
+    this.scheduleCollapseSave();
+  }
+
+  collapseToDefaultDepth(): void {
+    this.treeView?.collapseToDefaultDepth();
+    this.refreshCollapseButton();
+    this.scheduleCollapseSave();
+  }
+
+  /** One button, both directions — the idiom of Obsidian's own file explorer. */
+  toggleCollapseAll(): void {
+    if (this.treeView?.hasExpandedContainers()) this.collapseAll();
+    else this.expandAll();
+  }
+
+  /** Apply the state remembered for this file, if any. Never records — this IS
+   *  the restore, and recording it back would be a no-op write per file open. */
+  private restoreCollapseState(): void {
+    const path = this.file?.path;
+    if (!path || !this.collapseStore || !this.treeView) return;
+    const stored = this.collapseStore.get(path);
+    if (stored) this.treeView.applyCollapsedPaths(stored);
+  }
+
+  private scheduleCollapseSave(): void {
+    if (!this.collapseStore || !this.file) return;
+    if (this.collapseSaveTimer !== null) window.clearTimeout(this.collapseSaveTimer);
+    this.collapseSaveTimer = window.setTimeout(() => {
+      this.collapseSaveTimer = null;
+      this.flushCollapseSave();
+    }, 1000);
+  }
+
+  /** Write now, cancelling any pending debounce. Called on unload and before a
+   *  file switch — otherwise the last change of a session is lost. */
+  private flushCollapseSave(): void {
+    if (this.collapseSaveTimer !== null) {
+      window.clearTimeout(this.collapseSaveTimer);
+      this.collapseSaveTimer = null;
+    }
+    const path = this.file?.path;
+    if (!path || !this.collapseStore || !this.treeView) return;
+    this.collapseStore.set(path, this.treeView.collapsedPaths());
+  }
+
+  private refreshCollapseButton(): void {
+    if (!this.collapseBtn) return;
+    const expanded = this.treeView?.hasExpandedContainers() ?? false;
+    const label = expanded ? "Collapse all" : "Expand all";
+    this.collapseBtn.setAttribute("aria-label", label);
+    this.collapseBtn.title = label;
+    setIcon(this.collapseBtn, expanded ? "chevrons-down-up" : "chevrons-up-down");
+  }
+
+  /** Open the path picker. The app comes from the plugin, which owns it. */
+  openGoToPath(app: App): void {
+    if (this.mode !== "tree" || this.currentValue === null) return;
+    const { paths, truncated } = collectPaths(this.currentValue);
+    if (paths.length === 0) return;
+    new GoToPathModal(app, paths, truncated, (pathStr) => {
+      const path = parsePathStr(pathStr);
+      this.treeView?.scrollToPath(path);
+      this.breadcrumb.setPath(path);
+    }).open();
   }
 
   focusSearch(): void {
@@ -730,6 +840,7 @@ export class JsonFileView extends TextFileView {
     this.requestSave();
     if (this.treeView) {
       this.treeView.setValue(newValue);
+      this.refreshCollapseButton();
       if (this.currentQuery !== "") {
         const result = this.treeView.applyFilter(this.currentQuery);
         this.searchBar.setMatchInfo({ matchCount: result.matchCount });
@@ -833,6 +944,7 @@ export class JsonFileView extends TextFileView {
   }
 
   onunload(): void {
+    this.flushCollapseSave();
     this.tooltip.destroy();
     this.searchBar.destroy();
     this.sourceView?.destroy();

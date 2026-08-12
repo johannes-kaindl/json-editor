@@ -1,4 +1,5 @@
 import { Notice, Plugin, type WorkspaceLeaf } from "obsidian";
+import { type CollapseStates, capStates, recordFileState } from "./core/collapse-state";
 import { renderJsonCodeblock } from "./obsidian/CodeblockProcessor";
 import { JSON_VIEW_TYPE, JsonFileView } from "./obsidian/JsonFileView";
 import {
@@ -10,13 +11,27 @@ import { mergeSettings } from "./vendor/kit/settings";
 
 export default class JsonEditorPlugin extends Plugin {
   settings: JsonEditorSettings = { ...DEFAULT_SETTINGS };
+  private collapseStates: CollapseStates = {};
 
   async onload() {
-    this.settings = mergeSettings(DEFAULT_SETTINGS, await this.loadData());
+    // One read, two consumers: mergeSettings only picks up known setting keys,
+    // so the collapse state has to be pulled out of the same payload by hand.
+    const stored = (await this.loadData()) as { collapseState?: CollapseStates } | null;
+    this.settings = mergeSettings(DEFAULT_SETTINGS, stored);
+    this.collapseStates = capStates(stored?.collapseState ?? {});
 
     this.registerView(
       JSON_VIEW_TYPE,
-      (leaf: WorkspaceLeaf) => new JsonFileView(leaf, this.settings),
+      (leaf: WorkspaceLeaf) =>
+        new JsonFileView(leaf, this.settings, {
+          get: (filePath) => this.collapseStates[filePath]?.collapsed,
+          set: (filePath, collapsedPaths) => {
+            this.collapseStates = capStates(
+              recordFileState(this.collapseStates, filePath, collapsedPaths, Date.now()),
+            );
+            void this.persist();
+          },
+        }),
     );
 
     this.registerMarkdownCodeBlockProcessor("json", (src, el, ctx) =>
@@ -77,6 +92,52 @@ export default class JsonEditorPlugin extends Plugin {
       },
     });
 
+    // No default hotkeys (audit 2.1) — these stay palette-only until the user
+    // binds them, so they never shadow a core Obsidian binding.
+    this.addCommand({
+      id: "collapse-all",
+      name: "Collapse all",
+      checkCallback: (checking: boolean) => {
+        const view = this.app.workspace.getActiveViewOfType(JsonFileView);
+        if (!view) return false;
+        if (!checking) view.collapseAll();
+        return true;
+      },
+    });
+
+    this.addCommand({
+      id: "expand-all",
+      name: "Expand all",
+      checkCallback: (checking: boolean) => {
+        const view = this.app.workspace.getActiveViewOfType(JsonFileView);
+        if (!view) return false;
+        if (!checking) view.expandAll();
+        return true;
+      },
+    });
+
+    this.addCommand({
+      id: "collapse-to-default-depth",
+      name: "Collapse to default depth",
+      checkCallback: (checking: boolean) => {
+        const view = this.app.workspace.getActiveViewOfType(JsonFileView);
+        if (!view) return false;
+        if (!checking) view.collapseToDefaultDepth();
+        return true;
+      },
+    });
+
+    this.addCommand({
+      id: "go-to-path",
+      name: "Go to path",
+      checkCallback: (checking: boolean) => {
+        const view = this.app.workspace.getActiveViewOfType(JsonFileView);
+        if (!view) return false;
+        if (!checking) view.openGoToPath(this.app);
+        return true;
+      },
+    });
+
     // Claim the .json file extension LAST and guard it: registerExtensions
     // throws hard if another plugin already handles .json. An uncaught throw
     // would abort onload and take down everything registered above, so we
@@ -99,7 +160,16 @@ export default class JsonEditorPlugin extends Plugin {
     }
   }
 
+  /**
+   * The ONE place that writes data.json. saveData() replaces the whole file, so
+   * settings and collapse state must always be written together — writing either
+   * one alone would silently drop the other.
+   */
+  private async persist(): Promise<void> {
+    await this.saveData({ ...this.settings, collapseState: this.collapseStates });
+  }
+
   async saveSettings(): Promise<void> {
-    await this.saveData(this.settings);
+    await this.persist();
   }
 }

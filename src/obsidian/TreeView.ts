@@ -1,5 +1,5 @@
 import { type JsonType, computeInsertionIndex, editValue, jsonTypeOf } from "../core/edit";
-import { pathToString } from "../core/path";
+import { parsePathStr, pathToString } from "../core/path";
 import { renderTree } from "../core/render";
 import { findMatches } from "../core/search";
 import type { JsonPath, JsonValue, MarkerStyle } from "../core/types";
@@ -17,6 +17,8 @@ export interface TreeViewOptions {
    *  maps this to the .json (serialize) or .jsonc (source-text) mutation path. */
   onValueEdit?: (path: JsonPath, newVal: JsonValue) => void;
   onPathClick?: (path: JsonPath) => void;
+  /** Fired when the user changed the collapsed state of a single container. */
+  onCollapseChange?: () => void;
   onValueHover?: (target: HTMLElement, path: JsonPath, value: JsonValue) => void;
   onBeforeRender?: () => void;
   /**
@@ -53,6 +55,10 @@ export class TreeView {
   private activeRow: HTMLElement | null = null;
   private dragSourcePath: JsonPath | null = null;
   private validationErrors: Map<string, string> = new Map();
+  private matchPaths: string[] = [];
+  private matchIndex = -1;
+  /** Collapse state as it was before the current search run started. */
+  private preFilterCollapsed: string[] | null = null;
 
   constructor(
     private container: HTMLElement,
@@ -95,9 +101,26 @@ export class TreeView {
     const selector = `.json-row[data-path="${cssEscapeAttr(pathToString(path))}"]`;
     const row = this.container.querySelector<HTMLElement>(selector);
     if (!row) return;
-    row.scrollIntoView({ block: "center", behavior: "smooth" });
+    // A collapsed subtree is `display: none` (since 1.10.2), and scrollIntoView
+    // does nothing on a hidden element — so scrolling to a row inside a closed
+    // branch used to silently do nothing at all. Open the way there first.
+    this.expandAncestorsOf(row);
+    // Top rather than centre: the flash fades after 600ms and hover highlighting
+    // takes over, so the row has to land where the eye looks first. Centring it
+    // meant hunting for it again the moment the flash was gone.
+    row.scrollIntoView({ block: "start", behavior: "smooth" });
     row.classList.add("json-row-flash");
     window.setTimeout(() => row.classList.remove("json-row-flash"), FLASH_MS);
+  }
+
+  /** Expand every container between the tree root and `row`, so the row is
+   *  actually visible. Untouched branches stay as they were. */
+  private expandAncestorsOf(row: HTMLElement): void {
+    let el: HTMLElement | null = row.parentElement;
+    while (el && !el.classList.contains("json-tree-root")) {
+      if (el.classList.contains("json-container")) this.toggleContainer(el, true);
+      el = el.parentElement;
+    }
   }
 
   applyFilter(query: string): { matchCount: number } {
@@ -105,11 +128,24 @@ export class TreeView {
     if (!treeRoot) return { matchCount: 0 };
 
     treeRoot.classList.remove("json-filter-active");
-    treeRoot.querySelectorAll(".json-match, .json-on-path").forEach((el) => {
-      el.classList.remove("json-match", "json-on-path");
+    treeRoot.querySelectorAll(".json-match, .json-on-path, .json-match-active").forEach((el) => {
+      el.classList.remove("json-match", "json-on-path", "json-match-active");
     });
 
-    if (query.trim() === "") return { matchCount: 0 };
+    if (query.trim() === "") {
+      // Give back what the search opened. Without this every search silently
+      // costs the user their collapse state — and since 1.11 the stored one too.
+      if (this.preFilterCollapsed !== null) {
+        this.applyCollapsedPaths(this.preFilterCollapsed);
+        this.preFilterCollapsed = null;
+      }
+      this.matchPaths = [];
+      this.matchIndex = -1;
+      return { matchCount: 0 };
+    }
+
+    // Snapshot once per search run, not per keystroke.
+    if (this.preFilterCollapsed === null) this.preFilterCollapsed = this.collapsedPaths();
 
     const result = findMatches(this.current, query, { matchKeys: true, matchValues: true });
 
@@ -128,7 +164,100 @@ export class TreeView {
     treeRoot.classList.add("json-filter-active");
     this.openContainersWithMatches(treeRoot);
 
+    // findMatches walks depth-first in document order and a Set keeps insertion
+    // order, so this is already the correct jump list — no sorting needed.
+    this.matchPaths = [...result.matches].filter((p) => p !== "root");
+    this.matchIndex = -1;
+
     return { matchCount: result.matches.size };
+  }
+
+  /**
+   * Move to the next (delta 1) or previous (delta -1) match, wrapping around.
+   * Returns the new position, or null when there is nothing to jump to.
+   */
+  focusMatch(delta: 1 | -1): { index: number; total: number } | null {
+    const total = this.matchPaths.length;
+    if (total === 0) return null;
+    // From the "nothing focused yet" state, forward means the first match and
+    // backward means the last — the plain modulo would land on total-2 instead.
+    this.matchIndex =
+      this.matchIndex === -1 && delta === -1
+        ? total - 1
+        : (this.matchIndex + delta + total) % total;
+    const pathStr = this.matchPaths[this.matchIndex];
+    const treeRoot = this.container.querySelector<HTMLElement>(".json-tree-root");
+    treeRoot?.querySelectorAll(".json-match-active").forEach((el) => {
+      el.classList.remove("json-match-active");
+    });
+    const row = treeRoot?.querySelector<HTMLElement>(
+      `.json-row[data-path="${cssEscapeAttr(pathStr)}"]`,
+    );
+    row?.classList.add("json-match-active");
+    this.scrollToPath(this.parsePathStrSafe(pathStr));
+    return { index: this.matchIndex, total };
+  }
+
+  /** Collapse every container in the tree. */
+  collapseAll(): void {
+    this.eachContainer((c) => this.toggleContainer(c, false));
+  }
+
+  /** Expand every container in the tree. */
+  expandAll(): void {
+    this.eachContainer((c) => this.toggleContainer(c, true));
+  }
+
+  /**
+   * Restore the state a freshly-rendered tree would have: containers deeper than
+   * the configured autoCollapseDepth collapsed, everything else expanded. With no
+   * depth configured this expands everything, matching core/render.ts.
+   */
+  collapseToDefaultDepth(): void {
+    const limit = this.opts.autoCollapseDepth;
+    this.eachContainer((c) => {
+      const depth = Number(c.dataset.depth ?? 0);
+      const shouldCollapse = limit !== undefined && depth > limit;
+      this.toggleContainer(c, !shouldCollapse);
+    });
+  }
+
+  /** True while at least one container is expanded — drives the toolbar toggle. */
+  hasExpandedContainers(): boolean {
+    let found = false;
+    this.eachContainer((c) => {
+      if (!c.classList.contains("is-collapsed")) found = true;
+    });
+    return found;
+  }
+
+  /** Path strings of all currently collapsed containers, in document order. */
+  collapsedPaths(): string[] {
+    const treeRoot = this.container.querySelector<HTMLElement>(".json-tree-root");
+    if (!treeRoot) return [];
+    const out: string[] = [];
+    treeRoot.querySelectorAll<HTMLElement>(".json-container.is-collapsed").forEach((c) => {
+      out.push(pathToString(this.detectContainerPath(c, treeRoot)));
+    });
+    return out;
+  }
+
+  /** Collapse exactly the listed containers and expand all others. */
+  applyCollapsedPaths(paths: string[]): void {
+    const wanted = new Set(paths);
+    const treeRoot = this.container.querySelector<HTMLElement>(".json-tree-root");
+    if (!treeRoot) return;
+    treeRoot.querySelectorAll<HTMLElement>(".json-container").forEach((c) => {
+      const key = pathToString(this.detectContainerPath(c, treeRoot));
+      this.toggleContainer(c, !wanted.has(key));
+    });
+  }
+
+  /** Visit every container element below the tree root. */
+  private eachContainer(fn: (c: HTMLElement) => void): void {
+    const treeRoot = this.container.querySelector<HTMLElement>(".json-tree-root");
+    if (!treeRoot) return;
+    treeRoot.querySelectorAll<HTMLElement>(".json-container").forEach(fn);
   }
 
   private openContainersWithMatches(treeRoot: HTMLElement): void {
@@ -165,6 +294,7 @@ export class TreeView {
       autoCollapseDepth: this.opts.autoCollapseDepth,
       onValueClick: (path, value) => this.openEditor(path, value),
       onPathClick: (path) => this.opts.onPathClick?.(path),
+      onCollapse: () => this.opts.onCollapseChange?.(),
       onValueHover: (target, path, value) => {
         if (this.editing) return;
         this.opts.onValueHover?.(target, path, value);
@@ -843,58 +973,6 @@ function locateValueByPathStr(root: JsonValue, pathStr: string): JsonValue {
     }
   }
   return current;
-}
-
-function parsePathStr(pathStr: string): JsonPath {
-  if (pathStr === "root") return [];
-  const segments: JsonPath = [];
-  let i = 0;
-  let buf = "";
-  const flushString = () => {
-    if (buf.length > 0) {
-      segments.push(buf);
-      buf = "";
-    }
-  };
-  while (i < pathStr.length) {
-    const c = pathStr[i];
-    if (c === ".") {
-      flushString();
-      i++;
-    } else if (c === "[") {
-      flushString();
-      // Quoted-key form: ["..."]. Scan for the closing `"]` and respect
-      // escaped quotes (\"). A bare `]` inside the key value would otherwise
-      // be misread as the structural close and corrupt the segment.
-      if (pathStr[i + 1] === '"') {
-        let j = i + 2;
-        let raw = "";
-        while (j < pathStr.length) {
-          if (pathStr[j] === "\\" && pathStr[j + 1] === '"') {
-            raw += '"';
-            j += 2;
-          } else if (pathStr[j] === '"' && pathStr[j + 1] === "]") {
-            break;
-          } else {
-            raw += pathStr[j];
-            j++;
-          }
-        }
-        segments.push(raw);
-        i = j + 2; // skip `"]`
-      } else {
-        const close = pathStr.indexOf("]", i);
-        const inner = pathStr.slice(i + 1, close);
-        segments.push(Number.parseInt(inner, 10));
-        i = close + 1;
-      }
-    } else {
-      buf += c;
-      i++;
-    }
-  }
-  flushString();
-  return segments;
 }
 
 function cssEscapeAttr(v: string): string {
