@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.11.0] — 2026-08-12
+
 ### Added
 - **Collapse all / Expand all.** One toolbar button toggles between the two (the idiom of Obsidian's own file explorer), plus the commands *Collapse all*, *Expand all* and *Collapse to default depth* — the last one restores the state a freshly-opened file would have, per the `autoCollapseDepth` setting. No default hotkeys; bind your own if you want them.
 - **The collapse state now survives closing a file.** It is remembered per file path for the 50 most recently opened files, written debounced, and beats the depth default on reopen.
