@@ -47,7 +47,7 @@ Alles bleibt in deinem Vault. Das Plugin nutzt Obsidians eigene CSS-Variablen un
 - **Tastaturnavigation** — `Tab` fokussiert den Baum; `↓`/`↑` laufen durch die sichtbaren Zeilen; `→`/`←` klappen auf/zu bzw. springen zu Kind/Elternknoten; `Pos1`/`Ende` springen zur ersten/letzten sichtbaren Zeile; `Enter`/`F2` öffnen die Direktbearbeitung. WAI-ARIA-Baumrollen (`role="tree"`, `role="treeitem"`, `aria-expanded`) für Screenreader.
 - **Alles zuklappen / aufklappen** — eine Schaltfläche in der Werkzeugleiste schaltet zwischen beidem um; die Befehle *Collapse all*, *Expand all* und *Collapse to default depth* stehen zusätzlich in der Befehlspalette. **Der Klappzustand wird je Datei gemerkt** (die 50 zuletzt geöffneten) und übersteht das Schließen.
 - **Zu einem Pfad springen** — eine Auswahlliste im Stil des Schnellumschalters über alle Pfade der Datei; die Auswahl scrollt zur passenden Zeile.
-- **Lange Werte werden gekürzt** dargestellt (ab 200 Zeichen, mit *… show more*). Bearbeiten und Kopieren nutzen immer den vollständigen Wert.
+- **Lange Werte werden gekürzt** dargestellt (ab 120 Zeichen, mit *Show more*). Bearbeiten und Kopieren nutzen immer den vollständigen Wert.
 - **Brotkrumen-Leiste** mit dem aktuellen Pfad; ein Klick auf ein Segment scrollt im Baum dorthin zurück.
 - **Kopier-Schaltflächen** beim Überfahren — Klick kopiert den Wert, `Alt`+Klick den JSON-Pfad.
 - **Theme-treue Gestaltung** über Obsidians CSS-Variablen — keine fest verdrahteten Farben.

@@ -929,3 +929,22 @@ body.is-mobile .json-large-file-load {
   outline: 2px solid var(--interactive-accent);
   outline-offset: 1px;
 }
+
+/* Source mode: CodeMirror ships a light-grey gutter of its own, which reads as a
+   harsh white stripe in a dark theme and ignores the vault's colours entirely.
+   Bind it to Obsidian's own variables so it follows whatever theme is active. */
+.json-editor-body .cm-gutters {
+  background-color: transparent;
+  border-right: 1px solid var(--background-modifier-border);
+  color: var(--text-faint);
+}
+
+.json-editor-body .cm-activeLineGutter {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-muted);
+}
+
+.json-editor-body .cm-editor,
+.json-editor-body .cm-scroller {
+  background-color: transparent;
+}

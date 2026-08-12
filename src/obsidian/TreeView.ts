@@ -105,7 +105,10 @@ export class TreeView {
     // does nothing on a hidden element — so scrolling to a row inside a closed
     // branch used to silently do nothing at all. Open the way there first.
     this.expandAncestorsOf(row);
-    row.scrollIntoView({ block: "center", behavior: "smooth" });
+    // Top rather than centre: the flash fades after 600ms and hover highlighting
+    // takes over, so the row has to land where the eye looks first. Centring it
+    // meant hunting for it again the moment the flash was gone.
+    row.scrollIntoView({ block: "start", behavior: "smooth" });
     row.classList.add("json-row-flash");
     window.setTimeout(() => row.classList.remove("json-row-flash"), FLASH_MS);
   }

@@ -47,7 +47,7 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 - **Keyboard navigation** — Tab focuses the tree; `↓` / `↑` walk visible rows; `→` / `←` expand-collapse or jump children / parent; `Home` / `End` jump to first / last visible row; `Enter` / `F2` open inline-edit on a primitive. WAI-ARIA tree roles (`role="tree"`, `role="treeitem"`, `aria-expanded`) for screen-reader support.
 - **Collapse all / Expand all** — one toolbar button toggles between them; the commands *Collapse all*, *Expand all* and *Collapse to default depth* are also in the palette. **The collapse state is remembered per file** (50 most recent) and survives closing and reopening.
 - **Go to path** — a quick-switcher style picker over every path in the file; choosing one scrolls to that row.
-- **Long values are shortened** at 200 characters with a *… show more* chip. Editing and copying always use the full value.
+- **Long values are shortened** at 120 characters with a *Show more* chip. Editing and copying always use the full value.
 - **Breadcrumb** showing the current path; clicking a segment scrolls back up the tree.
 - **Copy buttons** on hover — click copies the value, Alt-click copies the JSON path.
 - **Theme-aware styling** via Obsidian CSS variables — no hardcoded colors, no theme breakage.

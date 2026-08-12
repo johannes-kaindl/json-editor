@@ -52,6 +52,20 @@ describe("scrollToPath on a collapsed branch", () => {
     expect(containerFor(container, "database")?.classList.contains("is-collapsed")).toBe(false);
   });
 
+  it("aligns the target to the top, not the centre", () => {
+    const { container, view } = mount();
+    const seen: ScrollIntoViewOptions[] = [];
+    for (const row of container.querySelectorAll<HTMLElement>(".json-row")) {
+      row.scrollIntoView = (arg?: boolean | ScrollIntoViewOptions) => {
+        if (arg && typeof arg === "object") seen.push(arg);
+      };
+    }
+    view.scrollToPath(["database", "pool", "idleMs"]);
+    // A centred row is lost the moment the 600ms flash fades and hover
+    // highlighting takes over; the top edge is where the eye looks first.
+    expect(seen.at(-1)?.block).toBe("start");
+  });
+
   it("does not throw for a path that does not exist", () => {
     const { view } = mount();
     expect(() => view.scrollToPath(["nope", "nada"])).not.toThrow();

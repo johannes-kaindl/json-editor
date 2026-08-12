@@ -89,3 +89,21 @@ describe("collapse button visibility", () => {
     expect(btn?.hidden).toBe(false);
   });
 });
+
+describe("collapse button visibility via the mode pills", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("hides when the Source pill is clicked and returns with the Tree pill", () => {
+    const v = makeView();
+    v.setViewData(JSON.stringify({ a: { b: 1 } }), false);
+    const btn = v.contentEl.querySelector<HTMLButtonElement>(".json-collapse-toggle-btn");
+    const pills = v.contentEl.querySelectorAll<HTMLButtonElement>(".json-mode-pill");
+    expect(btn?.hidden).toBe(false);
+    pills[1].click(); // Source
+    expect(btn?.hidden).toBe(true);
+    pills[0].click(); // Tree
+    expect(btn?.hidden).toBe(false);
+  });
+});

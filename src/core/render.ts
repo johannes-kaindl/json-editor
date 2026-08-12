@@ -2,11 +2,11 @@ import { pathToString } from "./path";
 import type { JsonPath, JsonValue, RenderOptions } from "./types";
 
 /**
- * Strings longer than this are shown shortened with an expand chip. A tree row is
- * one line, so roughly a screen width is the useful bound — svelte-jsoneditor's
- * 1000 bytes assume a wrapping value area, which this layout does not have.
+ * Strings longer than this are shown shortened with an expand chip. A tree row
+ * should stay one line: at 200 the value still wrapped across four lines in the
+ * real UI, which defeated the point. 120 is about one line at the default width.
  */
-export const TRUNCATE_AT = 200;
+export const TRUNCATE_AT = 120;
 
 type ContainerKind = "object" | "array";
 
