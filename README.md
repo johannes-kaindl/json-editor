@@ -40,11 +40,14 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 - **Drag-and-drop reorder** — hover a row to reveal a `⋮⋮` handle; drag it up/down within its container (array items or object keys). Same-parent only; undoable.
 - **Type-switching** — every row has a `T` button to switch a value's JSON type (string / number / boolean / null / object / array). Destructive but undoable.
 - **Undo / redo** — `Cmd/Ctrl+Z` reverts the last edit; `Cmd/Ctrl+Shift+Z` redoes. The history is **unified across tree and source mode** (a single 100-deep text-based stack since 1.2.0); switching modes no longer wipes it. While you're typing in an inline editor, undo falls through to the native input. The undo/redo and focus-search commands ship with **no default hotkeys** — a view-local keymap handles `Cmd/Ctrl+Z` / `Shift+Z` / `F` while the JSON view is focused; bind your own in Settings if you prefer.
-- **Search & filter** — `Cmd/Ctrl+F` opens a live search that strict-filters the tree to matching keys and primitive values (case-insensitive substring); in source mode it opens CodeMirror's find panel instead. ESC clears or blurs.
+- **Search & filter** — `Cmd/Ctrl+F` opens a live search that strict-filters the tree to matching keys and primitive values (case-insensitive substring); in source mode it opens CodeMirror's find panel instead. `Enter` / `Shift+Enter` jump to the next / previous match (the counter shows `3/17`), ESC clears or blurs. Clearing the search restores the collapse state it had opened.
 - **JSON Schema validation (opt-in)** — enable in settings to auto-load a companion `data.schema.json` next to `data.json`; a banner shows the error count and offending rows get a red outline + hover message. Off by default — auto-loading schema files from a shared vault is a trust decision.
 - **Large-file guard** — files past a render budget (~1 MB or ~15k nodes) open in source mode with a *Load tree anyway* banner, so a multi-MB file never freezes the UI on open.
 - **Big-integer / lossy-number safety** — files containing integers JSON can't represent exactly (> 2^53) open the tree read-only with a banner; source mode stays editable, so an edit can't silently corrupt 64-bit IDs.
 - **Keyboard navigation** — Tab focuses the tree; `↓` / `↑` walk visible rows; `→` / `←` expand-collapse or jump children / parent; `Home` / `End` jump to first / last visible row; `Enter` / `F2` open inline-edit on a primitive. WAI-ARIA tree roles (`role="tree"`, `role="treeitem"`, `aria-expanded`) for screen-reader support.
+- **Collapse all / Expand all** — one toolbar button toggles between them; the commands *Collapse all*, *Expand all* and *Collapse to default depth* are also in the palette. **The collapse state is remembered per file** (50 most recent) and survives closing and reopening.
+- **Go to path** — a quick-switcher style picker over every path in the file; choosing one scrolls to that row.
+- **Long values are shortened** at 200 characters with a *… show more* chip. Editing and copying always use the full value.
 - **Breadcrumb** showing the current path; clicking a segment scrolls back up the tree.
 - **Copy buttons** on hover — click copies the value, Alt-click copies the JSON path.
 - **Theme-aware styling** via Obsidian CSS variables — no hardcoded colors, no theme breakage.
@@ -105,6 +108,8 @@ npm run build
   ```
   ````
 - **Reorder** a row with <kbd>Alt</kbd>+<kbd>↑</kbd> / <kbd>Alt</kbd>+<kbd>↓</kbd> (keyboard), or drag the `⋮⋮` handle (mouse).
+- **Collapse or expand the whole tree** with the toolbar button, or via the *Collapse all* / *Expand all* commands. *Collapse to default depth* returns to the state a freshly-opened file has. Where you left the tree is remembered per file.
+- **Jump to a path** with the *Go to path* command, then type any part of it.
 
 ### On mobile
 

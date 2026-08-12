@@ -17,8 +17,11 @@ Deliberately small surface: vanilla TypeScript, two runtime dependencies (`@cfwo
 
 ## Current state
 
-- **Latest release:** `1.10.2` (Tree rendering: the separator comma now docks to its value instead of floating. It used to be a bare text node in the flex row, placed after the value's whole box — and a collapsed container still reserved the full width of its hidden children, so the comma drifted an arbitrary distance right of the collapse chip, differently on every row.)
-- **2026-08-11:** `1.10.2` — separator-comma docking + collapsed subtree removed from layout; Codeberg→Forgejo naming sweep (release tooling, issue/PR templates, `release.yml` back in sync with `tools/release-template/`)
+- **Latest release:** `1.10.3` (the `manifest.json` description — the storefront line in the directory — now names `.jsonc` comment-preserving editing).
+- **2026-08-12:** `1.11.0` **built on `feat/tree-navigation-qol`, not yet tagged** — collapse-all/expand-all + persisted collapse state (`core/collapse-state.ts`, LRU 50, one shared `data.json` write path), Enter/Shift+Enter match navigation + collapse-state restore on clearing the search, `Go to path` (`core/paths.ts` + `GoToPathModal`), long strings truncated at 200 chars with a show-more chip; `parsePathStr` moved from `TreeView` to `core/path.ts`
+- **2026-08-11:** `1.10.3` — storefront description names `.jsonc`
+- **2026-08-11:** `1.10.2` (Tree rendering: the separator comma now docks to its value instead of floating. It used to be a bare text node in the flex row, placed after the value's whole box — and a collapsed container still reserved the full width of its hidden children, so the comma drifted an arbitrary distance right of the collapse chip, differently on every row.)
+  Details: separator-comma docking + collapsed subtree removed from layout; Codeberg→Forgejo naming sweep (release tooling, issue/PR templates, `release.yml` back in sync with `tools/release-template/`)
 - **2026-07-11:** `1.10.1` — `.jsonc` comments no longer false-trigger the lossy-number guard (found by a GUI smoke test, not by the unit suite)
 - **2026-07-11:** `1.10.0` — `.jsonc` support with comment-preserving tree editing (`jsonc-parser`; second runtime dep) + ```` ```jsonc ```` code blocks
 - **2026-07-11:** `1.9.1` — maintenance: vendored `mergeSettings`, unified one-command release toolkit, CI actions v4→v5
@@ -31,11 +34,11 @@ Deliberately small surface: vanilla TypeScript, two runtime dependencies (`@cfwo
 - **2026-06-13:** `1.6.0` — Phase-2 guideline+UX release (audit Sections 2+3+4.1); 10 commits, multi-agent review + fixes
 - **2026-06-13:** `1.5.0` — Phase-1 blocker release (audit Section 1 + 2.8); 8 commits, multi-agent review + 2 rounds of fixes
 - **2026-05-27:** `0.1.2` → `1.3.0` released in one autonomous run (entire 1.x feature roadmap)
-- **Unreleased on `main`:** nothing pending. `1.10.2` is live on both remotes (3 assets + attestation; `release.yml` and `test.yml` both green). **Portal-eslint stays clean (`npm run lint:portal` = 0 problems)** — `eslint.portal.config.mjs` mirrors the community.obsidian.md portal reviewer; run it before submission-affecting changes. **The plugin is listed in the Community Plugin Directory (since 2026-07-12) and passes the automated review**; ~520 installs as of 2026-08-11. Note that a new release does *not* re-run the review by itself — it has to be triggered as a rescan in the Developer Dashboard.
-- **Roadmap (next):** No external gate is left — the listing is live. Open items are all discretionary: README screenshots (`docs/CAPTURE.md` §5, parked, CORE-META-03), `prefer-active-doc` popout polish (~70 lint warnings), broader A11y (§5; breadcrumb keyboard-access already fixed in 1.8.0), full positional fidelity for free-standing comments on `.jsonc` reorder, and the 2.x feature ideas (§6: schema autocompletion, multi-select, `.jsonl`; §3.3–3.13). Older open: cross-container drag-drop, `$schema` URL fetching, real pointer-events touch-drag. **Worth considering:** the `manifest.json` `description` is the storefront line in the directory and still describes JSON only — it does not mention `.jsonc` comment-preserving editing, the biggest differentiator since 1.10.0.
-- **Tests:** 640 Vitest tests, all green; `npm test`
-- **Coverage:** 95.65% statements / 85.84% branches / 96.99% functions; `npm run test:coverage`
-- **Build:** `npm run build` clean. Bundle is ~106 KB.
+- **Unreleased:** `1.11.0` sits complete on `feat/tree-navigation-qol` (705 tests, gate green) and is **waiting on the GUI smoke test + tag** — nothing pending on `main` itself. `1.10.3` is live on both remotes (3 assets + attestation; `release.yml` and `test.yml` both green). **Portal-eslint stays clean (`npm run lint:portal` = 0 problems)** — `eslint.portal.config.mjs` mirrors the community.obsidian.md portal reviewer; run it before submission-affecting changes. **The plugin is listed in the Community Plugin Directory (since 2026-07-12) and passes the automated review**; ~520 installs as of 2026-08-11. Note that a new release does *not* re-run the review by itself — it has to be triggered as a rescan in the Developer Dashboard.
+- **Roadmap (next):** No external gate is left — the listing is live. Open items are all discretionary: README screenshots (`docs/CAPTURE.md` §5, parked, CORE-META-03), `prefer-active-doc` popout polish (~70 lint warnings), broader A11y (§5; breadcrumb keyboard-access already fixed in 1.8.0), full positional fidelity for free-standing comments on `.jsonc` reorder, and the 2.x feature ideas (§6: schema autocompletion, multi-select, `.jsonl`; §3.3–3.13). Older open: cross-container drag-drop, `$schema` URL fetching, real pointer-events touch-drag.
+- **Tests:** 705 Vitest tests, all green; `npm test`
+- **Coverage:** 95.69% statements / 87.12% branches / 96.29% functions; `npm run test:coverage`
+- **Build:** `npm run build` clean. Bundle is ~113 KB.
 - **Gate:** `npm run gate` = `typecheck` + `test` + `lint` (biome) + `build`. `test` additionally runs `check-no-abs-paths.mjs` + `check-no-nul-bytes.mjs`. The GitHub release workflow calls `npm run gate`.
 - **Predecessor:** `0.1.0` (v1.0 — core viewer/editor)
 - **Branch:** `main` is canonical; feature branches `feat/<name>` per release, merged via `--no-ff`
@@ -93,7 +96,13 @@ src/
 │   │                           internal renderContainer(kind=object|array)
 │   │                           + WAI-ARIA roles (tree / treeitem / group)
 │   ├── search.ts               findMatches(value, query, opts?) → match + onPath sets
-│   └── path.ts                 pathToString utility for serializing JsonPath
+│   ├── collapse-state.ts       pure per-file collapse state: resolveCollapsed +
+│   │                           recordFileState + capStates (LRU, limit 50). Port
+│   │                           shape mirrors obsidian-kit's CollapsibleStorage
+│   ├── paths.ts                collectPaths(value, limit) → every addressable path
+│   │                           as a string + a truncation flag (cap 5000)
+│   └── path.ts                 pathToString + parsePathStr (inverses; parsePathStr
+│                               moved here from TreeView in 1.11.0)
 ├── obsidian/                   adapter layer, imports core/ + obsidian API
 │   ├── JsonFileView.ts         extends TextFileView; owns mode toggle, toolbar
 │   │                           (breadcrumb + searchbar + toggle), unified
@@ -123,6 +132,7 @@ src/
 │   ├── SettingsTab.ts          default mode, indent, marker style,
 │   │                           auto-collapse depth, validateAgainstSchema,
 │   │                           companionSchemaSuffix
+│   ├── GoToPathModal.ts        1.11.0 — SuggestModal over every path in the file
 │   ├── Breadcrumb.ts           path display, segment-click → scrollToPath
 │   ├── CopyButton.ts           hover-only buttons; click=value, Alt+click=path
 │   └── Tooltip.ts              singleton hover-tooltip (500ms delay)

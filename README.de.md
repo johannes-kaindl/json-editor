@@ -40,11 +40,14 @@ Alles bleibt in deinem Vault. Das Plugin nutzt Obsidians eigene CSS-Variablen un
 - **Umsortieren per Drag-and-Drop** — beim Überfahren einer Zeile erscheint ein `⋮⋮`-Griff; damit innerhalb des Containers nach oben/unten ziehen. Nur innerhalb desselben Elternknotens; rückgängig machbar.
 - **Typwechsel** — jede Zeile hat eine `T`-Schaltfläche zum Wechseln des JSON-Typs (String / Zahl / Boolean / null / Objekt / Array). Destruktiv, aber rückgängig machbar.
 - **Rückgängig / Wiederholen** — `Cmd/Strg+Z` und `Cmd/Strg+Umschalt+Z`. Die Historie ist **über Baum- und Quelltext-Modus vereinheitlicht** (ein gemeinsamer, 100 Schritte tiefer Text-Stapel seit 1.2.0); ein Moduswechsel löscht sie nicht mehr. Während des Tippens in einem Eingabefeld greift das native Rückgängig. Die Befehle für Rückgängig/Wiederholen und Suche kommen **ohne voreingestellte Tastenkürzel** — eine ansichts-lokale Tastenbelegung behandelt `Cmd/Strg+Z` / `Umschalt+Z` / `F`, solange die JSON-Ansicht den Fokus hat.
-- **Suchen & Filtern** — `Cmd/Strg+F` öffnet eine Live-Suche, die den Baum strikt auf passende Schlüssel und Werte filtert (Teilzeichenkette, Groß-/Kleinschreibung egal); im Quelltext-Modus öffnet sich stattdessen CodeMirrors Suchleiste. `Esc` leert die Suche bzw. gibt den Fokus frei.
+- **Suchen & Filtern** — `Cmd/Strg+F` öffnet eine Live-Suche, die den Baum strikt auf passende Schlüssel und Werte filtert (Teilzeichenkette, Groß-/Kleinschreibung egal); im Quelltext-Modus öffnet sich stattdessen CodeMirrors Suchleiste. `Enter` / `Umschalt+Enter` springen zum nächsten bzw. vorherigen Treffer (der Zähler zeigt `3/17`), `Esc` leert die Suche bzw. gibt den Fokus frei. Beim Leeren der Suche kehrt der Klappzustand von vorher zurück.
 - **JSON-Schema-Validierung (zuschaltbar)** — in den Einstellungen aktivierbar; lädt automatisch eine begleitende `data.schema.json` neben `data.json`. Ein Banner zeigt die Fehleranzahl, betroffene Zeilen bekommen einen roten Rahmen samt Erklärung beim Überfahren. Standardmäßig aus — das automatische Laden von Schema-Dateien aus einem geteilten Vault ist eine Vertrauensentscheidung.
 - **Großdatei-Schutz** — Dateien jenseits eines Render-Budgets (~1 MB bzw. ~15.000 Knoten) öffnen im Quelltext-Modus mit einem Banner *Load tree anyway*, damit eine mehrere Megabyte große Datei die Oberfläche nie beim Öffnen einfriert.
 - **Schutz vor verlustbehafteten Zahlen** — Dateien mit Ganzzahlen, die JSON nicht exakt darstellen kann (> 2^53), öffnen den Baum schreibgeschützt mit einem Banner; der Quelltext-Modus bleibt bearbeitbar, sodass eine Änderung keine 64-Bit-IDs stillschweigend beschädigen kann.
 - **Tastaturnavigation** — `Tab` fokussiert den Baum; `↓`/`↑` laufen durch die sichtbaren Zeilen; `→`/`←` klappen auf/zu bzw. springen zu Kind/Elternknoten; `Pos1`/`Ende` springen zur ersten/letzten sichtbaren Zeile; `Enter`/`F2` öffnen die Direktbearbeitung. WAI-ARIA-Baumrollen (`role="tree"`, `role="treeitem"`, `aria-expanded`) für Screenreader.
+- **Alles zuklappen / aufklappen** — eine Schaltfläche in der Werkzeugleiste schaltet zwischen beidem um; die Befehle *Collapse all*, *Expand all* und *Collapse to default depth* stehen zusätzlich in der Befehlspalette. **Der Klappzustand wird je Datei gemerkt** (die 50 zuletzt geöffneten) und übersteht das Schließen.
+- **Zu einem Pfad springen** — eine Auswahlliste im Stil des Schnellumschalters über alle Pfade der Datei; die Auswahl scrollt zur passenden Zeile.
+- **Lange Werte werden gekürzt** dargestellt (ab 200 Zeichen, mit *… show more*). Bearbeiten und Kopieren nutzen immer den vollständigen Wert.
 - **Brotkrumen-Leiste** mit dem aktuellen Pfad; ein Klick auf ein Segment scrollt im Baum dorthin zurück.
 - **Kopier-Schaltflächen** beim Überfahren — Klick kopiert den Wert, `Alt`+Klick den JSON-Pfad.
 - **Theme-treue Gestaltung** über Obsidians CSS-Variablen — keine fest verdrahteten Farben.
@@ -104,6 +107,8 @@ npm run build
   ```
   ````
 - **Umsortieren** mit <kbd>Alt</kbd>+<kbd>↑</kbd> / <kbd>Alt</kbd>+<kbd>↓</kbd> (Tastatur) oder durch Ziehen am `⋮⋮`-Griff (Maus).
+- **Den ganzen Baum zu- oder aufklappen** über die Schaltfläche in der Werkzeugleiste oder die Befehle *Collapse all* / *Expand all*. *Collapse to default depth* stellt den Zustand einer frisch geöffneten Datei wieder her. Wo du den Baum verlassen hast, wird je Datei gemerkt.
+- **Zu einem Pfad springen** über den Befehl *Go to path* und dann einen beliebigen Teil davon tippen.
 
 ### Auf Mobilgeräten
 
