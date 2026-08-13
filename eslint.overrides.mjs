@@ -24,12 +24,5 @@ export default [
         tsconfigRootDir: import.meta.dirname,
       },
     },
-    rules: {
-      // Der vorgeschlagene `.instanceOf()` ist eine Obsidian-HTMLElement-Erweiterung,
-      // die es in der happy-dom-Testumgebung nicht gibt (wuerde werfen), und alle
-      // Baum-Knoten leben in einem einzigen Document/Realm, also ist Standard-
-      // `instanceof` hier sicher.
-      "obsidianmd/prefer-instanceof": "off",
-    },
   },
 ];

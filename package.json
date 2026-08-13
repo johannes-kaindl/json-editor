@@ -25,7 +25,6 @@
     "lint": "node scripts/check-no-inline-disables.mjs && eslint src --max-warnings 0",
     "lint:biome": "biome check .",
     "gate": "npm run typecheck && npm test && npm run lint && npm run lint:biome && npm run build",
-    "lint:portal": "eslint src --config eslint.portal.config.mjs --max-warnings 0",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
     "deploy": "npm run build && cp main.js manifest.json styles.css \"${OBSIDIAN_PLUGIN_DIR:?Set OBSIDIAN_PLUGIN_DIR to <vault>/.obsidian/plugins/json-editor}\"/",
     "version-bump": "node scripts/version-bump.mjs",
