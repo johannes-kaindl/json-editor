@@ -1,6 +1,6 @@
 import { pathToString } from "../core/path";
 import type { JsonPath, JsonValue } from "../core/types";
-import { copyToClipboard } from "./clipboard";
+import { copyToClipboard } from "../vendor/kit-obsidian/clipboard";
 import { makeEl } from "./dom";
 
 export function createCopyButton(value: JsonValue, path: JsonPath): HTMLButtonElement {
@@ -14,7 +14,7 @@ export function createCopyButton(value: JsonValue, path: JsonPath): HTMLButtonEl
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
     const text = e.altKey ? pathToString(path) : JSON.stringify(value, null, 2);
-    copyToClipboard(text, () => markCopied(btn));
+    void copyToClipboard(text, { onCopied: () => markCopied(btn) });
   });
 
   return btn;
