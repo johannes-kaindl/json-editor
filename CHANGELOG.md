@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+- **A failed copy is now reported in every way it can fail, not just the one this plugin happened to guard.** The local guard tested `navigator.clipboard` for falsiness and stopped there. Copying now also survives a `navigator` whose property *read* throws (non-secure contexts, older Android WebViews — the very case the guard was written for), a `clipboard` object without a callable `writeText`, and shims that hand back something other than a promise. Each of those used to escape the click handler as an uncaught error; they now end in the same `Copy failed` notice as a rejected write.
+- **The copy button on `json` / `jsonc` code blocks in notes had no guard at all.** It read `navigator.clipboard` bare and threw on platforms without the API. It now takes the same path as the tree-view copy buttons, so it fails with a notice instead of throwing.
+
+### Changed
+- **Clipboard writing comes from `obsidian-kit` 0.27.0 instead of a local copy.** This plugin wrote that guard first; the kit lifted it into `pure/clipboard.ts` + `obsidian/clipboard.ts`, and both modules are now vendored under `src/vendor/` and refreshed by `tools/sync-kit.sh`. The JSON-specific wrappers `copyJsonValue` / `copyJsonPath` stay here — they know `JsonValue` / `JsonPath` and have no counterpart in the kit — and their signatures are unchanged, so nothing that calls them had to move. No message text changed: the kit's default failure notice is the same `Copy failed` this plugin already showed.
+
 ## [1.11.1] — 2026-08-12
 
 ### Fixed
