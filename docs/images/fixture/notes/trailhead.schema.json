@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Trailhead config",
+  "type": "object",
+  "required": ["name", "version", "maintainers"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "settings": {
+      "type": "object",
+      "properties": {
+        "units": { "enum": ["metric", "imperial"] },
+        "maxElevationGain": { "type": "number", "maximum": 1500 }
+      }
+    },
+    "trails": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "distanceKm"],
+        "properties": {
+          "difficulty": { "enum": ["easy", "moderate", "hard"] }
+        }
+      }
+    }
+  }
+}

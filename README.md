@@ -13,7 +13,9 @@ Renders `` ```json `` and `` ```jsonc `` code blocks inside Markdown notes as co
 
 **Target platform:** Obsidian 1.5.7+ on desktop and mobile. No external services, no remote resources, no telemetry.
 
-> **Status: 1.11.1 released.** Tree mode is a full structural editor — add / delete / rename keys, add / delete items, reorder rows (drag-and-drop or `Alt`+`↑`/`↓`), and switch a value's JSON type. Undo/redo (`Cmd/Ctrl+Z` / `Cmd/Ctrl+Shift+Z`) is unified across tree and source modes. On mobile, a long-press action menu, touch-sized controls and toolbar undo/redo make tree editing fully usable by touch. Optional JSON Schema validation (opt-in) and a large-file guard round out the editor. See [`CHANGELOG.md`](CHANGELOG.md) for the full per-release log.
+> **Status: 1.11.2 released.** Tree mode is a full structural editor — add / delete / rename keys, add / delete items, reorder rows (drag-and-drop or `Alt`+`↑`/`↓`), and switch a value's JSON type. Undo/redo (`Cmd/Ctrl+Z` / `Cmd/Ctrl+Shift+Z`) is unified across tree and source modes. On mobile, a long-press action menu, touch-sized controls and toolbar undo/redo make tree editing fully usable by touch. Optional JSON Schema validation (opt-in) and a large-file guard round out the editor. See [`CHANGELOG.md`](CHANGELOG.md) for the full per-release log.
+
+<img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/hero.png" width="820" alt="A .json file open in Obsidian in tree mode: the file list on the left, and on the right a toolbar with breadcrumb, search field and Tree/Source pills above a colour-coded, collapsible tree of the file.">
 
 ---
 
@@ -54,6 +56,34 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 - **Embedded code blocks** — `` ```json `` and `` ```jsonc `` fences in any Markdown note render as a titled card with a collapsible tree (the `` ```jsonc `` variant tolerates comments). Blocks over 20 lines auto-collapse. Invalid JSON renders as a styled error card with line/column info, not a crash.
 - **Settings** — default mode, indent (2 / 4 / tab), tree marker style (modern / classic), auto-collapse depth, JSON Schema validation (opt-in), companion-schema suffix.
 - **No telemetry, no remote resources.** All assets ship with the plugin.
+
+---
+
+## See it in action
+
+<img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/tree-view.png" width="820" alt="Tree mode close up: one row is hovered and shows its per-row actions — copy, change type, rename and delete — with a drag handle on the left, while the breadcrumb above follows the active path.">
+
+<sub>Tree mode: hover a row for rename, delete, type-switch and drag handle; the breadcrumb follows the active path.</sub>
+
+<img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/source-view.png" width="820" alt="Source mode showing a .jsonc file in CodeMirror with line numbers and syntax highlighting; the line and block comments are intact and the Source pill is active.">
+
+<sub>Source mode on a <code>.jsonc</code> file — comments and formatting are preserved across tree edits.</sub>
+
+<img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/search.png" width="820" alt="Search in tree mode: the query distanceKm matches three rows, the match counter reads 3 matches, and the tree is filtered down to the matching entries and their parents.">
+
+<sub><code>Cmd/Ctrl+F</code> filters the tree to matches and counts them; <code>Enter</code> steps from match to match.</sub>
+
+<img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/schema-validation.png" width="820" alt="Optional schema validation: a banner reads 3 schema errors and two rows are outlined in red — a replica count above the allowed maximum and a timeout below the required minimum.">
+
+<sub>Opt-in schema validation marks the offending rows and counts them in a banner.</sub>
+
+<img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/codeblock-in-note.png" width="820" alt="A ```json fence inside a Markdown note, rendered in reading view as a read-only collapsible tree with a Copy button in its header.">
+
+<sub>A <code>```json</code> fence in a note, rendered read-only in reading view.</sub>
+
+<a href="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/settings.png"><img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/thumbs/settings.png" width="380" alt="The plugin settings tab with six options: default mode, indent, tree marker style, auto-collapse depth, schema validation and the companion schema suffix."></a>
+
+<sub>Click the preview for the full-size settings tab.</sub>
 
 ---
 

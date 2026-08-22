@@ -1,0 +1,15 @@
+{
+  // Comments survive tree edits — this file is edited as JSONC.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    // Strict mode is on deliberately: the tree editor rewrites values,
+    // never the surrounding formatting.
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "outDir": "./dist"
+  },
+  /* Anything outside src/ is built separately. */
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
