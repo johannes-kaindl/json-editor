@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.11.2] — 2026-08-22
+
 ### Fixed
 - **A failed copy is now reported in every way it can fail, not just the one this plugin happened to guard.** The local guard tested `navigator.clipboard` for falsiness and stopped there. Copying now also survives a `navigator` whose property *read* throws (non-secure contexts, older Android WebViews — the very case the guard was written for), a `clipboard` object without a callable `writeText`, and shims that hand back something other than a promise. Each of those used to escape the click handler as an uncaught error; they now end in the same `Copy failed` notice as a rejected write.
 - **The copy button on `json` / `jsonc` code blocks in notes had no guard at all.** It read `navigator.clipboard` bare and threw on platforms without the API. It now takes the same path as the tree-view copy buttons, so it fails with a notice instead of throwing.
