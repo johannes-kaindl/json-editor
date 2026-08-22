@@ -17,7 +17,9 @@ Deliberately small surface: vanilla TypeScript, two runtime dependencies (`@cfwo
 
 ## Current state
 
-- **Latest release:** `1.11.1` (Portal-review hygiene: all 66 reviewer warnings cleared — `prefer-create-el` across the adapter plus an injected element factory for the Obsidian-free core, and declarative settings via the vendored kit walker. **The guard itself was the real finding**: `lint:portal` reported 0 while the reviewer reported 66, because eslint exits 0 on warnings AND the mirrored plugin version was stale. Both closed.)
+- **Latest release:** `1.11.2` (Clipboard writing comes from `obsidian-kit` 0.27.0 instead of a local copy — the return path for a guard this plugin wrote first. Three user-visible fixes came with it, none of them covered by an existing test: a `navigator` whose property *read* throws, a `clipboard` without a callable `writeText`, and the code-block copy button, which had no guard at all.)
+- **Previous release:** `1.11.1` (Portal-review hygiene: all 66 reviewer warnings cleared — `prefer-create-el` across the adapter plus an injected element factory for the Obsidian-free core, and declarative settings via the vendored kit walker. **The guard itself was the real finding**: `lint:portal` reported 0 while the reviewer reported 66, because eslint exits 0 on warnings AND the mirrored plugin version was stale. Both closed.)
+- **2026-08-22:** `1.11.2` — clipboard writing vendored from `obsidian-kit` 0.27.0 (`src/vendor/kit/clipboard.ts` + `src/vendor/kit-obsidian/clipboard.ts`, refreshed by `tools/sync-kit.sh`); local `copyToClipboard` deleted, `copyJsonValue`/`copyJsonPath` stay (they know `JsonValue`/`JsonPath`, no kit counterpart, signatures unchanged); `CodeblockProcessor`'s copy button joined the guarded path
 - **2026-08-12:** `1.11.1` — `lint:portal` now runs with `--max-warnings 0` and on `eslint-plugin-obsidianmd@0.4.1`; 65 `prefer-create-el` sites moved to Obsidian's helpers (`src/obsidian/dom.ts` gains `elementFactory`/`makeEl`; `core/render.ts` takes `RenderOptions.makeEl` and no longer calls `createElement`); `SettingsTab` implements `getSettingDefinitions()` with `src/vendor/kit/settings_walker.ts`; `obsidian` types 1.13.1; `src/vendor` excluded from biome
 - **2026-08-12:** `1.11.0` (Tree navigation & comfort — collapse-all/expand-all with a per-file remembered collapse state, match-to-match search navigation, a "Go to path" picker, and shortened display of very long string values. Purely additive: no mutation path was touched.)
   Details: collapse-all/expand-all + persisted collapse state (`core/collapse-state.ts`, LRU 50, one shared `data.json` write path), Enter/Shift+Enter match navigation + collapse-state restore on clearing the search, `Go to path` (`core/paths.ts` + `GoToPathModal`), long strings truncated at 200 chars with a show-more chip; `parsePathStr` moved from `TreeView` to `core/path.ts`. **Two defects the GUI smoke test caught**, one of them pre-existing: `scrollToPath` never expanded its target's ancestors, and 1.10.2's switch to `display: none` had turned that into a complete no-op — the breadcrumb had been silently dead on collapsed branches since then. Also: the separator comma floated free again on truncated values (the show-more chip had become the row's last element)
@@ -36,7 +38,7 @@ Deliberately small surface: vanilla TypeScript, two runtime dependencies (`@cfwo
 - **2026-06-13:** `1.6.0` — Phase-2 guideline+UX release (audit Sections 2+3+4.1); 10 commits, multi-agent review + fixes
 - **2026-06-13:** `1.5.0` — Phase-1 blocker release (audit Section 1 + 2.8); 8 commits, multi-agent review + 2 rounds of fixes
 - **2026-05-27:** `0.1.2` → `1.3.0` released in one autonomous run (entire 1.x feature roadmap)
-- **Unreleased on `main`:** nothing pending. `1.11.1` is live on both remotes (3 assets + attestation; `release.yml` and `test.yml` both green). **Portal-eslint stays clean (`npm run lint` = 0 problems, enforced via `--max-warnings 0` — eslint exits 0 on warnings, so the exit code alone proves nothing; keep `eslint-plugin-obsidianmd` current, a stale mirror manufactures false confidence).** Since 2026-08-13 there is no separate `lint:portal` any more: the canonical `eslint.config.mjs` core **is** the store-scanner mirror (template-managed, byte-guarded by `tools/template_drift_check.py`), and any local deviation lives — visible and greppable — in `eslint.overrides.mjs`. A second, hand-maintained mirror was the drift risk it was meant to catch. **The plugin is listed in the Community Plugin Directory (since 2026-07-12) and passes the automated review**; ~520 installs as of 2026-08-11. Note that a new release does *not* re-run the review by itself — it has to be triggered as a rescan in the Developer Dashboard.
+- **Unreleased on `main`:** nothing pending. `1.11.2` is live on both remotes (3 assets; `release.yml` and `test.yml` both green, verified via the GitHub API). **The Developer-Dashboard rescan for 1.11.2 is still open — it never starts by itself.** **Portal-eslint stays clean (`npm run lint` = 0 problems, enforced via `--max-warnings 0` — eslint exits 0 on warnings, so the exit code alone proves nothing; keep `eslint-plugin-obsidianmd` current, a stale mirror manufactures false confidence).** Since 2026-08-13 there is no separate `lint:portal` any more: the canonical `eslint.config.mjs` core **is** the store-scanner mirror (template-managed, byte-guarded by `tools/template_drift_check.py`), and any local deviation lives — visible and greppable — in `eslint.overrides.mjs`. A second, hand-maintained mirror was the drift risk it was meant to catch. **The plugin is listed in the Community Plugin Directory (since 2026-07-12) and passes the automated review**; ~520 installs as of 2026-08-11. Note that a new release does *not* re-run the review by itself — it has to be triggered as a rescan in the Developer Dashboard.
 - **Roadmap (next):** No external gate is left — the listing is live. Open items are all discretionary: README screenshots (`docs/CAPTURE.md` §5, parked, CORE-META-03), `prefer-active-doc` popout polish (~70 lint warnings), broader A11y (§5; breadcrumb keyboard-access already fixed in 1.8.0), full positional fidelity for free-standing comments on `.jsonc` reorder, and the 2.x feature ideas (§6: schema autocompletion, multi-select, `.jsonl`; §3.3–3.13). Older open: cross-container drag-drop, `$schema` URL fetching, real pointer-events touch-drag.
 - **Tests:** 722 Vitest tests in 76 files, all green; `npm test`
 - **Coverage:** 95.69% statements / 87.12% branches / 96.29% functions; `npm run test:coverage`
@@ -271,6 +273,7 @@ In priority order:
 - **`parse.ts`:** `lastIndexOf` heuristic for V8 error position can misidentify when the unexpected-token char also appears earlier in valid content (e.g. inside a string). Acceptable for v1.0/v1.1; rewrite-parser deferred.
 - **`Tooltip.ts`:** `ttHeight = 60` hardcoded for above/below position-flip; long previews can overflow. v1.2 candidate to measure dynamically.
 - **`render.ts`:** `renderObject` / `renderArray` share ~65 LOC of identical scaffolding. Refactor scheduled for v1.3.
+- **CHANGELOG link block:** `tools/release/release.mjs` writes the new version *heading* but does **not** extend the reference block at the end of the file (checked: no `compare/` or `releases/tag/` occurrence in that script). So every release leaves one heading rendering as literal `[1.x.y]` instead of a link, and `[Unreleased]` comparing against a stale tag — that is how the refs for 1.8.0–1.11.1 went missing for two months. **Add the ref by hand right after `npm run release`.** json_viewer is the only repo in the workspace that keeps such a block (measured 2026-08-22 across all 19 plugin repos), so this will not be fixed centrally.
 - **`onPathClick`:** fires N times for nested clicks (once per ancestor row via capture-phase listener); callers must be idempotent. Current callers (`Breadcrumb.setPath`) are.
 
 ## Memory
@@ -293,6 +296,29 @@ In priority order:
 ## Session history
 
 Append new entries at the top. Each entry = one working session.
+
+### 2026-08-22 — `1.11.2`: Kit-Vendoring-Branch abgeschlossen + CHANGELOG-Link-Block saniert
+
+Short session, no new feature work. The `kit/0.27.0-vorarbeit` branch (three commits from
+2026-08-20, gate green) was still local and unmerged: `--no-ff` into `main`, pushed to
+Forgejo, mirrored to GitHub within seconds, branch deleted. Gate ran twice — once on the
+branch, once on the merged result — 76 files / 722 tests, eslint `--max-warnings 0` clean,
+biome clean, build ok.
+
+Before tagging, the CHANGELOG reference block was brought back from `[1.7.0]` to the
+current state: eleven headings (1.8.0–1.11.1) had no link definition, so they rendered as
+literal `[1.11.1]`, and `[Unreleased]` had been comparing against 1.7.0 since June. All
+eleven tags verified to exist on `origin` first. **The cause is structural and is now a
+documented gotcha**: `release.mjs` writes the version heading but never the reference —
+so 1.11.2's own ref was missing again minutes later, which is exactly how the two-month
+backlog accumulated. Measured across all 19 plugin repos: json_viewer is the *only* one
+that keeps such a block, so a central fix in the shared release tooling would be an n=1
+extraction and was deliberately not built.
+
+Released `1.11.2` (patch — the clipboard work changes user-visible behaviour three times):
+GitHub release carries all 3 assets, release notes come out of the `[Unreleased]` section
+verbatim, `Release` + `Test` workflows both green (checked via the API, not the exit code).
+Open and only Johannes can do it: the Developer-Dashboard rescan.
 
 ### 2026-08-11 — `1.10.2`: Trailing-comma docking + Codeberg→Forgejo naming sweep
 
