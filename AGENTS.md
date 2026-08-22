@@ -292,6 +292,7 @@ In priority order:
 ## Abweichungen von der Leitkonvention
 
 - `CORE-META-03` — Hero/Feature-Screenshots (`docs/images/`): **Phase-2b** (requires capturing in a running Obsidian GUI).
+- `CORE-TEST-02 (b)` — **no tracked GUI-smoke driver.** `scripts/` has the three check scripts and nothing else; there is no `smoke:gui`. The *practice* exists and has paid off twice (1.10.1's lossy-guard false positive, 1.11.0's month-dead breadcrumb click — both found by a click test, both invisible to a green suite of 600+), but it has always been done by hand, which is exactly what (b) forbids. Setting it up is seeded as a task in the cockpit; the driver must import the central bridge `../../tools/obsidian-cdp/cdp.js` rather than vendoring one.
 
 ## Session history
 
