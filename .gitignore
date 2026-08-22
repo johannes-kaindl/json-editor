@@ -35,3 +35,6 @@ coverage/
 
 # Claude Code local session/logs
 .claude/
+
+# GUI-Smoke-Bundle (esbuild-Ausgabe, maintainer-lokal)
+.gui-smoke.mjs

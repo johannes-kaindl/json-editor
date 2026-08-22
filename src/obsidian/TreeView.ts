@@ -611,6 +611,7 @@ export class TreeView {
       if (resolved) return;
       resolved = true;
       this.editing = false;
+      releaseEditorFocus(input);
       if (newKey !== undefined && newKey !== "" && newKey !== currentKey) {
         this.opts.onRenameKey?.(path, newKey);
       } else {
@@ -621,9 +622,11 @@ export class TreeView {
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
+        e.stopPropagation();
         finish(input.value.trim());
       } else if (e.key === "Escape") {
         e.preventDefault();
+        e.stopPropagation();
         finish(undefined);
       }
     });
@@ -982,6 +985,35 @@ function cssEscapeAttr(v: string): string {
   return v.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
+/**
+ * Hand the focus back into the tree before an inline editor's element leaves the
+ * document.
+ *
+ * Found by the GUI smoke test (2026-08-22), invisible to the unit suite: with the
+ * focus still on the detached `<input>`, the next rebuild of the view body
+ * (`bodyEl.replaceChildren()` in JsonFileView.refreshMode) fires a blur on a node
+ * that is no longer in the document, and Chromium aborts the whole call —
+ * "The node to be removed is no longer a child of this node. Perhaps it was moved
+ * in a 'blur' event handler?". The user-visible consequence was that the FIRST
+ * Ctrl/Cmd+Z after a tree edit did nothing: the command caught the exception and
+ * reported itself as not applicable, so only the second undo worked.
+ *
+ * The focus goes to the enclosing row rather than to `document.body`, because
+ * `TreeView.render()` restores keyboard focus only if it was inside the tree
+ * before the re-render — blurring to the body would silently drop the caret out
+ * of the tree on every commit.
+ */
+function releaseEditorFocus(editor: HTMLElement): void {
+  const row = editor.closest<HTMLElement>(".json-row");
+  if (row) {
+    if (!row.hasAttribute("tabindex")) row.setAttribute("tabindex", "-1");
+    row.focus();
+  }
+  // Even with a row present the editor can keep the focus (a row that is not
+  // focusable in this environment); blur explicitly rather than assume.
+  if (editor.ownerDocument.activeElement === editor) editor.blur();
+}
+
 function replaceWithInput(
   target: HTMLElement,
   type: "text" | "number",
@@ -999,19 +1031,27 @@ function replaceWithInput(
   const commit = () => {
     if (resolved) return;
     resolved = true;
+    releaseEditorFocus(input);
     onDone(input.value, true);
   };
   const cancel = () => {
     if (resolved) return;
     resolved = true;
+    releaseEditorFocus(input);
     onDone(input.value, false);
   };
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
+      // Stop, do not just prevent: the tree's own keydown handler treats Enter on
+      // the active row as "open the editor". Once the commit hands the focus back
+      // to that row (see releaseEditorFocus), the very keystroke that closed the
+      // editor would bubble up and immediately reopen it.
       e.preventDefault();
+      e.stopPropagation();
       commit();
     } else if (e.key === "Escape") {
       e.preventDefault();
+      e.stopPropagation();
       cancel();
     }
   });
@@ -1033,20 +1073,24 @@ function replaceWithCheckbox(
   const commit = () => {
     if (resolved) return;
     resolved = true;
+    releaseEditorFocus(input);
     onDone(input.checked, true);
   };
   const cancel = () => {
     if (resolved) return;
     resolved = true;
+    releaseEditorFocus(input);
     onDone(input.checked, false);
   };
   input.addEventListener("change", () => commit());
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
+      e.stopPropagation();
       commit();
     } else if (e.key === "Escape") {
       e.preventDefault();
+      e.stopPropagation();
       cancel();
     }
   });
