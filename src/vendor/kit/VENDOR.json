@@ -1,0 +1,7 @@
+{
+  "source": "obsidian-kit",
+  "version": "0.27.0",
+  "sha": "fbb42d4",
+  "vendored": "clipboard.ts, settings.ts",
+  "note": "Verbatim snapshot. Never hand-edit. Re-vendor via tools/sync-kit.sh. version/sha gelten AUSSCHLIESSLICH fuer die unter \"vendored\" gelisteten Dateien. settings_walker.ts liegt ebenfalls hier, ist NICHT gepinnt und wird von diesem Skript NICHT erfasst: es traegt eine deklarierte Abweichung (der \"folder\"-Zweig ist entfernt, damit FolderSuggest nicht nachgezogen wird) und entspricht keinem Kit-Tag (tools/pin_find.py: KEIN MATCH) — s. Kopf der Datei. kit-obsidian/ siehe dortige VENDOR.json."
+}

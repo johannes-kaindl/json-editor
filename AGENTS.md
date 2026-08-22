@@ -38,10 +38,10 @@ Deliberately small surface: vanilla TypeScript, two runtime dependencies (`@cfwo
 - **2026-05-27:** `0.1.2` → `1.3.0` released in one autonomous run (entire 1.x feature roadmap)
 - **Unreleased on `main`:** nothing pending. `1.11.1` is live on both remotes (3 assets + attestation; `release.yml` and `test.yml` both green). **Portal-eslint stays clean (`npm run lint` = 0 problems, enforced via `--max-warnings 0` — eslint exits 0 on warnings, so the exit code alone proves nothing; keep `eslint-plugin-obsidianmd` current, a stale mirror manufactures false confidence).** Since 2026-08-13 there is no separate `lint:portal` any more: the canonical `eslint.config.mjs` core **is** the store-scanner mirror (template-managed, byte-guarded by `tools/template_drift_check.py`), and any local deviation lives — visible and greppable — in `eslint.overrides.mjs`. A second, hand-maintained mirror was the drift risk it was meant to catch. **The plugin is listed in the Community Plugin Directory (since 2026-07-12) and passes the automated review**; ~520 installs as of 2026-08-11. Note that a new release does *not* re-run the review by itself — it has to be triggered as a rescan in the Developer Dashboard.
 - **Roadmap (next):** No external gate is left — the listing is live. Open items are all discretionary: README screenshots (`docs/CAPTURE.md` §5, parked, CORE-META-03), `prefer-active-doc` popout polish (~70 lint warnings), broader A11y (§5; breadcrumb keyboard-access already fixed in 1.8.0), full positional fidelity for free-standing comments on `.jsonc` reorder, and the 2.x feature ideas (§6: schema autocompletion, multi-select, `.jsonl`; §3.3–3.13). Older open: cross-container drag-drop, `$schema` URL fetching, real pointer-events touch-drag.
-- **Tests:** 725 Vitest tests, all green; `npm test`
+- **Tests:** 722 Vitest tests in 76 files, all green; `npm test`
 - **Coverage:** 95.69% statements / 87.12% branches / 96.29% functions; `npm run test:coverage`
 - **Build:** `npm run build` clean. Bundle is ~114 KB.
-- **Gate:** `npm run gate` = `typecheck` + `test` + `lint` (biome) + `build`. `test` additionally runs `check-no-abs-paths.mjs` + `check-no-nul-bytes.mjs`. The GitHub release workflow calls `npm run gate`.
+- **Gate:** `npm run gate` = `typecheck` + `test` + `lint` (inline-disable scanner + eslint `--max-warnings 0`) + `lint:biome` + `build`. `test` additionally runs `check-no-abs-paths.mjs` + `check-no-nul-bytes.mjs`. The GitHub release workflow calls `npm run gate`.
 - **Predecessor:** `0.1.0` (v1.0 — core viewer/editor)
 - **Branch:** `main` is canonical; feature branches `feat/<name>` per release, merged via `--no-ff`
 - **Coverage tooling:** `@vitest/coverage-v8` set up (added in 0.3.0); `npm run test:coverage` for html report in `coverage/`
@@ -138,6 +138,22 @@ src/
 │   ├── Breadcrumb.ts           path display, segment-click → scrollToPath
 │   ├── CopyButton.ts           hover-only buttons; click=value, Alt+click=path
 │   └── Tooltip.ts              singleton hover-tooltip (500ms delay)
+├── vendor/                     verbatim snapshots from obsidian-kit — never hand-edit,
+│   │                           re-vendor with tools/sync-kit.sh; the pin per directory
+│   │                           lives in its VENDOR.json
+│   ├── kit/                    pure layer (← obsidian-kit src/pure/)
+│   │   ├── clipboard.ts        writeClipboard — the property-read guard this
+│   │   │                       plugin contributed first, now taken back from the kit
+│   │   ├── settings.ts         mergeSettings — open world ON PURPOSE: unknown
+│   │   │                       data.json keys survive the load/save cycle
+│   │   └── settings_walker.ts  DECLARED DEVIATION, not a snapshot — the
+│   │                           "folder" branch is removed (no folder setting here,
+│   │                           and it would drag FolderSuggest in). Unpinned; see
+│   │                           the file header + the note in kit/VENDOR.json
+│   └── kit-obsidian/           obsidian-coupled layer (← obsidian-kit src/obsidian/)
+│       └── clipboard.ts        copyToClipboard = writeClipboard + Notice; carries
+│                               the ONE allowed deviation from verbatim — the
+│                               kit-internal ../pure/ import becomes ../kit/
 ├── main.ts                     plugin entry; registers view, codeblock processor,
 │                               settings tab + commands: focus-search (Mod+F),
 │                               undo-edit (Mod+Z), redo-edit (Mod+Shift+Z)
@@ -161,6 +177,11 @@ docs/superpowers/               FROZEN legacy — historical specs/plans stay, b
 └── plans/                      task-by-task implementation plans
 
 _archiv/                        (gitignored) old Jupyter v0.1.5 — reference only
+
+tools/
+└── sync-kit.sh                 re-vendors src/vendor/** from ../obsidian-kit and
+                                rewrites both VENDOR.json pins. Run after a kit
+                                update — never edit a vendored file by hand.
 ```
 
 **Three tsconfigs:**

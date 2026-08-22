@@ -1,7 +1,8 @@
-import { type MarkdownPostProcessorContext, Notice } from "obsidian";
+import type { MarkdownPostProcessorContext } from "obsidian";
 import { jsoncParse } from "../core/jsonc";
 import { parse } from "../core/parse";
 import { renderTree } from "../core/render";
+import { copyToClipboard } from "../vendor/kit-obsidian/clipboard";
 import type { JsonEditorSettings } from "./SettingsTab";
 import { elementFactory, makeEl } from "./dom";
 
@@ -51,13 +52,8 @@ function makeCopyButton(doc: Document, source: string): HTMLButtonElement {
   btn.type = "button";
   btn.textContent = "Copy";
   btn.addEventListener("click", () => {
-    const clipboard = navigator.clipboard;
-    if (!clipboard) {
-      new Notice("Copy failed");
-      return;
-    }
-    clipboard.writeText(source).then(
-      () => {
+    void copyToClipboard(source, {
+      onCopied: () => {
         btn.classList.add("copied");
         btn.textContent = "Copied";
         window.setTimeout(() => {
@@ -65,8 +61,7 @@ function makeCopyButton(doc: Document, source: string): HTMLButtonElement {
           btn.textContent = "Copy";
         }, 800);
       },
-      () => new Notice("Copy failed"),
-    );
+    });
   });
   return btn;
 }
