@@ -285,6 +285,11 @@ export class JsonFileView extends TextFileView {
     this.currentSchema = null;
     this.currentQuery = "";
     this.searchBar.clear();
+    // The breadcrumb is per-file state like everything else here (found while
+    // photographing the README, 2026-08-22): after a switch in the same tab it kept
+    // showing the previous file's path — one that usually does not exist in the new
+    // file, so clicking it silently did nothing.
+    this.breadcrumb.setPath([]);
     this.mode = this.settings.defaultMode;
     this.lossyRoundtrip = false;
     this.lossBanner.hide();

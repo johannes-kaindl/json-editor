@@ -93,3 +93,29 @@ describe("REPRO: per-file state must reset on file switch (leaf reuse)", () => {
     expect(v.canRedo()).toBe(true);
   });
 });
+
+// Found while photographing the README (2026-08-22): the breadcrumb kept showing
+// the path of the PREVIOUS file after a switch in the same tab. It is per-file
+// state like the rest of this suite — a path that no longer exists in the open
+// file, and clicking it does nothing.
+describe("REPRO: the breadcrumb is per-file state too", () => {
+  beforeEach(() => {
+    document.body.replaceChildren();
+  });
+
+  it("does not keep the previous file's path after a switch", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+
+    v.setViewData('{"name":"trailhead"}', true);
+    const row = v.contentEl.querySelector<HTMLElement>('.json-row[data-path="name"] .json-key');
+    row?.click();
+    const crumb = v.contentEl.querySelector(".json-breadcrumb") as HTMLElement;
+    expect(crumb.textContent).toContain("name"); // path shown for file A
+
+    // Leaf reuse for file B, which has no "name" key at all.
+    v.setViewData('{"other":1}', true);
+
+    expect(crumb.textContent).not.toContain("name");
+  });
+});
