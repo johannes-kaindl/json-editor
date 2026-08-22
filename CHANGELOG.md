@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+- **The first Ctrl/Cmd+Z after editing a value in the tree did nothing.** An inline editor
+  left the keyboard focus on its own `<input>` after that element had already been taken
+  out of the document. The next rebuild of the view body then fired a blur on a detached
+  node, and Chromium aborted the whole `replaceChildren()` call — the undo command caught
+  the resulting exception and reported itself as "not applicable", so only the second undo
+  actually undid anything. Inline editors now hand the focus back to their row before the
+  commit tears them out, and they stop their own Enter/Escape from bubbling into the
+  tree's key handling (which would otherwise reopen the editor they just closed).
+
+### Added
+- `npm run smoke:gui` — a tracked GUI smoke driver that runs the checklist in
+  `docs/SMOKE.md` against a **running** Obsidian over the Chrome DevTools Protocol
+  (18 checks: host claim, layout geometry, theme variables, navigation, editing and the
+  code-block path). It is what found the undo defect above, which 726 green unit tests did
+  not: happy-dom computes no layout and does not reproduce the focus case. Closes the
+  workspace convention CORE-TEST-02 (b) for this repo.
+
 ## [1.11.2] — 2026-08-22
 
 ### Fixed
