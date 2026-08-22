@@ -1,0 +1,9 @@
+{
+  "environment": "staging",
+  "replicas": 12,
+  "region": "eu-central",
+  "healthcheck": {
+    "path": "/healthz",
+    "timeoutMs": 500
+  }
+}

@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Fixed
+- **The breadcrumb kept showing the previous file's path** after switching files in the
+  same tab — a path that usually does not exist in the newly opened file, and clicking it
+  silently did nothing. It is per-file state like the search query and the schema, and is
+  now reset with them. (Found while photographing the README.)
 - **The first Ctrl/Cmd+Z after editing a value in the tree did nothing.** An inline editor
   left the keyboard focus on its own `<input>` after that element had already been taken
   out of the document. The next rebuild of the view body then fired a blur on a detached
@@ -17,6 +21,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   tree's key handling (which would otherwise reopen the editor they just closed).
 
 ### Added
+- **The READMEs have pictures.** Seven of them — hero, tree mode with its per-row actions,
+  source mode on a `.jsonc` file with comments intact, search, schema validation,
+  a code block inside a note, and the settings tab. They are not taken by hand:
+  `npm run shots` drives a running Obsidian over the DevTools Protocol against a tracked
+  demo vault (`docs/images/fixture/`), so they can be re-taken after any UI change. The
+  capture contract is in `docs/images/README.md`.
 - `npm run smoke:gui` — a tracked GUI smoke driver that runs the checklist in
   `docs/SMOKE.md` against a **running** Obsidian over the Chrome DevTools Protocol
   (18 checks: host claim, layout geometry, theme variables, navigation, editing and the

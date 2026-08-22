@@ -11,9 +11,11 @@ Rendert außerdem `` ```json ``- und `` ```jsonc ``-Codeblöcke in Markdown-Noti
 
 **Zielplattform:** Obsidian 1.5.7+ auf Desktop und Mobile. Keine externen Dienste, keine entfernten Ressourcen, keine Telemetrie.
 
-> **Status: 1.11.1 veröffentlicht.** Der Baum-Modus ist ein vollwertiger Struktur-Editor — Schlüssel anlegen/löschen/umbenennen, Elemente anlegen/löschen, Zeilen umsortieren (Drag-and-Drop oder `Alt`+`↑`/`↓`) und den JSON-Typ eines Wertes wechseln. Rückgängig/Wiederholen (`Cmd/Strg+Z` / `Cmd/Strg+Umschalt+Z`) arbeitet über beide Modi hinweg auf einem gemeinsamen Stapel. Auf Mobilgeräten machen ein Aktionsmenü per Langdruck, touch-gerechte Bedienelemente und Rückgängig-Schaltflächen in der Werkzeugleiste das Bearbeiten im Baum vollständig per Finger nutzbar. Optionale JSON-Schema-Validierung und ein Großdatei-Schutz runden den Editor ab. Die vollständige Historie steht in [`CHANGELOG.md`](CHANGELOG.md).
+> **Status: 1.11.2 veröffentlicht.** Der Baum-Modus ist ein vollwertiger Struktur-Editor — Schlüssel anlegen/löschen/umbenennen, Elemente anlegen/löschen, Zeilen umsortieren (Drag-and-Drop oder `Alt`+`↑`/`↓`) und den JSON-Typ eines Wertes wechseln. Rückgängig/Wiederholen (`Cmd/Strg+Z` / `Cmd/Strg+Umschalt+Z`) arbeitet über beide Modi hinweg auf einem gemeinsamen Stapel. Auf Mobilgeräten machen ein Aktionsmenü per Langdruck, touch-gerechte Bedienelemente und Rückgängig-Schaltflächen in der Werkzeugleiste das Bearbeiten im Baum vollständig per Finger nutzbar. Optionale JSON-Schema-Validierung und ein Großdatei-Schutz runden den Editor ab. Die vollständige Historie steht in [`CHANGELOG.md`](CHANGELOG.md).
 
 > **Hinweis:** Diese Übersetzung folgt der englischen [`README.md`](README.md). Bei Abweichungen gilt die englische Fassung.
+
+<img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/hero.png" width="820" alt="Eine .json-Datei im Baummodus in Obsidian: links die Dateiliste, rechts eine Werkzeugleiste mit Brotkrumen, Suchfeld und Tree/Source-Pillen über einem farbig ausgezeichneten, klappbaren Baum der Datei.">
 
 ---
 
@@ -53,6 +55,34 @@ Alles bleibt in deinem Vault. Das Plugin nutzt Obsidians eigene CSS-Variablen un
 - **Theme-treue Gestaltung** über Obsidians CSS-Variablen — keine fest verdrahteten Farben.
 - **Eingebettete Codeblöcke** — `` ```json ``- und `` ```jsonc ``-Blöcke in jeder Markdown-Notiz werden als betitelte Karte mit aufklappbarem Baum gerendert. Blöcke über 20 Zeilen klappen automatisch zu. Ungültiges JSON erscheint als gestaltete Fehlerkarte mit Zeilen-/Spaltenangabe statt als Absturz.
 - **Keine Telemetrie, keine entfernten Ressourcen.** Alle Bestandteile werden mit dem Plugin ausgeliefert.
+
+---
+
+## So sieht es aus
+
+<img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/tree-view.png" width="820" alt="Baummodus aus der Nähe: eine Zeile ist überfahren und zeigt ihre Aktionen — kopieren, Typ wechseln, umbenennen, löschen — mit Ziehgriff links, während der Brotkrumen darüber dem aktiven Pfad folgt.">
+
+<sub>Baummodus: eine Zeile überfahren zeigt Umbenennen, Löschen, Typwechsel und Ziehgriff; der Brotkrumen folgt dem aktiven Pfad.</sub>
+
+<img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/source-view.png" width="820" alt="Quelltextmodus mit einer .jsonc-Datei in CodeMirror, Zeilennummern und Syntaxhervorhebung; die Zeilen- und Blockkommentare sind erhalten, die Pille „Source“ ist aktiv.">
+
+<sub>Quelltextmodus bei einer <code>.jsonc</code>-Datei — Kommentare und Formatierung überleben Baum-Edits.</sub>
+
+<img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/search.png" width="820" alt="Suche im Baummodus: die Anfrage distanceKm trifft drei Zeilen, der Zähler zeigt „3 matches“, und der Baum ist auf die Treffer samt ihrer Elternknoten gefiltert.">
+
+<sub><code>Cmd/Strg+F</code> filtert den Baum auf Treffer und zählt sie; <code>Enter</code> springt von Treffer zu Treffer.</sub>
+
+<img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/schema-validation.png" width="820" alt="Optionale Schema-Prüfung: ein Banner meldet „3 schema errors“, zwei Zeilen sind rot umrandet — eine Replikat-Zahl über dem erlaubten Höchstwert und ein Timeout unter dem geforderten Mindestwert.">
+
+<sub>Die opt-in Schema-Prüfung markiert die verletzenden Zeilen und zählt sie im Banner.</sub>
+
+<img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/codeblock-in-note.png" width="820" alt="Ein ```json-Block in einer Markdown-Notiz, im Lesemodus als schreibgeschützter, klappbarer Baum gerendert, mit Kopieren-Knopf in der Kopfzeile.">
+
+<sub>Ein <code>```json</code>-Block in einer Notiz, im Lesemodus schreibgeschützt gerendert.</sub>
+
+<a href="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/settings.png"><img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/thumbs/settings.png" width="380" alt="Der Einstellungs-Tab des Plugins mit sechs Optionen: Standardmodus, Einrückung, Markerstil, Auto-Einklapptiefe, Schema-Prüfung und Suffix der Begleit-Schemadatei."></a>
+
+<sub>Für die volle Auflösung auf die Vorschau klicken.</sub>
 
 ---
 

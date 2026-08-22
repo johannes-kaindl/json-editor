@@ -1,0 +1,47 @@
+{
+  "name": "trailhead",
+  "version": "2.4.0",
+  "description": "A small CLI for planning day hikes.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "test": "vitest run",
+    "start": "node ./dist/cli.js"
+  },
+  "settings": {
+    "units": "metric",
+    "maxElevationGain": 1800,
+    "offlineMaps": true,
+    "telemetry": null,
+    "theme": {
+      "mode": "auto",
+      "accent": "#3b82f6"
+    }
+  },
+  "trails": [
+    {
+      "id": 1,
+      "name": "Eagle Ridge Loop",
+      "distanceKm": 12.4,
+      "difficulty": "moderate",
+      "tags": ["loop", "views", "dog-friendly"]
+    },
+    {
+      "id": 2,
+      "name": "Cedar Falls",
+      "distanceKm": 6.1,
+      "difficulty": "easy",
+      "tags": ["waterfall", "shaded"]
+    },
+    {
+      "id": 3,
+      "name": "Summit Traverse",
+      "distanceKm": 21.8,
+      "difficulty": "hard",
+      "tags": ["exposed", "alpine"]
+    }
+  ]
+}

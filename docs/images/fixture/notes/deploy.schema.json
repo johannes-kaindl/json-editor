@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Deployment config",
+  "type": "object",
+  "required": ["environment", "replicas", "owner"],
+  "properties": {
+    "environment": { "enum": ["development", "staging", "production"] },
+    "replicas": { "type": "integer", "maximum": 8 },
+    "healthcheck": {
+      "type": "object",
+      "properties": {
+        "timeoutMs": { "type": "integer", "minimum": 1000 }
+      }
+    }
+  }
+}

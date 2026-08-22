@@ -38,7 +38,7 @@ Deliberately small surface: vanilla TypeScript, two runtime dependencies (`@cfwo
 - **2026-06-13:** `1.6.0` — Phase-2 guideline+UX release (audit Sections 2+3+4.1); 10 commits, multi-agent review + fixes
 - **2026-06-13:** `1.5.0` — Phase-1 blocker release (audit Section 1 + 2.8); 8 commits, multi-agent review + 2 rounds of fixes
 - **2026-05-27:** `0.1.2` → `1.3.0` released in one autonomous run (entire 1.x feature roadmap)
-- **Unreleased on `main`:** a GUI-smoke driver (`npm run smoke:gui`, `docs/SMOKE.md`) plus the undo fix it found — the first Ctrl/Cmd+Z after a tree edit did nothing, because an inline editor left the focus on its own detached `<input>` and the next `replaceChildren()` aborted on the blur. Not released yet. `1.11.2` is live on both remotes (3 assets; `release.yml` and `test.yml` both green, verified via the GitHub API). **The Developer-Dashboard rescan for 1.11.2 is still open — it never starts by itself.** **Portal-eslint stays clean (`npm run lint` = 0 problems, enforced via `--max-warnings 0` — eslint exits 0 on warnings, so the exit code alone proves nothing; keep `eslint-plugin-obsidianmd` current, a stale mirror manufactures false confidence).** Since 2026-08-13 there is no separate `lint:portal` any more: the canonical `eslint.config.mjs` core **is** the store-scanner mirror (template-managed, byte-guarded by `tools/template_drift_check.py`), and any local deviation lives — visible and greppable — in `eslint.overrides.mjs`. A second, hand-maintained mirror was the drift risk it was meant to catch. **The plugin is listed in the Community Plugin Directory (since 2026-07-12) and passes the automated review**; ~520 installs as of 2026-08-11. Note that a new release does *not* re-run the review by itself — it has to be triggered as a rescan in the Developer Dashboard.
+- **Unreleased on `main`:** two tracked drivers against a running Obsidian — `npm run smoke:gui` (`docs/SMOKE.md`, 18 checks) and `npm run shots` (`docs/images/README.md`, seven README pictures) — plus the two defects they found: the undo fix — the first Ctrl/Cmd+Z after a tree edit did nothing, because an inline editor left the focus on its own detached `<input>` and the next `replaceChildren()` aborted on the blur. and the breadcrumb that kept showing the previous file's path after a switch. Not released yet. `1.11.2` is live on both remotes (3 assets; `release.yml` and `test.yml` both green, verified via the GitHub API). **The Developer-Dashboard rescan for 1.11.2 is still open — it never starts by itself.** **Portal-eslint stays clean (`npm run lint` = 0 problems, enforced via `--max-warnings 0` — eslint exits 0 on warnings, so the exit code alone proves nothing; keep `eslint-plugin-obsidianmd` current, a stale mirror manufactures false confidence).** Since 2026-08-13 there is no separate `lint:portal` any more: the canonical `eslint.config.mjs` core **is** the store-scanner mirror (template-managed, byte-guarded by `tools/template_drift_check.py`), and any local deviation lives — visible and greppable — in `eslint.overrides.mjs`. A second, hand-maintained mirror was the drift risk it was meant to catch. **The plugin is listed in the Community Plugin Directory (since 2026-07-12) and passes the automated review**; ~520 installs as of 2026-08-11. Note that a new release does *not* re-run the review by itself — it has to be triggered as a rescan in the Developer Dashboard.
 - **Roadmap (next):** No external gate is left — the listing is live. Open items are all discretionary: README screenshots (`docs/CAPTURE.md` §5, parked, CORE-META-03), `prefer-active-doc` popout polish (~70 lint warnings), broader A11y (§5; breadcrumb keyboard-access already fixed in 1.8.0), full positional fidelity for free-standing comments on `.jsonc` reorder, and the 2.x feature ideas (§6: schema autocompletion, multi-select, `.jsonl`; §3.3–3.13). Older open: cross-container drag-drop, `$schema` URL fetching, real pointer-events touch-drag.
 - **Tests:** 726 Vitest tests in 77 files, all green; `npm test`. Plus `npm run smoke:gui` — 18 checks against a **running** Obsidian (CDP); see `docs/SMOKE.md`, and note that the unit suite structurally cannot see what it measures.
 - **Coverage:** 95.69% statements / 87.12% branches / 96.29% functions; `npm run test:coverage`
@@ -180,6 +180,17 @@ docs/superpowers/               FROZEN legacy — historical specs/plans stay, b
 
 _archiv/                        (gitignored) old Jupyter v0.1.5 — reference only
 
+docs/
+├── SMOKE.md                    GUI-smoke checklist + run log (npm run smoke:gui)
+└── images/                     README pictures + the capture contract that produced them
+    ├── README.md               contract: file | class | referenced by | must show
+    ├── fixture/                the recording vault (notes, .json/.jsonc samples, config)
+    └── thumbs/                 380px previews for tall images
+
+scripts/
+├── gui-smoke.ts                CORE-TEST-02 (b) driver — imports ../../tools/obsidian-cdp/
+└── shots.ts                    README capture driver — same bridge, different recipe
+
 tools/
 └── sync-kit.sh                 re-vendors src/vendor/** from ../obsidian-kit and
                                 rewrites both VENDOR.json pins. Run after a kit
@@ -291,11 +302,36 @@ In priority order:
 
 ## Abweichungen von der Leitkonvention
 
-- `CORE-META-03` — Hero/Feature-Screenshots (`docs/images/`): **Phase-2b** (requires capturing in a running Obsidian GUI).
+Keine offenen Abweichungen.
 
 ## Session history
 
 Append new entries at the top. Each entry = one working session.
+
+### 2026-08-22 (2) — Zwei getrackte Treiber gegen ein laufendes Obsidian, zwei Befunde
+
+Two things this repo did by hand became one command each: `npm run smoke:gui`
+(CORE-TEST-02 b, 18 checks, `docs/SMOKE.md`) and `npm run shots` (seven README pictures,
+contract in `docs/images/README.md`). Both import the central bridge `tools/obsidian-cdp/`
+rather than vendoring one, and both run against a real Obsidian over CDP.
+
+**Each driver found a defect the unit suite could not see.** The smoke found that the
+*first* Ctrl/Cmd+Z after a tree edit did nothing: an inline editor left the focus on its
+own already-detached `<input>`, so the next `replaceChildren()` aborted on the blur with
+`NotFoundError` and the undo command reported itself as "not applicable". happy-dom
+computes no layout and does not reproduce that; only the rename path was unit-testable and
+is kept as a regression test. The capture run found that the breadcrumb kept the previous
+file's path after a switch in the same tab — per-file state that 1.5.0's reset had missed.
+
+**Most first-run red marks were the tools' own fault, and only the counter-check said so.**
+The smoke's first run was 15/18: one check asked whether the lossy banner *existed*
+(it always does — it is `hidden`), one compared a collapse chip and a comma from different
+nesting levels (−437 px), and the run reported the plugin version from the manifest
+Obsidian had read at startup — "1.11.1" for a 1.11.2 deploy. The capture driver's cleanup
+looked correct and changed nothing on disk, because the per-file collapse state does not
+live in `settings` but in a second field that `persist()` writes alongside it.
+
+Counter-check on the smoke: fix removed → exactly D3 red, nothing else fell with it.
 
 ### 2026-08-22 — `1.11.2`: Kit-Vendoring-Branch abgeschlossen + CHANGELOG-Link-Block saniert
 
