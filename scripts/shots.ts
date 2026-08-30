@@ -452,7 +452,7 @@ async function settingsBild(cdp: Cdp, port: number, opts: ShotOptions): Promise<
     await new Promise((r) => setTimeout(r, 900));
     return true;
   `);
-  const fenster = await attachTo("settings", port);
+  const fenster = await attachTo("settings", port, REPO_NAME);
   if (!fenster) return "settings.png — kein Einstellungen-Fenster gefunden";
   try {
     await fenster.send("Page.bringToFront");
