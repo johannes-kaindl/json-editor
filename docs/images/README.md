@@ -34,6 +34,11 @@ standard (`_docs/readme/readme-spec.json`); `npm run shots:check` enforces them.
   `npm run shots -- --setup` to build this repo's vault from `fixture/`.
 - Obsidian running with `--remote-debugging-port=9222`, that vault open and trusted, and
   the interface language set to **English** (the driver checks and refuses otherwise).
+- ⚠️ **Before restarting Obsidian, check who else is attached:**
+  `lsof -nP -iTCP:9222 -sTCP:LISTEN`. Obsidian is single-instance, so a quit hits whichever
+  session is using it and destroys that state — while your own run still comes out cleanly
+  green. This recipe does need the fresh start (one picture per start), so co-using is not
+  an option: if the port is taken, ask first, then quit.
 
 No servers, no accounts, no network: everything in these pictures is local files.
 

@@ -8,6 +8,21 @@
  *
  * ## Ablauf
  *
+ * ⚠️ **Vor dem Quit koordinieren — Obsidian ist geteilte Infrastruktur.** Dieses Rezept
+ * braucht den frischen Start (ein Bild pro Start, jeder Lauf hinterlaesst Zustand); Mitnutzen ist
+ * hier keine Alternative. Aber Obsidian ist Single-Instance: der Quit trifft die Instanz, an der
+ * moeglicherweise eine andere Session arbeitet, und zerstoert deren Zustand. Der eigene Lauf ist
+ * danach sauber gruen; der Schaden faellt nicht auf.
+ *
+ * ```bash
+ * lsof -nP -iTCP:9222 -sTCP:LISTEN >/dev/null && echo "belegt — erst fragen, wem"
+ * ```
+ *
+ * Hoert der Port, haengt jemand dran: **erst fragen, dann quitten.** ⚠️ Und die Pruefung ersetzt die
+ * Frage nicht — sie zeigt aktive CDP-Treiber, aber nicht, wer ein Fenster offen haelt oder auf den
+ * Port wartet; am 2026-08-30 haette sie einen zwei Stunden alten Reindex nicht gezeigt, denn der
+ * hing an Ollama, nicht am Port.
+ *
  * ```bash
  * export STAGING_VAULTS_DIR="$HOME/StagingVaults"   # einmalig
  * npm run build && npm run shots -- --setup         # Vault aus dem Fixture bauen
@@ -550,6 +565,10 @@ async function main(): Promise<void> {
       "\n⚠️  Lief Obsidian waehrend dieses Setups, muss es JETZT neu starten. --setup hat\n" +
         "   Notizen, Layout und Plugin-Einstellungen ersetzt; ein laufendes Obsidian haelt\n" +
         "   den alten Stand im Speicher und schreibt ihn zurueck.\n" +
+        "\n⚠️  Erst pruefen, ob schon ein Obsidian laeuft — ein Quit zerstoert den Zustand\n" +
+        "    einer fremden Session, und der eigene Lauf ist danach trotzdem gruen:\n" +
+        "      lsof -nP -iTCP:9222 -sTCP:LISTEN\n" +
+        "    Hoert der Port, haengt jemand dran: erst fragen, dann quitten.\n" +
         "\nObsidian mit offenem Debug-Port starten und diesen Vault oeffnen:\n" +
         "  osascript -e 'quit app \"Obsidian\"'\n" +
         "  open -a Obsidian --args --remote-debugging-port=9222\n" +
