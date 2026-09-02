@@ -36,7 +36,7 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 ## Features
 
 - **`.json` and `.jsonc` file view** with a Tree↔Source mode toggle in a unified top toolbar.
-- **`.jsonc` comment preservation** — open a JSONC file (comments + trailing commas) and edit it in the tree; every edit is applied as a targeted text edit on the source, so comments and formatting are kept. An unedited open→save is byte-identical. `.json` stays strict (comments are an error). *Reorder caveat:* a free-standing comment line keeps its position on reorder — no comment is lost, but it may end up beside a different element.
+- **`.jsonc` comment preservation** — open a JSONC file (comments + trailing commas) and edit it in the tree; every edit is applied as a targeted text edit on the source, so comments and formatting are kept. An unedited open→save is byte-identical. `.json` stays strict (comments are an error). On reorder a comment travels with the element it belongs to — the trailing comment behind it and the comment lines directly above it; a comment set off by a blank line reads as a heading for its position and stays there.
 - **Inline editing** of strings, numbers, and booleans in tree mode — click a value, press Enter to commit, Escape to cancel.
 - **Structural editing** — add keys to objects (`+ Add key` affordance at the bottom of each container), append items to arrays, rename object keys (✎ hover button), delete any row (✕ hover button or `Backspace` / `Delete` on focused row).
 - **Drag-and-drop reorder** — hover a row to reveal a `⋮⋮` handle; drag it up/down within its container (array items or object keys). Same-parent only; undoable.

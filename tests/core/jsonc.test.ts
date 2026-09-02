@@ -146,3 +146,99 @@ describe("round-trip", () => {
     expect(val(src)).toEqual({ a: 1, b: [1, 2] });
   });
 });
+
+describe("reorder moves attached comment lines with their element", () => {
+  it("moves a single attached comment line with its object key", () => {
+    const src = ["{", "  // gehoert zu a", '  "a": 1,', "  // gehoert zu b", '  "b": 2', "}"].join(
+      "\n",
+    );
+    const out = jsoncMoveObjectKey(src, [], "b", 0);
+    expect(out).toBe(
+      ["{", "  // gehoert zu b", '  "b": 2,', "  // gehoert zu a", '  "a": 1', "}"].join("\n"),
+    );
+  });
+
+  it("moves a multi-line attached comment block as a whole", () => {
+    const src = [
+      "{",
+      '  "a": 1,',
+      "  // Zeile 1 der Erklaerung",
+      "  // Zeile 2 der Erklaerung",
+      '  "b": 2',
+      "}",
+    ].join("\n");
+    const out = jsoncMoveObjectKey(src, [], "b", 0);
+    expect(out).toBe(
+      [
+        "{",
+        "  // Zeile 1 der Erklaerung",
+        "  // Zeile 2 der Erklaerung",
+        '  "b": 2,',
+        '  "a": 1',
+        "}",
+      ].join("\n"),
+    );
+  });
+
+  it("leaves a comment that a blank line severed from its element", () => {
+    const src = ["{", '  "a": 1,', "  // Abschnitt 2", "", '  "b": 2', "}"].join("\n");
+    const out = jsoncMoveObjectKey(src, [], "b", 0);
+    // Die Ueberschrift bleibt an ihrem Platz; nur das Element wandert.
+    expect(out).toBe(["{", '  "b": 2,', "  // Abschnitt 2", "", '  "a": 1', "}"].join("\n"));
+  });
+
+  it("moves an attached comment in an array too", () => {
+    const src = ["[", "  // eins", "  1,", "  // zwei", "  2", "]"].join("\n");
+    const out = jsoncMoveArrayItem(src, [], 1, 0);
+    expect(out).toBe(["[", "  // zwei", "  2,", "  // eins", "  1", "]"].join("\n"));
+  });
+
+  it("leaves a comment that follows the last element", () => {
+    const src = ["{", '  "a": 1,', '  "b": 2', "  // haengt an niemandem", "}"].join("\n");
+    const out = jsoncMoveObjectKey(src, [], "b", 0);
+    expect(out).toBe(["{", '  "b": 2,', '  "a": 1', "  // haengt an niemandem", "}"].join("\n"));
+  });
+
+  it("leaves a multi-line block comment with the slot (conservative, nothing lost)", () => {
+    const src = ["{", '  "a": 1,', "  /* mehrzeilig", "     zweite Zeile */", '  "b": 2', "}"].join(
+      "\n",
+    );
+    const out = jsoncMoveObjectKey(src, [], "b", 0);
+    expect(out).toContain("/* mehrzeilig");
+    expect(out).toContain("zweite Zeile */");
+    expect(Object.keys(val(out) as object)).toEqual(["b", "a"]);
+  });
+
+  it("never loses a comment, whatever the order", () => {
+    const src = [
+      "{",
+      "  // ueber a",
+      '  "a": 1, // neben a',
+      "  // Abschnitt",
+      "",
+      "  // ueber b",
+      '  "b": 2, // neben b',
+      '  "c": 3',
+      "  // am Ende",
+      "}",
+    ].join("\n");
+    const alle = [
+      "// ueber a",
+      "// neben a",
+      "// Abschnitt",
+      "// ueber b",
+      "// neben b",
+      "// am Ende",
+    ];
+    for (const [key, pos] of [
+      ["a", 2],
+      ["b", 0],
+      ["c", 1],
+      ["c", 0],
+    ] as const) {
+      const out = jsoncMoveObjectKey(src, [], key, pos);
+      for (const c of alle) expect(out).toContain(c);
+      expect(jsoncParse(out).ok).toBe(true);
+    }
+  });
+});

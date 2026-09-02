@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+- **Reordering a `.jsonc` row now takes the row's comments with it.** Until now a
+  free-standing comment line kept its absolute position: nothing was lost, but after a
+  move the explanation could sit above a different key than the one it described. A
+  comment block directly above an element now travels with that element, as its
+  same-line trailing comment already did.
+
+  A blank line still severs that bond — a comment set off by an empty line reads as a
+  heading for the position rather than as a note on the element below it, and stays
+  where it is. That is the same rule `gofmt` and `prettier` use, and it is what people
+  already mean when they leave the blank line in. A block comment spanning several
+  lines is treated conservatively and stays with the position.
+
+  This closes the one documented boundary of the `.jsonc` support introduced in 1.10.0.
+  `.json` files are untouched — they have no comments and take a different mutation path.
+
 ## [1.11.3] — 2026-08-22
 
 ### Fixed

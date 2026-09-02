@@ -160,6 +160,21 @@ const SMOKE_JSONC_TEXT = [
   "}",
 ].join("\n");
 
+/** `.jsonc`-Probe fuer den Reorder: jeder Schluessel traegt einen anhaengenden Kommentar,
+ *  und „Abschnitt" ist durch eine Leerzeile abgetrennt — die Zeile, die NICHT mitwandern
+ *  darf. Ohne sie waere der Pruefpunkt blind fuer die halbe Regel. */
+const SMOKE_JSONC_REORDER = [
+  "{",
+  "  // gehoert zu a",
+  '  "a": 1,',
+  "",
+  "  // Abschnitt",
+  "",
+  "  // gehoert zu b",
+  '  "b": 2',
+  "}",
+].join("\n");
+
 const fence = "```";
 
 // --- Protokoll ---------------------------------------------------------------
@@ -263,6 +278,23 @@ const elImView = (body: string): string => `(() => {
   if (!root) return null;
   ${body}
 })()`;
+
+/**
+ * Ein ECHTER Tastendruck ueber den Host, nicht `new KeyboardEvent(...)`.
+ *
+ * Die Brücke kennt bisher nur `clickReal`; fuer Tasten gibt es kein Primitiv, also wird
+ * `Input.dispatchKeyEvent` hier direkt gesendet — dieselbe Bauart, vier Zeilen. Wandert in
+ * `tools/obsidian-cdp/`, sobald ein zweites Repo es braucht (n=2), nicht vorher.
+ *
+ * `modifiers: 1` ist Alt. Ein synthetisches Event traegt `isTrusted: false` und liefe an
+ * jedem Host-Pfad vorbei, der an echter Eingabe haengt.
+ */
+async function pressKey(cdp: Cdp, key: string, modifiers = 0): Promise<void> {
+  const codes: Record<string, number> = { ArrowDown: 40, ArrowUp: 38 };
+  const common = { key, code: key, windowsVirtualKeyCode: codes[key] ?? 0, modifiers };
+  await cdp.send("Input.dispatchKeyEvent", { type: "rawKeyDown", ...common });
+  await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", ...common });
+}
 
 /** Einen Plugin-Befehl über den Host ausführen — nicht die Methode direkt rufen.
  *  Die Registrierung ist Teil dessen, was hier geprüft wird. */
@@ -684,6 +716,46 @@ const SECTIONS: Section[] = [
             ? "Kommentar steht noch in der Datei"
             : "Wert geschrieben, KOMMENTAR VERLOREN"
           : "Wert nicht geschrieben",
+      );
+
+      // D5 — Reorder nimmt den anhaengenden Kommentar mit (seit 2026-09-02). Gefahren wird
+      // der Nutzerweg per Tastatur (Alt+Pfeil), nicht die Kernfunktion: gemessen werden soll
+      // die ganze Kette Zeile → TreeView → jsonc.ts → Platte, und die Kernfunktion hat ihre
+      // eigenen 7 Unit-Tests. Die zweite Haelfte der Regel steht mit in der Szene: der durch
+      // eine Leerzeile abgetrennte Kommentar darf NICHT mitwandern.
+      const REORDER = "_json-smoke-reorder.jsonc";
+      await openJsonFile(cdp, REORDER, SMOKE_JSONC_REORDER);
+      await runCommand(cdp, "expand-all");
+      const zeileAktiv = await klick(
+        cdp,
+        elImView(`return root.querySelector('.json-row[data-path="a"] .json-key');`),
+      );
+      await pressKey(cdp, "ArrowDown", 1);
+      // Gewartet wird auf einen Zustand, den es VOR der Bewegung nicht gibt. Die erste
+      // Fassung pollte auf `"b"` — das stand schon in der Ausgangsdatei, der Poll kehrte
+      // sofort zurueck und mass den Vorzustand. Der Schreibweg ist debounced (~2 s):
+      // 500 ms nach der Taste traegt die Ansicht die neue Reihenfolge und die Platte noch
+      // die alte (gemessen 2026-09-02).
+      const bewegt = await fileContains(cdp, REORDER, "{\n  // gehoert zu b");
+      // Gemessen wird die REIHENFOLGE der Marker in der Datei, nicht ihr blosses Vorkommen —
+      // „alle vier noch da" war der alte Zustand und waere gruen geblieben.
+      const reihenfolge = bewegt
+        ? ["// gehoert zu b", '"b"', "// gehoert zu a", '"a"'].map((m) => bewegt.indexOf(m))
+        : [];
+      const sortiert = reihenfolge.every((v, i) => v >= 0 && (i === 0 || v > reihenfolge[i - 1]));
+      const abschnittBlieb = Boolean(
+        bewegt && bewegt.indexOf("// Abschnitt") > bewegt.indexOf('"b"'),
+      );
+      check(
+        "D5 Reorder nimmt den anhängenden Kommentar mit, den abgetrennten nicht",
+        zeileAktiv && sortiert && abschnittBlieb,
+        !bewegt
+          ? "Datei nicht lesbar"
+          : !sortiert
+            ? `Kommentar folgte seinem Element nicht (Marker-Positionen: ${reihenfolge.join(", ")})`
+            : abschnittBlieb
+              ? "anhängend gewandert, abgetrennt geblieben"
+              : "der durch eine Leerzeile abgetrennte Kommentar ist mitgewandert",
       );
     },
   },
