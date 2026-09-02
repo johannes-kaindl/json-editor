@@ -42,7 +42,7 @@ Deliberately small surface: vanilla TypeScript, two runtime dependencies (`@cfwo
 - **2026-08-22:** `1.11.3` — two defects found by the two new drivers, plus the README pictures (`npm run smoke:gui` / `npm run shots`, both against a running Obsidian over CDP). The first Ctrl/Cmd+Z after a tree edit did nothing (focus left on a detached `<input>` → `replaceChildren()` aborted → the command reported itself as not applicable); the breadcrumb kept the previous file's path after a switch.
 - **Unreleased on `main`:** nothing pending. `1.11.3` is live on both remotes (3 assets; `Release` and `Test` workflows green, verified via the GitHub API). **The Developer-Dashboard rescan for 1.11.3 is through: `passed`, 0 warnings, top score (2026-08-22).** It never starts by itself — every future release needs it triggered by hand. **Portal-eslint stays clean (`npm run lint` = 0 problems, enforced via `--max-warnings 0` — eslint exits 0 on warnings, so the exit code alone proves nothing; keep `eslint-plugin-obsidianmd` current, a stale mirror manufactures false confidence).** Since 2026-08-13 there is no separate `lint:portal` any more: the canonical `eslint.config.mjs` core **is** the store-scanner mirror (template-managed, byte-guarded by `tools/template_drift_check.py`), and any local deviation lives — visible and greppable — in `eslint.overrides.mjs`. A second, hand-maintained mirror was the drift risk it was meant to catch. **The plugin is listed in the Community Plugin Directory (since 2026-07-12) and passes the automated review**; ~520 installs as of 2026-08-11. Note that a new release does *not* re-run the review by itself — it has to be triggered as a rescan in the Developer Dashboard.
 - **Roadmap (next):** No external gate is left — the listing is live. Open items are all discretionary: README screenshots (`docs/CAPTURE.md` §5, parked, CORE-META-03), `prefer-active-doc` popout polish (~70 lint warnings), broader A11y (§5; breadcrumb keyboard-access already fixed in 1.8.0), full positional fidelity for free-standing comments on `.jsonc` reorder, and the 2.x feature ideas (§6: schema autocompletion, multi-select, `.jsonl`; §3.3–3.13). Older open: cross-container drag-drop, `$schema` URL fetching, real pointer-events touch-drag.
-- **Tests:** 726 Vitest tests in 77 files, all green; `npm test`. Plus `npm run smoke:gui` — 18 checks against a **running** Obsidian (CDP); see `docs/SMOKE.md`, and note that the unit suite structurally cannot see what it measures.
+- **Tests:** 727 Vitest tests in 77 files, all green; `npm test`. Plus `npm run smoke:gui` — 18 checks against a **running** Obsidian (CDP); see `docs/SMOKE.md`, and note that the unit suite structurally cannot see what it measures. Since 2026-09-02 the driver answers two questions about **itself** before trusting a green run: `requireEigenerBuild` proves the measured `main.js` is this repo's build (by sha1 — `manifest.version` is blind to it, both builds carry the same number), and `--klick-gegenprobe` runs without clicking, where every click-dependent check MUST turn red.
 - **Coverage:** 95.69% statements / 87.12% branches / 96.29% functions; `npm run test:coverage`
 - **Build:** `npm run build` clean. Bundle is ~114 KB.
 - **Gate:** `npm run gate` = `typecheck` + `typecheck:scripts` + `test` + `lint` (inline-disable scanner + eslint `--max-warnings 0`) + `lint:biome` + `build`. `test` additionally runs `check-no-abs-paths.mjs` + `check-no-nul-bytes.mjs`. The GitHub release workflow calls `npm run gate`.
@@ -309,6 +309,41 @@ Keine offenen Abweichungen.
 ## Session history
 
 Append new entries at the top. Each entry = one working session.
+
+### 2026-09-02 — Der Smoke misst belegbar den eigenen Code, und der Prüfer prüft sich selbst
+
+Two findings from the umbrella repo pointed here, and both were closed by measuring rather
+than by asserting.
+
+**The 18/18 run of 2026-08-28 was unbacked.** It ran against `10_Pallas`, and what lies
+there is the store installation, not this repo's build. The driver could not see it: it
+compared `manifest.version`, and both builds carry the same number. Repeated in the repo's
+own staging vault against a freshly deployed build: **18/18, provenance `deployt`**. What
+prevents a repeat is not discipline but `requireEigenerBuild` (central, in
+`tools/obsidian-cdp/vault.ts`) ahead of the first check — with the path taken from the
+**running instance** (`app.vault.adapter.basePath`), not from `stagingVaultDir()`: a driver
+attaches to an arbitrary window via `--vault`, and the failing run attached to a foreign
+vault. `docs/SMOKE.md` marks the August run as unbacked instead of quietly replacing it.
+
+**The second finding asked whether a click without a hold duration measures past the
+defect.** Answer for this repo: **no check flips at 0 ms** — `--halten 0` and `--halten 150`
+are both 18/18, so json_viewer contributes no evidence for a future default above 0.
+
+**The counter-check was the real yield, and only because it was built as a switch rather
+than as a one-off gesture.** `--klick-gegenprobe` performs no click, so every
+click-dependent check must turn red — and it found two tool defects pointing in opposite
+directions. **E3 was red for the wrong reason:** a markdown view keeps its editor and
+reading-mode containers in the DOM *simultaneously*, the inactive one sized 0×0 and placed
+*first*, so `document.querySelector` reliably hit the invisible twin and reported "button
+not found" for a button that was plainly there — the measurements had been scoped to the
+view root all along, only the clicks were not. **D3 was green for the wrong reason:** it
+measured "does the file hold the original value?", which is trivially true when the edit it
+depends on never happened; undo had nothing to revert and the check confirmed it anyway.
+Both fixed; the counter-check now yields 12/18 with exactly the six click-dependent checks
+falling and nothing else.
+
+The rule both halves share: **a check measures what its name says only if its precondition
+is checked too, and if it clicks where it measures.**
 
 ### 2026-08-22 (2) — Zwei getrackte Treiber gegen ein laufendes Obsidian, zwei Befunde
 
