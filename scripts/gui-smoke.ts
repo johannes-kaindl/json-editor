@@ -731,7 +731,12 @@ const SECTIONS: Section[] = [
         elImView(`return root.querySelector('.json-row[data-path="a"] .json-key');`),
       );
       await pressKey(cdp, "ArrowDown", 1);
-      const bewegt = await fileContains(cdp, REORDER, '"b"');
+      // Gewartet wird auf einen Zustand, den es VOR der Bewegung nicht gibt. Die erste
+      // Fassung pollte auf `"b"` — das stand schon in der Ausgangsdatei, der Poll kehrte
+      // sofort zurueck und mass den Vorzustand. Der Schreibweg ist debounced (~2 s):
+      // 500 ms nach der Taste traegt die Ansicht die neue Reihenfolge und die Platte noch
+      // die alte (gemessen 2026-09-02).
+      const bewegt = await fileContains(cdp, REORDER, "{\n  // gehoert zu b");
       // Gemessen wird die REIHENFOLGE der Marker in der Datei, nicht ihr blosses Vorkommen —
       // „alle vier noch da" war der alte Zustand und waere gruen geblieben.
       const reihenfolge = bewegt
