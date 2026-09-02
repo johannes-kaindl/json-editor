@@ -147,9 +147,34 @@ export function jsoncChangeType(src: string, path: JsonPath, newType: JsonType):
  */
 interface Child {
   nodeStart: number;
+  leadStart: number; // start of the attached comment block (== nodeStart when there is none)
   extentEnd: number; // end of the consumed region (node + optional comma + same-line comment)
   nodeText: string;
+  leadText: string; // attached comment lines + the node's own indent, e.g. "  // why\n  "
   commentText: string; // e.g. " // A" (leading whitespace kept), or ""
+}
+
+/**
+ * The ATTACHED part of the whitespace-and-comments gap before a node: the part that
+ * travels with the element when it moves. The remainder stays with the slot and is
+ * cut straight from the source by the caller.
+ *
+ * The rule is the one people already use when reading code: comment lines directly
+ * above an element belong to it; a blank line severs that bond and makes the comment
+ * a heading for what follows. Everything up to and including the last blank line stays
+ * put; the comment lines after it — plus the node's own indent — travel.
+ *
+ * A block comment spanning several lines is deliberately NOT recognised: the check is
+ * per line, so a multi-line `/* … *\/` breaks the run and stays with the slot. That is
+ * the conservative direction — nothing is lost, only left behind.
+ */
+function attachedLead(gap: string): string {
+  const lines = gap.split("\n");
+  // The final segment carries no newline: it is the node's indent and always travels.
+  let from = lines.length - 1;
+  const commentOnly = /^\s*(?:\/\/.*|\/\*(?:(?!\*\/)[\s\S])*\*\/)\s*$/;
+  while (from > 0 && commentOnly.test(lines[from - 1] ?? "")) from--;
+  return lines.slice(from).join("\n");
 }
 
 function childInfos(src: string, containerPath: JsonPath): Child[] | null {
@@ -159,6 +184,11 @@ function childInfos(src: string, containerPath: JsonPath): Child[] | null {
     containerPath.length === 0 ? root : findNodeAtLocation(root, containerPath);
   const kids = container?.children;
   if (!kids || kids.length === 0) return [];
+  // Where the container's inner text begins — right after the opening brace/bracket.
+  // The first element's attached comment lives here, so it must be inside the rebuilt
+  // region; otherwise element 1 would be the only one whose comment stays behind.
+  const innerStart = (container?.offset ?? 0) + 1;
+  let prevEnd = innerStart;
   return kids.map((n) => {
     const nodeStart = n.offset;
     const nodeEnd = n.offset + n.length;
@@ -167,12 +197,17 @@ function childInfos(src: string, containerPath: JsonPath): Child[] | null {
     // lineTail ∈ { ", // A", " // C", ",", "", " /* x */", … }
     const m = /^(\s*,)?(\s*(?:\/\/[^\n]*|\/\*[\s\S]*?\*\/))?/.exec(lineTail);
     const consumed = m?.[0] ?? "";
-    return {
+    const lead = attachedLead(src.slice(prevEnd, nodeStart));
+    const child: Child = {
       nodeStart,
+      leadStart: nodeStart - lead.length,
       extentEnd: nodeEnd + consumed.length,
       nodeText: src.slice(nodeStart, nodeEnd),
+      leadText: lead,
       commentText: m?.[2] ?? "",
     };
+    prevEnd = child.extentEnd;
+    return child;
   });
 }
 
@@ -184,23 +219,28 @@ function reorderIndices(count: number, from: number, to: number): number[] {
 }
 
 /**
- * Rebuild a container's inter-brace text in a new child order, preserving the
- * original inter-element gaps (indentation + free-standing comment lines) in slot
- * order. The moved element carries its own same-line trailing comment; no comment
- * is ever lost (free-standing comments keep their absolute slot — see spec).
+ * Rebuild a container's inter-brace text in a new child order.
+ *
+ * Each element carries what belongs to it: its same-line trailing comment behind, and
+ * its attached comment lines in front (see `attachedLead`). Only the gap halves that no
+ * element claims — blank lines and comments a blank line severed — stay at their slot.
+ * No comment is ever lost either way.
  */
 function rebuildContainer(src: string, containerPath: JsonPath, order: number[]): string {
   const children = childInfos(src, containerPath);
   if (!children || children.length === 0) return src;
-  const innerStart = children[0].nodeStart;
+  const innerStart = children[0].leadStart;
   const innerEnd = children[children.length - 1].extentEnd;
-  const gapBefore = children.map((_, i) =>
-    i === 0 ? "" : src.slice(children[i - 1].extentEnd, children[i].nodeStart),
+  // The slot half of each gap stays at its position; the attached half travels on the
+  // Child and is emitted with it below.
+  const slotBefore = children.map((c, i) =>
+    src.slice(i === 0 ? innerStart : children[i - 1].extentEnd, c.leadStart),
   );
   const ordered = order.map((i) => children[i]);
   let out = "";
   for (let i = 0; i < ordered.length; i++) {
-    if (i > 0) out += gapBefore[i];
+    out += slotBefore[i];
+    out += ordered[i].leadText;
     out += ordered[i].nodeText;
     if (i < ordered.length - 1) out += ",";
     out += ordered[i].commentText;
