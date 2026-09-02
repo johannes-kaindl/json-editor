@@ -69,7 +69,7 @@ import {
   releaseAlwaysOnTop,
   requireVisible,
 } from "../../tools/obsidian-cdp/cdp.js";
-import { requireEigenerBuild } from "../../tools/obsidian-cdp/vault.js";
+import { buildHerkunft, requireEigenerBuild } from "../../tools/obsidian-cdp/vault.js";
 
 const PLUGIN_ID = "json-editor";
 /** Interner View-Registrierungs-Key — NICHT die Plugin-id (AGENTS.md: nie ändern). */
@@ -878,8 +878,9 @@ async function main(): Promise<void> {
     // lief gegen einen fremden Vault. Ein Check gegen den konventionellen Staging-Pfad
     // haette also eine Datei geprueft, die mit dem Lauf nichts zu tun hat. Geprueft wird,
     // was gemessen wird (Lesson 2026-09-02, kuro-gamification).
+    const pluginDir = join(vaultInfo.basePath, vaultInfo.configDir, "plugins", PLUGIN_ID);
     requireEigenerBuild(
-      join(vaultInfo.basePath, vaultInfo.configDir, "plugins", PLUGIN_ID, "main.js"),
+      join(pluginDir, "main.js"),
       // Der Vergleichsstand muss FRISCH sein — `npm run deploy` baut ihn direkt davor.
       // Ohne ihn bleibt nur die billige Aussage (Store-Suffix ja/nein), und die belegt
       // den eigenen Stand nicht.
@@ -889,6 +890,27 @@ async function main(): Promise<void> {
         console.warn(meldung);
       },
     );
+
+    // Und dieselbe Frage fuer `styles.css`, denn der zentrale Guard kennt nur `main.js` —
+    // `npm run deploy` kopiert aber beides. Abschnitt B misst **gerendertes CSS**
+    // (Trennkomma-Geometrie, `display` des eingeklappten Teilbaums, Theme-Farben,
+    // `[hidden]`-Sichtbarkeit); ein altes Stylesheet neben frischer `main.js` erzeugt dort
+    // denselben unbelegten Stand, den der Guard eine Zeile hoeher gerade ausgeschlossen hat
+    // — und er erschiene als Plugin-Befund, nicht als Deploy-Fehler.
+    // Uebernommen aus local-image-generator (`e6fbb53`, via REGISTRY § Testing).
+    const cssHerkunft = buildHerkunft(join(pluginDir, "styles.css"), join(cwd(), "styles.css"));
+    if (cssHerkunft.art === "fehlt") {
+      throw new Error(`Im Vault liegt kein styles.css: ${cssHerkunft.pfad}\nZuerst deployen.`);
+    }
+    if (cssHerkunft.art === "fremd") {
+      const z = (n: number) => n.toLocaleString("de-DE");
+      throw new Error(
+        `Das styles.css im Vault ist nicht der gebaute Repo-Stand: ${cssHerkunft.pfad}\n` +
+          `  im Vault: ${z(cssHerkunft.bytes)} Bytes\n` +
+          `  gebaut:   ${z(cssHerkunft.erwarteteBytes)} Bytes\n` +
+          "Abschnitt B misst gerendertes CSS. Zuerst deployen, dann erneut laufen.",
+      );
+    }
 
     // Das Plugin NEU LADEN, bevor irgendetwas gemessen wird. `npm run deploy` ersetzt nur
     // die Dateien; die laufende Instanz behaelt den alten Code im Speicher — ohne diesen
