@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.12.0] — 2026-09-02
+
 ### Changed
 - **Reordering a `.jsonc` row now takes the row's comments with it.** Until now a
   free-standing comment line kept its absolute position: nothing was lost, but after a
