@@ -45,11 +45,20 @@
  * npm run smoke:gui -- --port 9222 --section layout --keep
  * ```
  *
+ * Zwei Schalter fuer die Klicks selbst — sie pruefen den PRUEFER, nicht den Prueflings:
+ *
+ * ```bash
+ * npm run smoke:gui -- --klick-gegenprobe   # klickt nicht; jeder Klick-Punkt MUSS rot werden
+ * npm run smoke:gui -- --halten 150         # Press/Release mit Haltedauer statt im selben Tick
+ * ```
+ *
  * ⚠️ Chromium drosselt das Rendering nicht-fokussierter Fenster: ohne Fokus bleibt der DOM
  * der Ansicht leer und man debuggt ein Phantom (CORE-TEST-02).
  */
 
 import { execFileSync } from "node:child_process";
+import { join } from "node:path";
+import { cwd } from "node:process";
 
 import {
   type Cdp,
@@ -60,6 +69,7 @@ import {
   releaseAlwaysOnTop,
   requireVisible,
 } from "../../tools/obsidian-cdp/cdp.js";
+import { requireEigenerBuild } from "../../tools/obsidian-cdp/vault.js";
 
 const PLUGIN_ID = "json-editor";
 /** Interner View-Registrierungs-Key — NICHT die Plugin-id (AGENTS.md: nie ändern). */
@@ -67,6 +77,54 @@ const VIEW_TYPE = "json-editor-view";
 
 /** Vom Lauf angelegte Dateien — das `finally` wirft sie gebündelt in den Papierkorb. */
 const createdFiles = new Set<string>();
+
+/**
+ * Klick-Optionen des Laufs — gesetzt aus `--halten` / `--klick-gegenprobe`.
+ *
+ * **Warum das ein Schalter ist und kein Handgriff:** ein Prüfpunkt hinter einem Klick kann
+ * *grün am Falschen* sein — grün, obwohl der Klick nie ankam, weil die Bedingung schon
+ * vorher wahr war. Das fällt nur auf, wenn man den Klick wegnimmt und **rot** erwartet.
+ * Eine Gegenprobe, die man von Hand herstellt, wird einmal gefahren und danach nie wieder;
+ * als Flag ist sie beim nächsten neuen Prüfpunkt einen Aufruf entfernt.
+ *
+ * `haltenMs` ist die zweite Hälfte derselben Frage: `clickReal` schickt Press und Release
+ * ohne Pause. Zeichnet die Ansicht sich dazwischen neu, trifft das Release ein anderes
+ * Element und es entsteht **gar kein** `click` — der Punkt wird dann zu Recht rot, aber aus
+ * einem Grund, den niemand am Prüfling suchen würde. Die Schwelle, ab der ein Punkt kippt,
+ * wird gemessen (`--halten 150`) statt geschätzt.
+ */
+const klickOptionen = { haltenMs: 0, gegenprobe: false };
+
+/**
+ * Einziger Klick-Weg des Treibers — kein Prüfpunkt ruft `clickReal` direkt auf, sonst
+ * greift der Schalter nur bei der Hälfte.
+ *
+ * In der Gegenprobe wird die *Existenz und Sichtbarkeit* des Ziels weiter geprüft (ein
+ * fehlendes Ziel bleibt ein Werkzeugfehler und soll nicht als „Klick wirkt nicht"
+ * durchgehen) — nur der Klick selbst unterbleibt.
+ */
+async function klick(cdp: Cdp, ausdruck: string): Promise<boolean> {
+  // Zuerst die LAGE des Ziels, dann erst der Klick. `clickReal` gibt bei „nicht im DOM" und
+  // bei „da, aber 0x0" dasselbe `false` zurueck — und der Pruefpunkt meldet dann beides als
+  // „Knopf nicht gefunden". Genau diese Verwechslung kostete am 2026-09-02 eine
+  // Viertelstunde: der Knopf war da, nur im unsichtbaren Zwilling-Container der Ansicht.
+  const lage = await cdp.evaluate<{ da: boolean; w: number; h: number }>(`
+    const el = ${ausdruck};
+    if (!el) return { da: false, w: 0, h: 0 };
+    const r = el.getBoundingClientRect();
+    return { da: true, w: r.width, h: r.height };
+  `);
+  if (!lage.da) {
+    console.log("    (Klick-Ziel nicht im DOM)");
+    return false;
+  }
+  if (lage.w === 0 || lage.h === 0) {
+    console.log("    (Klick-Ziel liegt im DOM, ist aber 0x0 — unsichtbar. Falscher Scope?)");
+    return false;
+  }
+  if (klickOptionen.gegenprobe) return true;
+  return clickReal(cdp, ausdruck, klickOptionen.haltenMs);
+}
 
 const SMOKE_JSON = "_json-smoke.json";
 const SMOKE_JSONC = "_json-smoke.jsonc";
@@ -186,6 +244,25 @@ const inView = (body: string): string => `
   const root = view.containerEl;
   ${body}
 `;
+
+/**
+ * Wie `inView`, aber als **Ausdruck** — `klick()` bekommt sein Ziel als Expression, nicht
+ * als Statement-Block.
+ *
+ * Warum das nicht kosmetisch ist: die Messungen liefen laengst ueber `inView`, die KLICKS
+ * aber über `document.querySelector`. Fallen beide auseinander, klickt der Treiber auf ein
+ * anderes Element als das, an dem er hinterher misst. Eine Markdown-Ansicht haelt
+ * Editor- und Lesemodus-Container **gleichzeitig** im DOM — der inaktive ist 0x0, steht im
+ * Dokument aber VORNE. `document.querySelector(".json-codeblock-copy")` traf deshalb
+ * zuverlaessig den unsichtbaren Zwilling (gemessen 2026-09-02: 4 Karten, 2 Knoepfe, ein
+ * einziges Blatt).
+ */
+const elImView = (body: string): string => `(() => {
+  const leaf = app.workspace.getMostRecentLeaf(app.workspace.rootSplit);
+  const root = leaf?.view?.containerEl;
+  if (!root) return null;
+  ${body}
+})()`;
 
 /** Einen Plugin-Befehl über den Host ausführen — nicht die Methode direkt rufen.
  *  Die Registrierung ist Teil dessen, was hier geprüft wird. */
@@ -434,7 +511,7 @@ const SECTIONS: Section[] = [
       if (!zielVorhanden) {
         check("C2 Sprung in einen eingeklappten Ast macht die Zeile sichtbar", false, "Zielzeile nicht im Baum");
       } else {
-        await clickReal(cdp, `document.querySelector('.json-row[data-path="nested.deep.leaf"] .json-key')`);
+        await klick(cdp, elImView(`return root.querySelector('.json-row[data-path="nested.deep.leaf"] .json-key');`));
         await new Promise((r) => setTimeout(r, 400));
         const segmente = await cdp.evaluate<string[]>(
           inView(`return [...root.querySelectorAll(".bc-seg")].map((s) => s.textContent.trim());`),
@@ -448,12 +525,12 @@ const SECTIONS: Section[] = [
         );
         // Auf das letzte Segment klicken: es zeigt auf die Zeile selbst, also genau den
         // Sprung, der im Defektfall nichts tat.
-        const geklickt = await clickReal(
+        const geklickt = await klick(
           cdp,
-          `(() => {
-            const segs = [...document.querySelectorAll(".bc-seg")];
+          elImView(`
+            const segs = [...root.querySelectorAll(".bc-seg")];
             return segs.length ? segs[segs.length - 1] : null;
-          })()`,
+          `),
         );
         const nachher = await pollUntil<boolean>(
           cdp,
@@ -519,9 +596,9 @@ const SECTIONS: Section[] = [
       // D1 — echter Mausklick statt `element.click()`: ein synthetischer Klick trägt
       // `isTrusted: false` und läuft an Host-Pfaden vorbei, die an echten Zeigereingaben
       // hängen (Fokus, Blur, Tooltip). Ein Defekt genau dort bliebe unsichtbar.
-      const geklickt = await clickReal(
+      const geklickt = await klick(
         cdp,
-        `document.querySelector('.json-row[data-path="marker"] .json-editable')`,
+        elImView(`return root.querySelector('.json-row[data-path="marker"] .json-editable');`),
       );
       const feld = await pollUntil<boolean>(
         cdp,
@@ -565,21 +642,28 @@ const SECTIONS: Section[] = [
       `);
       const undoOk = await runCommand(cdp, "undo-edit");
       const nachUndo = await fileContains(cdp, SMOKE_JSON, "unveraendert");
+      // Die Vorbedingung gehoert MITGEPRUEFT, sonst misst dieser Punkt nichts: stand der
+      // Ausgangswert vor dem Undo noch in der Datei (weil die Aenderung aus D2 gar nicht
+      // ankam), dann ist „Ausgangswert zurueck" trivial wahr — der Punkt waere gruen, ohne
+      // dass Undo irgendetwas getan haette. Gemessen 2026-09-02 mit `--klick-gegenprobe`:
+      // ohne Klick fielen C2/D1/D2/D4/E3, D3 blieb als einziger faelschlich gruen.
       check(
         "D3 Undo stellt den Dateiinhalt wieder her",
-        undoOk && Boolean(nachUndo),
-        nachUndo
-          ? "Ausgangswert zurück"
-          : `Ausgangswert nicht zurück (Befehl lief: ${undoOk ? "ja" : "nein"}, canUndo: ${undoLage.kannUndo ? "ja" : "nein"}, aktive Datei: ${undoLage.aktiv})`,
+        Boolean(nachEdit) && undoOk && Boolean(nachUndo),
+        !nachEdit
+          ? "Szene ungültig: die Änderung aus D2 stand gar nicht in der Datei — Undo hatte nichts rückgängig zu machen"
+          : nachUndo
+            ? "Ausgangswert zurück"
+            : `Ausgangswert nicht zurück (Befehl lief: ${undoOk ? "ja" : "nein"}, canUndo: ${undoLage.kannUndo ? "ja" : "nein"}, aktive Datei: ${undoLage.aktiv})`,
       );
 
       // D4 — der duale Mutationspfad: eine `.jsonc`-Änderung darf die Kommentare nicht
       // wegwerfen. Auch das ist nur an der geschriebenen Datei zu sehen.
       await openJsonFile(cdp, SMOKE_JSONC, SMOKE_JSONC_TEXT);
       await runCommand(cdp, "expand-all");
-      const jsoncGeklickt = await clickReal(
+      const jsoncGeklickt = await klick(
         cdp,
-        `document.querySelector('.json-row[data-path="wert"] .json-editable')`,
+        elImView(`return root.querySelector('.json-row[data-path="wert"] .json-editable');`),
       );
       await cdp.evaluate(
         inView(`
@@ -661,7 +745,14 @@ const SECTIONS: Section[] = [
 
       // E3 — der Copy-Knopf des Codeblocks hatte bis 1.11.2 GAR KEINEN Guard. Gemessen
       // wird die Zwischenablage selbst; ihr Vorwert wird in `main` zurückgeschrieben.
-      const kopiert = await clickReal(cdp, `document.querySelector(".json-codeblock-copy")`);
+      // Der Knopf wird im SICHTBAREN Lesemodus-Container gesucht, wie E1/E2 auch. Ohne
+      // diesen Scope trifft die Suche den Zwilling im Editor-Container: vorne im Dokument,
+      // 0x0 gross, und der Pruefpunkt meldet „Knopf nicht gefunden" fuer einen Knopf, der
+      // einwandfrei da ist (gemessen 2026-09-02).
+      const kopiert = await klick(
+        cdp,
+        elImView(`return root.querySelector(".markdown-reading-view .json-codeblock-copy");`),
+      );
       const inhalt = kopiert
         ? await pollUntil<string>(
             cdp,
@@ -684,7 +775,10 @@ const SECTIONS: Section[] = [
         // LESEN der Zwischenablage im Renderer verweigert wird. Dann belegt die Notice
         // den Erfolg — falsch ist nur das stumme Dritte.
         const beschriftung = await cdp.evaluate<string>(
-          `return (document.querySelector(".json-codeblock-copy")?.textContent ?? "").trim();`,
+          inView(`
+            const b = root.querySelector(".markdown-reading-view .json-codeblock-copy");
+            return (b?.textContent ?? "").trim();
+          `),
         );
         check(
           "E3 Copy-Knopf schreibt in die Zwischenablage",
@@ -710,6 +804,8 @@ async function main(): Promise<void> {
   const vault = flag("vault");
   const keep = argv.includes("--keep");
   const sectionArg = flag("section");
+  klickOptionen.haltenMs = Number(flag("halten") ?? 0);
+  klickOptionen.gegenprobe = argv.includes("--klick-gegenprobe");
 
   const sections = sectionArg ? SECTIONS.filter((s) => s.key === sectionArg) : SECTIONS;
   if (sections.length === 0) {
@@ -719,6 +815,13 @@ async function main(): Promise<void> {
   }
 
   console.log(`GUI-Smoke — Obsidian auf Port ${port}`);
+  if (klickOptionen.gegenprobe) {
+    console.log(
+      "⚠️  KLICK-GEGENPROBE: es wird nicht geklickt. Jeder klickabhaengige Pruefpunkt MUSS "
+        + "rot werden — bleibt einer gruen, misst er etwas, das auch ohne den Klick wahr ist.",
+    );
+  }
+  if (klickOptionen.haltenMs > 0) console.log(`Klick-Haltedauer: ${klickOptionen.haltenMs} ms`);
   const cdp = await attachTo("workspace", port, vault);
   if (!cdp) {
     throw new Error(
@@ -731,6 +834,10 @@ async function main(): Promise<void> {
   // zurueckschreiben kann.
   let previousSettings: string | null = null;
   let previousClipboard: string | null = null;
+  // Die `ungeklaert`-Warnung gehoert in die Abschlusszeile, nicht nur nach oben ins
+  // Protokoll: wer eine Runde faehrt, liest die letzte Zeile — und ein Lauf, dessen
+  // Herkunft ungeprueft blieb, darf nicht aussehen wie einer, der belegt ist.
+  let herkunftsWarnung: string | null = null;
 
   try {
     // Ohne Fokus drosselt Chromium den Renderer: der DOM der Ansicht bleibt leer, waehrend
@@ -749,9 +856,39 @@ async function main(): Promise<void> {
     await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: true }).catch(() => undefined);
     await new Promise((r) => setTimeout(r, 300));
 
-    const vaultName = await cdp.evaluate<string>(`return window.app ? app.vault.getName() : "";`);
-    if (!vaultName) throw new Error("Obsidians `app` ist im Renderer nicht erreichbar.");
-    console.log(`Vault: ${vaultName}`);
+    const vaultInfo = await cdp.evaluate<{ name: string; basePath: string; configDir: string }>(`
+      if (!window.app) return null;
+      return {
+        name: app.vault.getName(),
+        basePath: app.vault.adapter.basePath,
+        configDir: app.vault.configDir,
+      };
+    `);
+    if (!vaultInfo?.name) throw new Error("Obsidians `app` ist im Renderer nicht erreichbar.");
+    console.log(`Vault: ${vaultInfo.name}`);
+
+    // Laeuft dieser Lauf gegen den eigenen Stand? Die Frage, gegen die die Versionszeile
+    // eine Zeile weiter unten strukturell blind ist: Store-Build und Repo-Build tragen
+    // dieselbe Nummer. Am 2026-08-30 standen dachweit 69 von 150 gruenen Pruefpunkten auf
+    // einem Build, der nicht belegt der Repo-Stand war — dieser Treiber war einer davon
+    // (18/18 am 28.08. gegen die Store-Installation vom 23.08.).
+    //
+    // Der Pfad kommt aus der LAUFENDEN Instanz, nicht aus `stagingVaultDir(...)`: der
+    // Treiber dockt per `--vault` an ein beliebiges Fenster an, und genau der Fehllauf
+    // lief gegen einen fremden Vault. Ein Check gegen den konventionellen Staging-Pfad
+    // haette also eine Datei geprueft, die mit dem Lauf nichts zu tun hat. Geprueft wird,
+    // was gemessen wird (Lesson 2026-09-02, kuro-gamification).
+    requireEigenerBuild(
+      join(vaultInfo.basePath, vaultInfo.configDir, "plugins", PLUGIN_ID, "main.js"),
+      // Der Vergleichsstand muss FRISCH sein — `npm run deploy` baut ihn direkt davor.
+      // Ohne ihn bleibt nur die billige Aussage (Store-Suffix ja/nein), und die belegt
+      // den eigenen Stand nicht.
+      join(cwd(), "main.js"),
+      (meldung) => {
+        herkunftsWarnung = meldung;
+        console.warn(meldung);
+      },
+    );
 
     // Das Plugin NEU LADEN, bevor irgendetwas gemessen wird. `npm run deploy` ersetzt nur
     // die Dateien; die laufende Instanz behaelt den alten Code im Speicher — ohne diesen
@@ -910,6 +1047,9 @@ async function main(): Promise<void> {
 
   const failed = results.filter((r) => !r.passed);
   console.log(`${results.length - failed.length}/${results.length} gruen`);
+  if (herkunftsWarnung !== null) {
+    console.log("⚠️  Herkunft des gemessenen Builds ungeprueft — s. Warnung oben.");
+  }
   if (failed.length > 0) {
     console.log("Rot:");
     for (const r of failed) console.log(`  - ${r.name}: ${r.detail}`);

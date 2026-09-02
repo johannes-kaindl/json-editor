@@ -46,6 +46,48 @@ Der Plugin-Ordner heißt nach der `manifest.json`-`id` (`json-editor`), nicht na
 `--keep` lässt die angelegten Prüfdateien stehen, `--section <key>` fährt nur einen
 Abschnitt (`ansicht`, `layout`, `navigation`, `editieren`, `codeblock`).
 
+### Prüft der Prüfer? (`--klick-gegenprobe`, `--halten`)
+
+Ein Prüfpunkt hinter einem Klick kann **grün am Falschen** sein: grün, obwohl der Klick nie
+ankam, weil die gemessene Bedingung schon vorher wahr war. Das sieht man nur, wenn man den
+Klick wegnimmt und Rot erwartet:
+
+```bash
+npm run smoke:gui -- --klick-gegenprobe   # klickt nicht — jeder Klick-Punkt MUSS rot werden
+npm run smoke:gui -- --halten 150         # Press/Release mit Pause statt im selben Tick
+```
+
+`clickReal` schickt Press und Release ohne Haltedauer. Zeichnet die Ansicht sich dazwischen
+neu, trifft das Release ein anderes Element und es entsteht **gar kein** `click`. Kippt ein
+Punkt erst mit `--halten`, gehört die Schwelle notiert — der künftige Default der zentralen
+Brücke wird aus gemessenen Zahlen gebildet, nicht geschätzt (beschlossen im Dach,
+2026-08-30; die bekannten 150 ms stammen von *einem* Plugin).
+
+**Gefahren wird im eigenen Staging-Vault** (`$STAGING_VAULTS_DIR/json_viewer`), nicht im
+Arbeits-Vault. Dort liegt bei den meisten Plugins der Store-Build statt des Repo-Stands,
+und dort liegt fremdes Prüfmaterial — beides macht einen Lauf unbelegt.
+
+### Läuft der Lauf gegen den eigenen Build? (seit 2026-09-02 erzwungen)
+
+Vor dem ersten Prüfpunkt fragt der Treiber `requireEigenerBuild` (zentral in
+`tools/obsidian-cdp/vault.ts`), ob die `main.js` im gemessenen Vault der frisch gebaute
+Repo-Stand ist — entschieden am sha1, nicht an der Versionsnummer. **Die Versionsnummer
+ist für diese Frage strukturell blind**: Store-Build und Repo-Build tragen dieselbe.
+
+Der geprüfte Pfad kommt aus der **laufenden Instanz** (`app.vault.adapter.basePath`), nicht
+aus `stagingVaultDir(...)` — der Treiber dockt per `--vault` an ein beliebiges Fenster an,
+und ein Check gegen den konventionellen Pfad prüfte dann eine Datei, die mit dem Lauf
+nichts zu tun hat. Drei Ausgänge: `store-installiert`/`fremd`/`fehlt` brechen ab,
+`ungeklaert` warnt und hängt die Warnung in die Abschlusszeile.
+
+Daraus folgt die Reihenfolge oben: **erst `npm run deploy`** (baut und kopiert), dann
+fahren. Ohne frischen Build im Repo-Root bleibt nur die billige Aussage.
+
+*Anlass:* der Lauf 18/18 vom 2026-08-28 lief gegen die Store-Installation, nicht gegen den
+Repo-Stand — dachweit standen an dem Tag 69 von 150 grünen Prüfpunkten auf ungeprüftem
+Code. Ein grüner Punkt wird nicht untersucht; deshalb ist ein solcher Lauf schlimmer als
+gar keiner.
+
 Der Treiber legt seine Prüfdateien selbst an, lädt das Plugin im Renderer neu (sonst misst
 er den zuletzt geladenen Stand statt des gerade gebauten), schreibt die Plugin-Settings am
 Ende auf den Vorwert zurück und wirft die Prüfdateien in den **Papierkorb** — auch nach
@@ -93,7 +135,35 @@ Mechanisch nicht entscheidbar — dafür bleibt die Runde von Hand:
 
 | Datum | Obsidian | Plugin | Ergebnis | Gegenprobe |
 |---|---|---|---|---|
-| 2026-08-22 | 1.13.7 | 1.11.2 + Fix | **18/18** (Vault `10_Pallas`) | **bestanden**: Fix ausgebaut → genau D3 rot, kein anderer Punkt fällt mit |
+| 2026-08-22 | 1.13.7 | 1.11.2 + Fix | 18/18 (Vault `10_Pallas`) — **unbelegt**, s. u. | bestanden: Fix ausgebaut → genau D3 rot, kein anderer Punkt fällt mit |
+| 2026-09-02 | 1.13.7 | 1.11.3 | **18/18** (Staging-Vault `json_viewer`, Herkunft `deployt`) | **bestanden**: `--klick-gegenprobe` → 12/18, exakt die sechs klickabhängigen Punkte fallen (C2, D1–D4, E3), kein anderer fällt mit |
+
+Der Lauf vom **2026-08-22 ist rückwirkend als unbelegt zu lesen**: er lief gegen `10_Pallas`,
+und dort lag die Store-Installation, nicht der Repo-Stand. Aufgefallen ist das erst am
+2026-08-30 bei einer dachweiten Zählung (69 von 150 grünen Prüfpunkten standen auf
+ungeprüftem Code) — der Treiber selbst konnte es nicht sehen, weil er sich an
+`manifest.version` orientierte und beide Builds dieselbe Nummer tragen. Seit dem
+2026-09-02 verhindert `requireEigenerBuild` genau diesen Lauf.
+
+**Was der belegte Lauf gefunden hat** — beides am Werkzeug, nichts am Plugin:
+
+- **Ein Prüfpunkt war zu Unrecht rot.** E3 meldete „Knopf nicht gefunden" für einen Knopf,
+  der einwandfrei da war. Eine Markdown-Ansicht hält Editor- und Lesemodus-Container
+  **gleichzeitig** im DOM; der inaktive ist 0×0 groß und steht im Dokument **vorne**.
+  `document.querySelector(".json-codeblock-copy")` traf deshalb zuverlässig den
+  unsichtbaren Zwilling (gemessen: 4 Karten, 2 Knöpfe, ein einziges Blatt). Die Messungen
+  liefen längst über `inView`, nur die *Klicks* nicht — jetzt tun sie es (`elImView`), und
+  `klick()` unterscheidet im Protokoll „nicht im DOM" von „da, aber 0×0".
+- **Ein Prüfpunkt war zu Unrecht grün.** In der Gegenprobe fielen fünf der sechs
+  klickabhängigen Punkte, D3 nicht: er maß „steht der Ausgangswert in der Datei?" — und
+  ohne die vorangegangene Änderung aus D2 ist das trivial wahr. Undo hatte nichts
+  rückgängig zu machen und der Punkt bestätigte es trotzdem. Die Vorbedingung wird jetzt
+  mitgeprüft.
+
+**Zur Haltedauer** (offene Dach-Frage, ab wann `clickReal` Press/Release trennen muss): in
+diesem Repo kippt **kein** Punkt bei 0 ms — die Läufe mit `--halten 0` und `--halten 150`
+sind beide 18/18. Aus json_viewer kommt also **kein Beleg für einen Default > 0**; eine
+Schwelle war nicht messbar, weil nichts zu kippen war.
 
 **Was der erste Lauf gefunden hat** — ein echter Defekt und drei Mängel am Werkzeug selbst:
 
