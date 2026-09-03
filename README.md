@@ -101,15 +101,34 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 
 ## Install
 
-### From the Community Plugin Directory (recommended)
+> **Not currently in the Community Plugin Directory.** The listing was removed in September
+> 2026 for a reason unrelated to this plugin's code: the Directory installs exclusively from
+> GitHub releases, and the maintainer's GitHub account was flagged, which took every plugin
+> distributed through it out of the store at once. The plugin itself is unchanged and
+> actively maintained — releases continue on Forgejo, and the two routes below install and
+> update from there.
 
-Listed since 12 July 2026. In Obsidian: **Settings → Community plugins → Browse → search "JSON Editor" → Install → Enable**. Updates then arrive through Obsidian like any other community plugin.
+### With AnySource Sideloader (recommended)
+
+[AnySource Sideloader](https://git.jkaindl.de/jkaindl/anysource-sideloader) installs and
+updates Obsidian plugins from any git forge, which is exactly the single point of failure
+described above. Once it is installed, subscribe to this catalog under **Browse catalogs**:
+
+```
+https://git.jkaindl.de/jkaindl/anysource-sideloader/raw/branch/main/catalog.json
+```
+
+JSON Editor is listed there and installs from its Forgejo release. Updates are then offered
+like any store update — visible, and never applied without confirmation.
 
 ### Manually
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/johannes-kaindl/json-editor/releases/latest).
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://git.jkaindl.de/jkaindl/json-editor/releases/latest).
 2. Drop the three files into your vault's `.obsidian/plugins/json-editor/` directory.
 3. In Obsidian: **Settings → Community plugins → Installed → Enable "JSON Editor"**.
+
+Already installed it by hand and want updates? AnySource Sideloader recognises plugins that
+are already in the vault and can adopt them without a reinstall.
 
 ### From source
 
@@ -289,9 +308,13 @@ This project is mirrored across two forges:
 | Remote | URL | Role |
 |---|---|---|
 | Forgejo | <https://git.jkaindl.de/jkaindl/json-editor> | **Primary** — source development, issues, PRs |
-| GitHub | <https://github.com/johannes-kaindl/json-editor> | Release mirror — the Community Plugin Directory reads releases from GitHub only |
+| GitHub | <https://github.com/johannes-kaindl/json-editor> | Mirror, currently inactive — see below |
 
-Issues and pull requests are preferred on **Forgejo**. GitHub exists because the Obsidian Community Plugin Directory only links to GitHub releases.
+Issues, pull requests **and releases** belong on **Forgejo**; that is where installs come
+from. The GitHub mirror existed because the Community Plugin Directory links to GitHub
+releases only — since the account was flagged it serves no distribution purpose, and its
+release automation is switched off. It is kept as a mirror of the source, not as a download
+location.
 
 ---
 
@@ -305,7 +328,12 @@ Bug reports and pull requests are welcome on Forgejo. For larger changes, please
 
 Actively maintained by a single maintainer ([@jkaindl](https://git.jkaindl.de/jkaindl) / [@johannes-kaindl](https://github.com/johannes-kaindl)). Built for personal use, released because it might be useful to others.
 
-**In the Community Plugin Directory since 12 July 2026**, passing the automated review. As the directory notes on every such entry, that is the automated check — the plugin has not been manually reviewed by Obsidian staff.
+**Listed in the Community Plugin Directory from 12 July 2026 until September 2026**, passing
+its automated review throughout (that check is automated; no Obsidian staff review is implied).
+The removal was not about this plugin: the Directory distributes from GitHub only, and the
+maintainer's GitHub account was flagged, which removed every plugin published through it. See
+[Install](#install) for the routes that work — development, releases and support continue
+unchanged on Forgejo.
 
 **Shipped** (see [`CHANGELOG.md`](CHANGELOG.md)): structural tree editing & undo/redo (1.0.0), drag-and-drop reorder + type-switching (1.1.0), unified cross-mode undo/redo (1.2.0), JSON Schema validation (1.3.0, opt-in since 1.5.0), data-integrity & crash hardening (1.5.0), guideline alignment + large-file guard + source-mode search (1.6.0), submission-prep + plugin rename to `json-editor` (1.7.0), mobile interaction model + toolbar polish (1.8.0), pop-out window correctness + community-review cleanup (1.8.1–1.8.2), eval-free schema validation with a ~52% smaller bundle (1.9.0), `.jsonc` support with comment-preserving tree editing (1.10.0–1.10.1), tree-rendering polish (1.10.2), storefront description (1.10.3), tree navigation & comfort — collapse-all, remembered collapse state, match-to-match search, go-to-path, shortened long values (1.11.0), portal-review hygiene: zero reviewer warnings, declarative settings (1.11.1).
 
