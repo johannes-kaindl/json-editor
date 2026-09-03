@@ -11,6 +11,11 @@ export class LargeFileBanner {
   constructor(onLoadAnyway: () => void) {
     this.el = makeEl("div");
     this.el.className = "json-large-file-banner";
+    // Erscheint ohne Zutun des Nutzers (beim Oeffnen der Datei) — ohne Live-Region
+    // erfaehrt ein Screenreader nie davon. `polite`, nicht `alert`: die Meldung ist
+    // wichtig, aber sie muss nicht mitten in einen Satz hineinsprechen.
+    this.el.setAttribute("role", "status");
+    this.el.setAttribute("aria-live", "polite");
     this.el.hidden = true;
 
     this.msgEl = makeEl("span");

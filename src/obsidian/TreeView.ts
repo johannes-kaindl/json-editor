@@ -60,10 +60,19 @@ export class TreeView {
   /** Collapse state as it was before the current search run started. */
   private preFilterCollapsed: string[] | null = null;
 
+  /** Live-Region fuer Ereignisse ohne eigenen Text (Kopieren). */
+  private readonly announceEl: HTMLElement;
+
   constructor(
     private container: HTMLElement,
     private opts: TreeViewOptions,
-  ) {}
+  ) {
+    this.announceEl = makeEl("div", container.ownerDocument);
+    this.announceEl.className = "json-a11y-announce";
+    this.announceEl.setAttribute("role", "status");
+    this.announceEl.setAttribute("aria-live", "polite");
+    container.appendChild(this.announceEl);
+  }
 
   setValidationErrors(errors: Map<string, string>): void {
     this.validationErrors = errors;
@@ -274,6 +283,19 @@ export class TreeView {
       });
   }
 
+  /**
+   * Sagt einer Hilfstechnologie etwas an, das sonst nur sichtbar passiert.
+   *
+   * Anlass ist der Kopier-Knopf: er meldet Erfolg ueber eine CSS-Klasse, und eine Klasse
+   * hoert niemand. Die Region ist `aria-live="polite"`, unterbricht also nicht — und sie
+   * wird vor dem Setzen geleert, weil ein identischer Text zweimal hintereinander sonst
+   * gar nicht angesagt wird (der Screenreader sieht keine Aenderung).
+   */
+  announce(message: string): void {
+    this.announceEl.textContent = "";
+    this.announceEl.textContent = message;
+  }
+
   private render(): void {
     this.opts.onBeforeRender?.();
     // Capture state that the full re-render would otherwise drop (blocker 1.8):
@@ -286,6 +308,9 @@ export class TreeView {
     const prevScroll = scroller.scrollTop;
     const prevCollapsed = this.collectCollapseState();
     this.container.replaceChildren();
+    // Die Ansage-Region ueberlebt jeden Re-Render: sie haengt am Container, den
+    // `replaceChildren()` gerade geleert hat, und wird deshalb wieder eingehaengt.
+    this.container.appendChild(this.announceEl);
     this.activeRow = null;
     const el = renderTree(this.current, {
       doc: this.container.ownerDocument,
@@ -601,6 +626,7 @@ export class TreeView {
     const input = makeEl("input");
     input.type = "text";
     input.className = "json-inline-edit json-key-rename";
+    input.setAttribute("aria-label", `Rename key ${currentKey}`);
     input.value = currentKey;
     keyEl.replaceWith(input);
     input.focus();
@@ -882,7 +908,9 @@ export class TreeView {
       if (pathStr === null) return;
       const value = locateValueByPathStr(this.current, pathStr);
       const path = parsePathStr(pathStr);
-      const btn = createCopyButton(value, path);
+      const btn = createCopyButton(value, path, (what) =>
+        this.announce(what === "path" ? "Path copied" : "Value copied"),
+      );
       row.appendChild(btn);
     });
   }
@@ -905,12 +933,14 @@ export class TreeView {
       this.render();
     };
 
+    // Der Name sagt, WAS bearbeitet wird — ohne ihn liest ein Screenreader nur „Eingabefeld".
+    const editLabel = `Edit value at ${pathToString(path)}`;
     if (typeof value === "string") {
-      replaceWithInput(valueEl, "text", value, (raw, committed) => {
+      replaceWithInput(valueEl, "text", value, editLabel, (raw, committed) => {
         finish(committed ? raw : undefined);
       });
     } else if (typeof value === "number") {
-      replaceWithInput(valueEl, "number", String(value), (raw, committed) => {
+      replaceWithInput(valueEl, "number", String(value), editLabel, (raw, committed) => {
         if (!committed) return finish(undefined);
         const n = Number(raw);
         if (!Number.isFinite(n)) return finish(undefined);
@@ -928,7 +958,7 @@ export class TreeView {
         finish(n);
       });
     } else if (typeof value === "boolean") {
-      replaceWithCheckbox(valueEl, value, (newVal, committed) => {
+      replaceWithCheckbox(valueEl, value, editLabel, (newVal, committed) => {
         finish(committed ? newVal : undefined);
       });
     }
@@ -1018,12 +1048,14 @@ function replaceWithInput(
   target: HTMLElement,
   type: "text" | "number",
   initial: string,
+  label: string,
   onDone: (rawValue: string, committed: boolean) => void,
 ): void {
   const input = makeEl("input");
   input.type = type;
   input.value = initial;
   input.className = "json-inline-edit";
+  input.setAttribute("aria-label", label);
   target.replaceWith(input);
   input.focus();
   input.select();
@@ -1061,12 +1093,14 @@ function replaceWithInput(
 function replaceWithCheckbox(
   target: HTMLElement,
   initial: boolean,
+  label: string,
   onDone: (newValue: boolean, committed: boolean) => void,
 ): void {
   const input = makeEl("input");
   input.type = "checkbox";
   input.checked = initial;
   input.className = "json-inline-edit";
+  input.setAttribute("aria-label", label);
   target.replaceWith(input);
   input.focus();
   let resolved = false;

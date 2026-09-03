@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- **The tree now speaks to screen readers.** Four banners that appear without the user
+  doing anything (parse error, schema errors, lossy numbers, large file) and the search
+  match count are live regions, so they are announced instead of only shown. The copy
+  button — which reported success through a CSS class and a glyph, neither of which a
+  screen reader conveys — now announces "Value copied" / "Path copied" through a visually
+  hidden region.
+- **The three text inputs have accessible names**: the value editor announces which path
+  it edits, the rename editor which key, and the search field says what it searches.
+  Previously a screen reader read all three as an unnamed "edit field".
+
 ## [1.12.0] — 2026-09-02
 
 ### Changed

@@ -20,12 +20,17 @@ export class SearchBar {
     this.input = makeEl("input");
     this.input.type = "text";
     this.input.className = "json-search-input";
+    this.input.setAttribute("aria-label", "Search JSON");
     this.input.placeholder = "Search keys and values…";
     this.input.spellcheck = false;
     this.el.appendChild(this.input);
 
     this.countEl = makeEl("span");
     this.countEl.className = "json-search-count";
+    // Die Trefferzahl aendert sich beim Tippen und ist sonst rein visuell — als Live-Region
+    // wird sie angesagt. `polite`, damit sie das Tippen nicht unterbricht.
+    this.countEl.setAttribute("role", "status");
+    this.countEl.setAttribute("aria-live", "polite");
     this.countEl.hidden = true;
     this.el.appendChild(this.countEl);
 
