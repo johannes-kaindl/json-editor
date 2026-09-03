@@ -1,4 +1,4 @@
-// vendored from obsidian-kit@0.27.0, src/obsidian/clipboard.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from obsidian-kit@0.30.0, src/obsidian/clipboard.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 // ONE mechanical deviation from verbatim: kit-internal imports ../pure/ → ../kit/ (vendor layout); reproduce on every re-vendor, nothing else may differ.
 /** Zwischenablage **mit Quittung**: bindet `writeClipboard` aus `pure/clipboard` an Obsidians
  *  `Notice`. Der Kopiervorgang selbst steht vollständig dort — hier liegt nur die Entscheidung,
