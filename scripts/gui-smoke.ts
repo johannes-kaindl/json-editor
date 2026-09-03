@@ -504,6 +504,43 @@ const SECTIONS: Section[] = [
           `${versteckt.gefunden} geprüft${versteckt.sichtbar.length ? `, sichtbar trotz hidden: ${versteckt.sichtbar.join(", ")}` : ""}`,
         );
       }
+
+      // B5 — die A11y-Ansage-Region traegt Text, den NIEMAND sehen soll. Der Unit-Test dazu
+      // prueft die CSS-QUELLE (`position: absolute`, `clip-path`, kein `display: none`) und
+      // kann nicht sagen, ob das auch WIRKT. Genau diese Haelfte misst hier der echte
+      // Browser — und zwar in beide Richtungen, denn beide Fehler sind moeglich: sichtbar
+      // (Text steht im Baum) und stumm (`display: none` nimmt das Element aus dem
+      // Accessibility-Tree, dann wird nie etwas angesagt).
+      const region = await cdp.evaluate<{
+        w: number;
+        h: number;
+        display: string;
+        visibility: string;
+      } | null>(
+        inView(`
+          const el = root.querySelector(".json-a11y-announce");
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          const cs = getComputedStyle(el);
+          return {
+            w: Math.round(r.width),
+            h: Math.round(r.height),
+            display: cs.display,
+            visibility: cs.visibility,
+          };
+        `),
+      );
+      const unsichtbar = Boolean(region && region.w <= 2 && region.h <= 2);
+      const hoerbar = Boolean(
+        region && region.display !== "none" && region.visibility !== "hidden",
+      );
+      check(
+        "B5 A11y-Ansage-Region ist unsichtbar, aber nicht stumm",
+        Boolean(region) && unsichtbar && hoerbar,
+        !region
+          ? "keine .json-a11y-announce in der Ansicht"
+          : `${region.w}x${region.h}px, display: ${region.display}, visibility: ${region.visibility}`,
+      );
     },
   },
 
