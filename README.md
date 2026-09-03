@@ -121,9 +121,18 @@ https://git.jkaindl.de/jkaindl/anysource-sideloader/raw/branch/main/catalog.json
 JSON Editor is listed there and installs from its Forgejo release. Updates are then offered
 like any store update — visible, and never applied without confirmation.
 
+### From Obsidian's Community plugins browser
+
+Available again once the store listing returns:
+
+1. **Settings → Community plugins → Browse**, search for **"JSON Editor"**, select **Install**.
+2. **Enable** it.
+
 ### Manually
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://git.jkaindl.de/jkaindl/json-editor/releases/latest).
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest Forgejo release](https://git.jkaindl.de/jkaindl/json-editor/releases/latest).
+   Each release also ships `checksums.sha256`, so you can verify what you downloaded:
+   `shasum -a 256 -c checksums.sha256`
 2. Drop the three files into your vault's `.obsidian/plugins/json-editor/` directory.
 3. In Obsidian: **Settings → Community plugins → Installed → Enable "JSON Editor"**.
 
