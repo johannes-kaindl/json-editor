@@ -938,6 +938,10 @@ export class JsonFileView extends TextFileView {
     if (!this.bannerEl) {
       this.bannerEl = makeEl("div");
       this.bannerEl.className = "json-error-banner";
+      // Der Parse-Fehler erscheint beim Oeffnen und erzwingt den Source-Modus — die
+      // wichtigste unaufgeforderte Meldung des Plugins, und bisher eine rein visuelle.
+      this.bannerEl.setAttribute("role", "status");
+      this.bannerEl.setAttribute("aria-live", "polite");
       this.contentEl.insertBefore(this.bannerEl, this.bodyEl);
     }
     this.bannerEl.textContent = message;

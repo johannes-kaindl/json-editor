@@ -5,6 +5,10 @@ export class SchemaBanner {
   constructor() {
     this.el = makeEl("div");
     this.el.className = "json-schema-banner";
+    // Fehleranzahl und Schema-Ladefehler erscheinen ohne Zutun des Nutzers — ohne
+    // Live-Region erfaehrt ein Screenreader nie davon.
+    this.el.setAttribute("role", "status");
+    this.el.setAttribute("aria-live", "polite");
     this.el.hidden = true;
   }
 
