@@ -79,7 +79,7 @@ import {
 import { buildVault, stagingVaultDir } from "../../tools/obsidian-cdp/vault.js";
 
 const PLUGIN_ID = "json-editor";
-const REPO_NAME = "json_viewer";
+const REPO_NAME = "json-editor";
 const OUT_DIR = "docs/images";
 const CAPTURE_WIDTH = 1200;
 const THUMB_WIDTH = 380;

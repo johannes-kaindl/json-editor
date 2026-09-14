@@ -63,7 +63,7 @@ Punkt erst mit `--halten`, gehört die Schwelle notiert — der künftige Defaul
 Brücke wird aus gemessenen Zahlen gebildet, nicht geschätzt (beschlossen im Dach,
 2026-08-30; die bekannten 150 ms stammen von *einem* Plugin).
 
-**Gefahren wird im eigenen Staging-Vault** (`$STAGING_VAULTS_DIR/json_viewer`), nicht im
+**Gefahren wird im eigenen Staging-Vault** (`$STAGING_VAULTS_DIR/json-editor`), nicht im
 Arbeits-Vault. Dort liegt bei den meisten Plugins der Store-Build statt des Repo-Stands,
 und dort liegt fremdes Prüfmaterial — beides macht einen Lauf unbelegt.
 
