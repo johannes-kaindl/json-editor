@@ -14,7 +14,7 @@ KIT="${KIT_DIR:-../obsidian-kit}"
 # Bewusst NICHT genommen: obsidian-kit traegt unter src/vendor/code-kit/ eigene Kopien.
 # Eine Zwischenkopie als Quelle erzeugt eine Kopier-Kette, und die sieht bei der naechsten
 # Zaehlung wie ein unabhaengiger Beleg aus (Dach-AGENTS, Kit-first Punkt 1).
-CODE_KIT="${CODE_KIT_DIR:-../../code-kit}"
+CODE_KIT="${CODE_KIT_DIR:-../../libs/code-kit}"
 [ -d "$CODE_KIT/src/ts" ] || { echo "code-kit nicht gefunden unter $CODE_KIT (CODE_KIT_DIR setzen)" >&2; exit 1; }
 [ -d "$KIT/src/pure" ] || { echo "Kit nicht gefunden unter $KIT (KIT_DIR setzen)" >&2; exit 1; }
 # Gelesen wird aus einer festen Ref, nicht aus dem Arbeitsstand des Nachbar-Repos
