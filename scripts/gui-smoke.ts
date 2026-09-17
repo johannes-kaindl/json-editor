@@ -948,6 +948,97 @@ async function main(): Promise<void> {
   // Herkunft ungeprueft blieb, darf nicht aussehen wie einer, der belegt ist.
   let herkunftsWarnung: string | null = null;
 
+  // Dieselbe Aufraeumarbeit wie im `finally` unten — als eigene Funktion, damit der
+  // SIGINT/SIGTERM-Handler sie aufrufen kann, ohne Code zu duplizieren. Ein Ctrl-C mitten
+  // im Lauf ueberspringt das `finally` NICHT (try/catch-Semantik), sondern beendet den
+  // Node-Prozess sofort — ohne eigenen Handler blieben Pruefdateien, veraenderte Clipboard-
+  // und Settings-Inhalte stehen.
+  const cleanupState = async (): Promise<void> => {
+    if (previousClipboard) {
+      await cdp
+        .evaluate(`
+          try { await navigator.clipboard.writeText(${JSON.stringify(previousClipboard)}); } catch (e) {}
+          return true;
+        `)
+        .catch(() => undefined);
+    }
+    if (!keep) {
+      await cdp
+        .evaluate(`
+          const pfade = ${JSON.stringify([...createdFiles])};
+          const blaetter = [];
+          app.workspace.iterateAllLeaves((l) => blaetter.push(l));
+          for (const blatt of blaetter) {
+            const datei = blatt.view?.file?.path;
+            if (datei && pfade.includes(datei)) blatt.detach();
+          }
+          await new Promise((r) => setTimeout(r, 2500));
+          for (const path of pfade) {
+            const file = app.vault.getAbstractFileByPath(path);
+            if (file) await app.fileManager.trashFile(file);
+          }
+          await new Promise((r) => setTimeout(r, 800));
+          return true;
+        `)
+        .catch(() => undefined);
+    } else {
+      console.log(`(--keep: ${createdFiles.size} Pruefdatei(en) bleiben im Vault stehen)`);
+    }
+    if (previousSettings !== null) {
+      const zurueck = async (): Promise<string> =>
+        cdp
+          .evaluate<string>(`
+            const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+            if (!plugin) return "(Plugin weg)";
+            for (const key of Object.keys(plugin.settings)) delete plugin.settings[key];
+            Object.assign(plugin.settings, JSON.parse(${JSON.stringify(previousSettings)}));
+            for (const pfad of ${JSON.stringify([...createdFiles])}) {
+              if (plugin.settings.collapseState) delete plugin.settings.collapseState[pfad];
+              if (plugin.collapseStates) delete plugin.collapseStates[pfad];
+            }
+            await plugin.saveSettings?.();
+            await new Promise((r) => setTimeout(r, 600));
+            const pfad = app.vault.configDir + "/plugins/" + ${JSON.stringify(PLUGIN_ID)} + "/data.json";
+            return JSON.stringify(JSON.parse(await app.vault.adapter.read(pfad)));
+          `)
+          .catch(() => "(Fehler)");
+      let endstand = await zurueck();
+      for (let runde = 0; runde < 5; runde++) {
+        await new Promise((r) => setTimeout(r, 1200));
+        const erneut = await zurueck();
+        if (erneut === endstand) break;
+        endstand = erneut;
+      }
+      const sollObjekt = JSON.parse(previousSettings) as {
+        collapseState?: Record<string, unknown>;
+      };
+      if (sollObjekt.collapseState) {
+        for (const pfad of createdFiles) delete sollObjekt.collapseState[pfad];
+      }
+      const soll = JSON.stringify(sollObjekt);
+      console.log(
+        endstand === soll
+          ? "Einstellungen zurueckgeschrieben: data.json byte-gleich"
+          : `Einstellungen ABWEICHUNG in data.json:\n  vorher:  ${soll}\n  nachher: ${endstand}`,
+      );
+    }
+    await releaseAlwaysOnTop(cdp).catch(() => undefined);
+  };
+
+  let signalCleanupRunning = false;
+  const onAbortSignal = (signal: NodeJS.Signals) => {
+    if (signalCleanupRunning) return;
+    signalCleanupRunning = true;
+    void (async () => {
+      console.log(`\n\nAbbruch durch ${signal} — raeume Smoke-Zustand auf...`);
+      await cleanupState();
+      cdp.close();
+      process.exit(130);
+    })();
+  };
+  process.on("SIGINT", onAbortSignal);
+  process.on("SIGTERM", onAbortSignal);
+
   try {
     // Ohne Fokus drosselt Chromium den Renderer: der DOM der Ansicht bleibt leer, waehrend
     // die App-API den Zustand korrekt meldet — man debuggt ein Phantom. `Page.bringToFront`
@@ -1051,6 +1142,33 @@ async function main(): Promise<void> {
     `);
     console.log(`Plugin-Version: ${deployt} deployt, ${plugin.version} beim App-Start registriert\n`);
 
+    // Alle Namen, die dieser Treiber je anlegt, tragen das Praefix `_json-smoke` (SMOKE_JSON/
+    // SMOKE_JSONC/SMOKE_BAD/SMOKE_NOTE oben) — das macht liegen gebliebene Dateien aus einem
+    // per SIGINT/SIGTERM abgebrochenen frueheren Lauf erkennbar, BEVOR dieser Lauf selbst
+    // welche anlegt. `createdFiles` ist in diesem Lauf noch leer, das `finally` raeumt also
+    // nur eigene Spuren weg, nie fremde.
+    const leftover = await cdp.evaluate<string[]>(`
+      const alle = [];
+      app.vault.getAllLoadedFiles().forEach((f) => { if (f.path && f.path.startsWith("_json-smoke")) alle.push(f.path); });
+      return alle;
+    `);
+    check(
+      "Keine liegen gebliebenen Smoke-Dateien aus einem abgebrochenen frueheren Lauf",
+      leftover.length === 0,
+      leftover.length === 0
+        ? "kein Rest im Vault"
+        : `${leftover.length} Datei(en) gefunden und entfernt: ${leftover.join(", ")} — vermutlich Ctrl-C/Crash im vorigen Lauf vor dessen Aufraeumen; dieser Lauf faehrt normal weiter`,
+    );
+    if (leftover.length > 0) {
+      await cdp.evaluate(`
+        for (const path of ${JSON.stringify(leftover)}) {
+          const file = app.vault.getAbstractFileByPath(path);
+          if (file) await app.fileManager.trashFile(file);
+        }
+        return true;
+      `);
+    }
+
     await closeExtraLeaves(cdp).catch(() => undefined);
 
     // Vorwerte sichern. Ein Gesamt-Schnappschuss der Settings, nicht einzelne Felder: die
@@ -1069,110 +1187,11 @@ async function main(): Promise<void> {
     }
   } finally {
     // Aufraeumen haengt nie am Ergebnis: auch ein abgebrochener Lauf gibt den Vault so
-    // zurueck, wie er ihn vorgefunden hat.
-    if (previousClipboard) {
-      await cdp
-        .evaluate(`
-          try { await navigator.clipboard.writeText(${JSON.stringify(previousClipboard)}); } catch (e) {}
-          return true;
-        `)
-        .catch(() => undefined);
-    }
-    if (!keep) {
-      // Erst die Ansichten SCHLIESSEN, dann die Dateien wegwerfen. Eine schliessende
-      // JsonFileView schreibt ihren Collapse-Zustand in `data.json` — geschieht das nach
-      // dem Zurueckschreiben der Einstellungen, stehen die Pruefdateien danach wieder
-      // drin und der Lauf hinterlaesst Spuren im Vault (gemessen 2026-08-22, zweimal:
-      // eine blosse Wartezeit reichte nicht).
-      // In den PAPIERKORB, nicht hart loeschen: der Smoke laeuft im produktiven Vault, und
-      // ein Fehlgriff beim Pfad waere sonst unwiderruflich.
-      await cdp
-        .evaluate(`
-          const pfade = ${JSON.stringify([...createdFiles])};
-          const blaetter = [];
-          app.workspace.iterateAllLeaves((l) => blaetter.push(l));
-          for (const blatt of blaetter) {
-            const datei = blatt.view?.file?.path;
-            if (datei && pfade.includes(datei)) blatt.detach();
-          }
-          // Lange genug, dass der verzoegerte Collapse-State-Schreiber der schliessenden
-          // Ansicht durch ist — sonst holt er das Zurueckschreiben spaeter wieder ein.
-          await new Promise((r) => setTimeout(r, 2500));
-          for (const path of pfade) {
-            const file = app.vault.getAbstractFileByPath(path);
-            if (file) await app.fileManager.trashFile(file);
-          }
-          await new Promise((r) => setTimeout(r, 800));
-          return true;
-        `)
-        .catch(() => undefined);
-    } else {
-      console.log(`(--keep: ${createdFiles.size} Pruefdatei(en) bleiben im Vault stehen)`);
-    }
-    // Die Einstellungen ZULETZT, wenn nichts mehr in `data.json` schreiben kann — und
-    // zweimal mit Abstand: eine schliessende Ansicht schreibt ihren Collapse-Zustand
-    // verzoegert nach, und der erste Rueckschreibvorgang wird davon wieder ueberholt
-    // (gemessen 2026-08-22: Warten allein reichte nicht, Reihenfolge allein auch nicht).
-    // Das ERGEBNIS wird gemeldet, nicht vorausgesetzt: was hier still schiefgeht, laesst
-    // eine Testfixtur in den Einstellungen des Maintainers zurueck.
-    if (previousSettings !== null) {
-      // Gelesen wird die DATEI, nicht das Objekt im Speicher: `saveSettings` schreibt
-      // verzoegert, und ein Vergleich gegen `plugin.settings` meldet „byte-gleich",
-      // waehrend `data.json` noch etwas anderes enthaelt (gemessen 2026-08-22 — der
-      // Treiber log genau so).
-      const zurueck = async (): Promise<string> =>
-        cdp
-          .evaluate<string>(`
-            const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
-            if (!plugin) return "(Plugin weg)";
-            for (const key of Object.keys(plugin.settings)) delete plugin.settings[key];
-            Object.assign(plugin.settings, JSON.parse(${JSON.stringify(previousSettings)}));
-            // Der Schnappschuss allein genuegt nicht — aus zwei Gruenden. Erstens legt das
-            // Oeffnen einer Pruefdatei einen Eintrag im per-Datei-Collapse-Zustand an, der
-            // nach einem frueheren Lauf BEREITS im Vorwert steht und sonst getreu
-            // konserviert wuerde. Zweitens liegt dieser Zustand gar nicht in settings,
-            // sondern in einem eigenen Feld collapseStates: persist() schreibt
-            // { ...settings, collapseState: collapseStates }, also setzt jedes Speichern
-            // die Eintraege aus dem zweiten Feld neu in die Datei. Wer nur settings
-            // zurueckschreibt, raeumt sichtbar auf und aendert an data.json nichts
-            // (gemessen 2026-08-22 — der Speicher war leer, die Datei nicht).
-            for (const pfad of ${JSON.stringify([...createdFiles])}) {
-              if (plugin.settings.collapseState) delete plugin.settings.collapseState[pfad];
-              if (plugin.collapseStates) delete plugin.collapseStates[pfad];
-            }
-            await plugin.saveSettings?.();
-            await new Promise((r) => setTimeout(r, 600));
-            const pfad = app.vault.configDir + "/plugins/" + ${JSON.stringify(PLUGIN_ID)} + "/data.json";
-            return JSON.stringify(JSON.parse(await app.vault.adapter.read(pfad)));
-          `)
-          .catch(() => "(Fehler)");
-      // Herstellen schlaegt melden: es wird so lange zurueckgeschrieben, bis die Datei
-      // stehen bleibt. Ein einzelner Versuch wird vom verzoegerten Schreiber der zuletzt
-      // geschlossenen Ansicht ueberholt — und eine Abweichungsmeldung bei JEDEM Lauf
-      // waere Laerm, den beim dritten Mal niemand mehr liest.
-      let endstand = await zurueck();
-      for (let runde = 0; runde < 5; runde++) {
-        await new Promise((r) => setTimeout(r, 1200));
-        const erneut = await zurueck();
-        if (erneut === endstand) break;
-        endstand = erneut;
-      }
-      // Das Soll ist der Vorwert OHNE die eigenen Spuren — sonst meldet der Vergleich
-      // eine Abweichung genau dann, wenn richtig aufgeraeumt wurde.
-      const sollObjekt = JSON.parse(previousSettings) as {
-        collapseState?: Record<string, unknown>;
-      };
-      if (sollObjekt.collapseState) {
-        for (const pfad of createdFiles) delete sollObjekt.collapseState[pfad];
-      }
-      const soll = JSON.stringify(sollObjekt);
-      console.log(
-        endstand === soll
-          ? "Einstellungen zurueckgeschrieben: data.json byte-gleich"
-          : `Einstellungen ABWEICHUNG in data.json:\n  vorher:  ${soll}\n  nachher: ${endstand}`,
-      );
-    }
-    await releaseAlwaysOnTop(cdp).catch(() => undefined);
+    // zurueck, wie er ihn vorgefunden hat. Dieselbe Funktion wie der SIGINT/SIGTERM-Handler
+    // oben — kein Doppelcode.
+    process.off("SIGINT", onAbortSignal);
+    process.off("SIGTERM", onAbortSignal);
+    await cleanupState();
     cdp.close();
   }
 
