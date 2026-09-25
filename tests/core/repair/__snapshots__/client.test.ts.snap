@@ -1,0 +1,201 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`goldene Requests (Modus structured, Denken aus) > gemma4 × lmstudio 1`] = `
+{
+  "backend": "lmstudio",
+  "family": "gemma4",
+  "params": {
+    "max_tokens": 2048,
+    "reasoning_effort": "none",
+    "temperature": 0.1,
+    "top_k": 64,
+    "top_p": 0.95,
+  },
+}
+`;
+
+exports[`goldene Requests (Modus structured, Denken aus) > gemma4 × openwebui 1`] = `
+{
+  "backend": "openwebui",
+  "family": "gemma4",
+  "params": {
+    "max_tokens": 2048,
+    "reasoning_effort": "none",
+    "temperature": 0.1,
+    "top_k": 64,
+    "top_p": 0.95,
+  },
+}
+`;
+
+exports[`goldene Requests (Modus structured, Denken aus) > gemma4 × unknown 1`] = `
+{
+  "backend": "unknown",
+  "family": "gemma4",
+  "params": {
+    "max_tokens": 2048,
+    "reasoning_effort": "none",
+    "temperature": 0.1,
+    "top_p": 0.95,
+  },
+}
+`;
+
+exports[`goldene Requests (Modus structured, Denken aus) > gpt-oss × lmstudio 1`] = `
+{
+  "backend": "lmstudio",
+  "family": "gpt-oss",
+  "params": {
+    "max_tokens": 2048,
+    "reasoning_effort": "minimal",
+    "temperature": 0.1,
+    "top_p": 1,
+  },
+}
+`;
+
+exports[`goldene Requests (Modus structured, Denken aus) > gpt-oss × openwebui 1`] = `
+{
+  "backend": "openwebui",
+  "family": "gpt-oss",
+  "params": {
+    "max_tokens": 2048,
+    "reasoning_effort": "minimal",
+    "temperature": 0.1,
+    "top_p": 1,
+  },
+}
+`;
+
+exports[`goldene Requests (Modus structured, Denken aus) > gpt-oss × unknown 1`] = `
+{
+  "backend": "unknown",
+  "family": "gpt-oss",
+  "params": {
+    "max_tokens": 2048,
+    "reasoning_effort": "minimal",
+    "temperature": 0.1,
+    "top_p": 1,
+  },
+}
+`;
+
+exports[`goldene Requests (Modus structured, Denken aus) > null × lmstudio 1`] = `
+{
+  "backend": "lmstudio",
+  "family": null,
+  "params": {
+    "max_tokens": 2048,
+    "reasoning_effort": "none",
+    "temperature": 0.1,
+  },
+}
+`;
+
+exports[`goldene Requests (Modus structured, Denken aus) > null × openwebui 1`] = `
+{
+  "backend": "openwebui",
+  "family": null,
+  "params": {
+    "max_tokens": 2048,
+    "reasoning_effort": "none",
+    "temperature": 0.1,
+  },
+}
+`;
+
+exports[`goldene Requests (Modus structured, Denken aus) > null × unknown 1`] = `
+{
+  "backend": "unknown",
+  "family": null,
+  "params": {
+    "max_tokens": 2048,
+    "temperature": 0.1,
+  },
+}
+`;
+
+exports[`goldene Requests (Modus structured, Denken aus) > qwen3.6 × lmstudio 1`] = `
+{
+  "backend": "lmstudio",
+  "family": "qwen3.6",
+  "params": {
+    "max_tokens": 2048,
+    "reasoning_effort": "none",
+    "temperature": 0.1,
+    "top_k": 20,
+    "top_p": 0.95,
+  },
+}
+`;
+
+exports[`goldene Requests (Modus structured, Denken aus) > qwen3.6 × openwebui 1`] = `
+{
+  "backend": "openwebui",
+  "family": "qwen3.6",
+  "params": {
+    "max_tokens": 2048,
+    "reasoning_effort": "none",
+    "temperature": 0.1,
+    "top_k": 20,
+    "top_p": 0.95,
+  },
+}
+`;
+
+exports[`goldene Requests (Modus structured, Denken aus) > qwen3.6 × unknown 1`] = `
+{
+  "backend": "unknown",
+  "family": "qwen3.6",
+  "params": {
+    "max_tokens": 2048,
+    "reasoning_effort": "none",
+    "temperature": 0.1,
+    "top_p": 0.95,
+  },
+}
+`;
+
+exports[`goldene Requests (Modus structured, Denken aus) > qwen3.8 × lmstudio 1`] = `
+{
+  "backend": "lmstudio",
+  "family": "qwen3.8",
+  "params": {
+    "max_tokens": 2048,
+    "min_p": 0,
+    "reasoning_effort": "none",
+    "temperature": 0.1,
+    "top_k": 20,
+    "top_p": 0.8,
+  },
+}
+`;
+
+exports[`goldene Requests (Modus structured, Denken aus) > qwen3.8 × openwebui 1`] = `
+{
+  "backend": "openwebui",
+  "family": "qwen3.8",
+  "params": {
+    "max_tokens": 2048,
+    "min_p": 0,
+    "presence_penalty": 1.5,
+    "reasoning_effort": "none",
+    "temperature": 0.1,
+    "top_k": 20,
+    "top_p": 0.8,
+  },
+}
+`;
+
+exports[`goldene Requests (Modus structured, Denken aus) > qwen3.8 × unknown 1`] = `
+{
+  "backend": "unknown",
+  "family": "qwen3.8",
+  "params": {
+    "max_tokens": 2048,
+    "reasoning_effort": "none",
+    "temperature": 0.1,
+    "top_p": 0.8,
+  },
+}
+`;

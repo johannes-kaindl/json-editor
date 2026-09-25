@@ -11,7 +11,8 @@ import { JSON_VIEW_TYPE } from "../../src/obsidian/JsonFileView";
 const MANIFEST: PluginManifest = { id: "x", name: "x", version: "0.1.0" };
 // onload reads loadData(); a minimal app stub is enough (commands gate on
 // workspace only when invoked, not at registration time).
-const appStub = () => ({}) as Record<string, unknown>;
+// onLayoutReady would start an endpoint probe; the stub never fires it.
+const appStub = () => ({ workspace: { onLayoutReady: () => {} } }) as Record<string, unknown>;
 
 describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
   beforeEach(() => {
@@ -32,7 +33,7 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
     expect(plugin.postprocessors.json).toBeDefined(); // codeblock processor survived
     expect(plugin.postprocessors.jsonc).toBeDefined(); // jsonc codeblock survived too
     expect(plugin.settingTabs.length).toBe(1);
-    expect(plugin.commands.length).toBe(8);
+    expect(plugin.commands.length).toBe(9);
   });
 
   it("shows an explanatory Notice naming the .json conflict on collision", async () => {

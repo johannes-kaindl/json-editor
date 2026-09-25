@@ -105,6 +105,58 @@ export class TextFileView {
   }
 }
 
+export class Modal {
+  contentEl: HTMLElement = document.createElement("div");
+  titleEl: HTMLElement = document.createElement("div");
+  modalEl: HTMLElement = document.createElement("div");
+  constructor(public app: unknown) {}
+  open(): void {
+    this.onOpen();
+  }
+  close(): void {
+    this.onClose();
+  }
+  onOpen(): void {}
+  onClose(): void {}
+}
+
+export class ButtonComponent {
+  buttonEl: HTMLButtonElement = document.createElement("button");
+  constructor(containerEl?: HTMLElement) {
+    containerEl?.appendChild(this.buttonEl);
+  }
+  setButtonText(text: string): this {
+    this.buttonEl.textContent = text;
+    return this;
+  }
+  setCta(): this {
+    this.buttonEl.classList.add("mod-cta");
+    return this;
+  }
+  setDisabled(disabled: boolean): this {
+    this.buttonEl.disabled = disabled;
+    return this;
+  }
+  onClick(cb: () => void): this {
+    this.buttonEl.addEventListener("click", cb);
+    return this;
+  }
+}
+
+export abstract class AbstractInputSuggest<T> {
+  constructor(
+    public app: unknown,
+    public inputEl: HTMLInputElement,
+  ) {}
+  abstract getSuggestions(query: string): T[];
+  abstract renderSuggestion(item: T, el: HTMLElement): void;
+  abstract selectSuggestion(item: T, evt: MouseEvent | KeyboardEvent): void;
+  setValue(_v: string): void {}
+  close(): void {}
+}
+
+export const moment = { locale: (): string => "en" };
+
 export class TFile {
   constructor(public path: string) {}
 }
@@ -153,6 +205,9 @@ export class Setting {
   }
   setDesc(desc: string): this {
     this.descValue = desc;
+    return this;
+  }
+  setHeading(): this {
     return this;
   }
   addText(cb: (text: TextComponent) => void): this {

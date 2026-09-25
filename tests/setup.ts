@@ -48,3 +48,30 @@ if (typeof elProto.setText !== "function") {
     this.textContent = text;
   };
 }
+
+// Obsidian's element helpers the kit's settings walker and the repair modal use.
+for (const [name, fn] of [
+  [
+    "empty",
+    function empty(this: HTMLElement) {
+      this.replaceChildren();
+    },
+  ],
+  [
+    "addClass",
+    function addClass(this: HTMLElement, ...c: string[]) {
+      this.classList.add(...c);
+    },
+  ],
+  [
+    "removeClass",
+    function removeClass(this: HTMLElement, ...c: string[]) {
+      this.classList.remove(...c);
+    },
+  ],
+] as const) {
+  if (typeof elProto[name] !== "function") elProto[name] = fn;
+}
+
+// UI strings of the repair feature (en/de); `t()` reads them once registered.
+import "../src/i18n/strings";

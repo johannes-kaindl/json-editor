@@ -13,8 +13,10 @@ class FakePlugin extends Plugin {
   }
 }
 
+type Def = { control?: { key?: string }; items?: Def[] };
+// Groups hold their controls one level down; searchability needs the leaves.
 function keysOf(items: unknown[]): string[] {
-  return items.map((i) => (i as { control?: { key?: string } }).control?.key ?? "");
+  return (items as Def[]).flatMap((i) => (i.items ? keysOf(i.items) : [i.control?.key ?? ""]));
 }
 
 describe("declarative setting definitions", () => {
@@ -28,7 +30,8 @@ describe("declarative setting definitions", () => {
   });
 
   it("exposes every setting, so none is missing from settings search", () => {
-    const keys = keysOf(tab.getSettingDefinitions());
+    // The endpoint and request rows are render-only (kit blocks); their leaves carry no key.
+    const keys = keysOf(tab.getSettingDefinitions()).filter((k) => k !== "");
     expect(keys.sort()).toEqual(
       [
         "autoCollapseDepth",
@@ -36,6 +39,7 @@ describe("declarative setting definitions", () => {
         "defaultMode",
         "indent",
         "markerStyle",
+        "timeoutSec",
         "validateAgainstSchema",
       ].sort(),
     );

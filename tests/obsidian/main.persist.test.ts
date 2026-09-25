@@ -7,7 +7,8 @@ import { describe, expect, it } from "vitest";
 import JsonEditorPlugin from "../../src/main";
 
 const MANIFEST: PluginManifest = { id: "x", name: "x", version: "0.1.0" };
-const appStub = () => ({}) as Record<string, unknown>;
+// onLayoutReady would start an endpoint probe; the stub never fires it.
+const appStub = () => ({ workspace: { onLayoutReady: () => {} } }) as Record<string, unknown>;
 
 type Stored = { collapseState?: Record<string, { collapsed: string[]; touched: number }> } & Record<
   string,

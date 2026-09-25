@@ -1,8 +1,4 @@
-// uebernommen aus obsidian-kit/src/obsidian/settings_walker.ts, 2026-08-12
-//
-// Abweichung von der Quelle: der "folder"-Control-Zweig ist entfernt (er zieht
-// FolderSuggest nach, und dieses Plugin hat kein Ordner-Setting). Sonst
-// unveraendert. Waechst der Bedarf, aus dem Kit neu ziehen statt hier ergaenzen.
+// vendored from obsidian-kit@0.41.1, src/obsidian/settings_walker.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 // obsidian-kit/src/obsidian/settings_walker.ts
 //
 // Der gemeinsame Fallback-Walker fuer zweigleisige deklarative Settings-Tabs
@@ -10,14 +6,8 @@
 // Host display(), das DIESELBE Struktur mit der klassischen Setting-API
 // nachzeichnet). Gehoben aus 9 unabhaengigen Kopien, REGISTRY „Zweigleisige
 // deklarative Settings — eine-Wahrheit-Walker".
-import {
-  type App,
-  type PluginSettingTab,
-  Setting,
-  type SettingControl,
-  type SettingDefinitionGroup,
-  type SettingDefinitionItem,
-} from "obsidian";
+import { Setting, type App, type PluginSettingTab, type SettingControl, type SettingDefinitionGroup, type SettingDefinitionItem } from "obsidian";
+import { FolderSuggest } from "./folder-suggest";
 
 export interface SettingControlHost {
   getControlValue(key: string): unknown;
@@ -44,6 +34,54 @@ export function refreshSettingsTab(
   const self = tab as unknown as { update?: () => void };
   if (typeof self.update === "function") self.update();
   else fullRebuild();
+}
+
+/** Haengt einen Refresh-Hook in `renderTab()`, der bei jedem Sichtbarwerden des Tabs neu
+ *  zeichnet -- ohne die Rekursion, die ein naiver Override ausloest, UND ohne sich auf
+ *  Obsidians native `update()`/`renderTab()`-Kombination zu verlassen, die dafuer
+ *  (gemessen) nicht ausreicht.
+ *
+ *  Gemessen an Obsidian 1.14.2 (`app.setting`, yijing-w6 + yijing-w7, per CDP, echter
+ *  Renderer): `openTab()` ruft `hide()` nur auf dem verlassenen Tab; der neu aktive Tab
+ *  bekommt `renderTab()`. Dessen native Implementierung ist ein Cache-Kurzschluss nach
+ *  Laenge -- bei UNVERAENDERTER `settingItems.length` zeichnet sie ueberhaupt nicht neu,
+ *  auch wenn `settingItems` zuvor per `update()` durch ein frisches Array (neue Closures,
+ *  z.B. ein neu installierter LLM Endpoint Manager) ersetzt wurde: `tab.update()` +
+ *  `tab.renderTab()` liessen den zuvor gerenderten DOM-Baum unveraendert (Rekursionstest
+ *  bestaetigte gleichzeitig: dieser Pfad wirft KEINEN `RangeError` mehr, weil unser
+ *  Override den urspruenglichen Rekursionsausloeser -- ein bedingungsloser `update()`-Ruf
+ *  in `renderTab()` -- gar nicht mehr benutzt). Einzig ein manueller `containerEl.empty()`
+ *  + Neuzeichnen ueber den klassischen Setting-API-Walker (`renderSettingDefinitions`,
+ *  also der Fallback-Pfad des Consumers) zeigte den frischen Inhalt zuverlaessig.
+ *
+ *  Der Hook ersetzt `renderTab()` deshalb vollstaendig durch `fullRebuild` -- ruft NIE
+ *  die native Implementierung. Reentrancy-Guard bleibt trotzdem noetig: `fullRebuild`
+ *  ruft ueblicherweise selbst `update()` (haelt `settingItems`/die Einstellungs-Suche
+ *  synchron), und `update()`s native Implementierung ruft intern wieder `renderTab()` des
+ *  aktiven Tabs auf -- ohne Guard waere das erneut `fullRebuild()` in Rekursion. Additiv:
+ *  ein Tab, der den Hook nicht installiert, verhaelt sich wie zuvor. */
+export function installTabRefreshOnOpen(
+  tab: PluginSettingTab & { renderTab?: () => void },
+  fullRebuild: () => void,
+): () => void {
+  const self = tab as unknown as { renderTab?: () => void };
+  const original = self.renderTab;
+  if (typeof original !== "function") return () => {};
+
+  let inProgress = false;
+  self.renderTab = (): void => {
+    if (inProgress) return;
+    inProgress = true;
+    try {
+      fullRebuild();
+    } finally {
+      inProgress = false;
+    }
+  };
+
+  return (): void => {
+    self.renderTab = original;
+  };
 }
 
 /** Rendert eine deklarative Setting-Definition mit der klassischen Setting-API
@@ -98,6 +136,14 @@ export function renderSettingDefinitions(
           if (control.rows) t.inputEl.rows = control.rows;
         });
         break;
+      case "folder":
+        setting.addText((t) => {
+          t.setPlaceholder((control as { placeholder?: string }).placeholder ?? "")
+            .setValue(current as string)
+            .onChange(save);
+          new FolderSuggest(app, t.inputEl);
+        });
+        break;
       case "number":
         setting.addText((t) =>
           t
@@ -122,10 +168,7 @@ export function renderSettingDefinitions(
     const visible = (item as { visible?: boolean | (() => boolean) }).visible;
     if (visible === false || (typeof visible === "function" && !visible())) return;
 
-    if (
-      (item as SettingDefinitionGroup).type === "group" ||
-      (item as { type?: string }).type === "list"
-    ) {
+    if ((item as SettingDefinitionGroup).type === "group" || (item as { type?: string }).type === "list") {
       const group = item as SettingDefinitionGroup;
       if (group.heading) new Setting(parentEl).setName(group.heading).setHeading();
       for (const sub of group.items ?? []) renderItem(parentEl, sub);
@@ -150,9 +193,7 @@ export function renderSettingDefinitions(
     }
     if (typeof def.action === "function") {
       const action = def.action;
-      setting.addButton((b) =>
-        b.setButtonText(def.name ?? "").onClick(() => action(setting.settingEl, 0)),
-      );
+      setting.addButton((b) => b.setButtonText(def.name ?? "").onClick(() => action(setting.settingEl, 0)));
       return;
     }
     if (def.control) renderControl(setting, def.name ?? "", def.control);

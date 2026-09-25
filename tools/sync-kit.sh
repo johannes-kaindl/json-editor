@@ -229,13 +229,13 @@ esac
 
 mkdir -p src/vendor/kit src/vendor/kit-obsidian
 
-PURE_MODULE="clipboard settings endpoint endpoint_config endpoint_diagnostics model-choice model-list-cache reasoning capabilities sampling-profiles endpoint-source diff"
+PURE_MODULE="clipboard settings endpoint endpoint_config endpoint_diagnostics model-choice model-list-cache reasoning error_body timeout i18n capabilities sampling-profiles endpoint-source diff"
 # Die gekoppelte Schicht (importiert `obsidian`). stable-writer traegt einen Querimport auf
 # ../vendor/code-kit/pure/stream-blocks und braucht deshalb den relayer (Fallgruppe unten);
 # endpoint-source ebenso (../pure/endpoint-source + ../vendor/code-kit/pure/*).
 # request-section/request-session/thinking-control ebenso, Querimport auf
 # ../vendor/code-kit/pure/sampling-profiles (Sampling-Profile-Welle, Teil D 2026-09-23).
-OBSIDIAN_MODULE="clipboard endpoint-list model-picker endpoint-source request-section request-session collapsible"
+OBSIDIAN_MODULE="clipboard settings_walker folder-suggest endpoint-list model-picker endpoint-source request-section request-session collapsible"
 
 # Die "vendored"-Zeile der VENDOR.json wird aus derselben Liste erzeugt, aus der kopiert wird.
 # Zwei Orte fuer dieselbe Wahrheit driften (CORE-META-16) — und zwar leise: die Datei, in der
@@ -286,7 +286,7 @@ cat > src/vendor/kit/VENDOR.json <<JSON
   "sha": "$SHA",
   "code_kit_version": "$CODE_VER",
   "vendored": "$(liste "$PURE_MODULE")",
-  "note": "Verbatim snapshot aus ZWEI Quellen (obsidian-kit + code-kit); welche Datei woher stammt, sagt ihr eigener Kopf. Never hand-edit. Re-vendor via tools/sync-kit.sh. version/sha gelten AUSSCHLIESSLICH fuer die unter \"vendored\" gelisteten Dateien. settings_walker.ts liegt ebenfalls hier, ist NICHT gepinnt und wird von diesem Skript NICHT erfasst: es traegt eine deklarierte Abweichung (der \"folder\"-Zweig ist entfernt, damit FolderSuggest nicht nachgezogen wird) und entspricht keinem Kit-Tag — s. Kopf der Datei. kit-obsidian/ siehe dortige VENDOR.json."
+  "note": "Verbatim snapshot aus ZWEI Quellen (obsidian-kit + code-kit); welche Datei woher stammt, sagt ihr eigener Kopf. Never hand-edit. Re-vendor via tools/sync-kit.sh. version/sha gelten AUSSCHLIESSLICH fuer die unter \"vendored\" gelisteten Dateien. kit-obsidian/ siehe dortige VENDOR.json."
 }
 JSON
 cat > src/vendor/kit-obsidian/VENDOR.json <<JSON

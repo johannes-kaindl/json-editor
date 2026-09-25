@@ -1,5 +1,7 @@
-import { Notice, Plugin, type WorkspaceLeaf } from "obsidian";
+import { Notice, Plugin, type WorkspaceLeaf, moment } from "obsidian";
+import "./i18n/strings";
 import { type CollapseStates, capStates, recordFileState } from "./core/collapse-state";
+import { loadLlmSettings } from "./core/repair/settings";
 import { renderJsonCodeblock } from "./obsidian/CodeblockProcessor";
 import { JSON_VIEW_TYPE, JsonFileView } from "./obsidian/JsonFileView";
 import {
@@ -7,18 +9,54 @@ import {
   type JsonEditorSettings,
   JsonEditorSettingsTab,
 } from "./obsidian/SettingsTab";
+import { repairAtCursor, repairFromBlock } from "./obsidian/repair-flow";
+import { RepairService } from "./obsidian/repair-service";
+import { onEndpointManagerChanged } from "./vendor/kit-obsidian/endpoint-source";
+import { pickLang, setLang, t } from "./vendor/kit/i18n";
 import { mergeSettings } from "./vendor/kit/settings";
+
+/** Obsidian setzt die Locale von `moment` aus der Oberflaechensprache; `getLanguage()` selbst
+ *  gibt es erst ab 1.8.7 (minAppVersion liegt darunter). */
+function safeGetLanguage(): string | null {
+  try {
+    return moment.locale();
+  } catch {
+    return null;
+  }
+}
 
 export default class JsonEditorPlugin extends Plugin {
   settings: JsonEditorSettings = { ...DEFAULT_SETTINGS };
   private collapseStates: CollapseStates = {};
+  readonly repairService = new RepairService(
+    this.app,
+    () => this.settings,
+    () => this.saveSettings(),
+  );
+  private unsubscribeManager: () => void = () => {};
 
   async onload() {
+    setLang(pickLang(safeGetLanguage()));
     // One read, two consumers: mergeSettings only picks up known setting keys,
     // so the collapse state has to be pulled out of the same payload by hand.
     const stored = (await this.loadData()) as { collapseState?: CollapseStates } | null;
-    this.settings = mergeSettings(DEFAULT_SETTINGS, stored);
+    const { llm, dropped } = loadLlmSettings(stored);
+    this.settings = { ...mergeSettings(DEFAULT_SETTINGS, stored), ...llm };
     this.collapseStates = capStates(stored?.collapseState ?? {});
+    if (dropped.length > 0) {
+      new Notice(t("request.dropped", String(dropped.length)));
+      console.warn("json-editor: request settings dropped", dropped);
+    }
+    // Nicht awaiten: onload darf nicht an einer Netz-Probe haengen. Der Manager kann jederzeit
+    // installiert, deaktiviert oder umkonfiguriert werden — dann frisch aufloesen.
+    this.app.workspace.onLayoutReady(() => {
+      void this.repairService.resolve();
+      this.unsubscribeManager = onEndpointManagerChanged(this.app, () => {
+        this.repairService.invalidate();
+        void this.repairService.resolve();
+      });
+    });
+    const deps = { app: this.app, service: this.repairService, settings: () => this.settings };
 
     this.registerView(
       JSON_VIEW_TYPE,
@@ -35,14 +73,26 @@ export default class JsonEditorPlugin extends Plugin {
     );
 
     this.registerMarkdownCodeBlockProcessor("json", (src, el, ctx) =>
-      renderJsonCodeblock(src, el, ctx, this.settings, "json"),
+      renderJsonCodeblock(src, el, ctx, this.settings, "json", (b) =>
+        repairFromBlock(deps, { ...b, ctx }),
+      ),
     );
 
     this.registerMarkdownCodeBlockProcessor("jsonc", (src, el, ctx) =>
-      renderJsonCodeblock(src, el, ctx, this.settings, "jsonc"),
+      renderJsonCodeblock(src, el, ctx, this.settings, "jsonc", (b) =>
+        repairFromBlock(deps, { ...b, ctx }),
+      ),
     );
 
     this.addSettingTab(new JsonEditorSettingsTab(this.app, this));
+
+    this.addCommand({
+      id: "repair-codeblock",
+      name: t("repair.cmd"),
+      editorCallback: (editor) => {
+        repairAtCursor(deps, editor);
+      },
+    });
 
     this.addCommand({
       id: "focus-search",
@@ -158,6 +208,10 @@ export default class JsonEditorPlugin extends Plugin {
         "JSON editor: another plugin already handles .jsonc — file view disabled, code-block rendering still active.",
       );
     }
+  }
+
+  onunload(): void {
+    this.unsubscribeManager();
   }
 
   /**
