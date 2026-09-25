@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.13.0] — 2026-09-25
+
 ### Added
 - **Repair broken JSON with an LLM.** An invalid `json`/`jsonc` code block gets a *Repair* button in its error card, and the command *Repair JSON in the current code block* works at the cursor. The block and the parser error go to a language model; a modal shows original and proposal side by side with the changed lines marked. Nothing is written until *Apply*, which replaces only that block's content (the rest of the note stays byte-identical) and refuses if the note changed in the meantime. The answer is validated with the same parser that rejected the block, so an invalid answer cannot be applied. *Try again* re-asks; *Discard* writes nothing.
 - **Endpoint and request settings for the repair.** With the *LLM Endpoint Manager* plugin the endpoint, key and model come from there; otherwise a local endpoint list with connection check. A *Request* section shows the recognised model family and backend, the exact values of the last request and deviations in the answer, and allows overrides per family (profile *structured*). New settings: endpoints, endpoint choice, request overrides, timeout. All new texts exist in English and German; the rest of the interface stays English.
