@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Added
+- **Repair broken JSON with an LLM.** An invalid `json`/`jsonc` code block gets a *Repair* button in its error card, and the command *Repair JSON in the current code block* works at the cursor. The block and the parser error go to a language model; a modal shows original and proposal side by side with the changed lines marked. Nothing is written until *Apply*, which replaces only that block's content (the rest of the note stays byte-identical) and refuses if the note changed in the meantime. The answer is validated with the same parser that rejected the block, so an invalid answer cannot be applied. *Try again* re-asks; *Discard* writes nothing.
+- **Endpoint and request settings for the repair.** With the *LLM Endpoint Manager* plugin the endpoint, key and model come from there; otherwise a local endpoint list with connection check. A *Request* section shows the recognised model family and backend, the exact values of the last request and deviations in the answer, and allows overrides per family (profile *structured*). New settings: endpoints, endpoint choice, request overrides, timeout. All new texts exist in English and German; the rest of the interface stays English.
 - **The tree now speaks to screen readers.** Four banners that appear without the user
   doing anything (parse error, schema errors, lossy numbers, large file) and the search
   match count are live regions, so they are announced instead of only shown. The copy
@@ -16,6 +18,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **The three text inputs have accessible names**: the value editor announces which path
   it edits, the rename editor which key, and the search field says what it searches.
   Previously a screen reader read all three as an unnamed "edit field".
+
+### Changed
+- **Requires Obsidian 1.6.6, was 1.5.7** — the folder suggest that the shared kit's settings walker uses relies on `Vault.getAllFolders`.
+- Vendored `obsidian-kit` 0.30.0 → 0.41.1 and `code-kit` 0.5.0 → 0.7.0. The settings walker is now the kit's own (the earlier copy had its folder branch removed and lacked the tab-refresh hook); clipboard and settings modules are unchanged apart from the header stamp.
 
 ## [1.12.0] — 2026-09-02
 

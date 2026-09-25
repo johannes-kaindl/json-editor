@@ -57,6 +57,8 @@
  */
 
 import { execFileSync } from "node:child_process";
+import { type Server, createServer } from "node:http";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { cwd } from "node:process";
 
@@ -69,6 +71,7 @@ import {
   releaseAlwaysOnTop,
   requireVisible,
 } from "../../tools/obsidian-cdp/cdp.js";
+import { capture } from "../../tools/obsidian-cdp/shot.js";
 import { buildHerkunft, requireEigenerBuild } from "../../tools/obsidian-cdp/vault.js";
 
 const PLUGIN_ID = "json-editor";
@@ -130,6 +133,10 @@ const SMOKE_JSON = "_json-smoke.json";
 const SMOKE_JSONC = "_json-smoke.jsonc";
 const SMOKE_BAD = "_json-smoke-bad.json";
 const SMOKE_NOTE = "_json-smoke-block.md";
+const SMOKE_REPAIR_NOTE = "_json-smoke-repair.md";
+
+/** `--shot <pfad>`: Screenshot des Reparatur-Modals (Abschnitt F) fuer die Abnahme. */
+let shotPfad: string | null = null;
 
 /**
  * Prüfdatei mit Absicht in jedem Feld: `nested.deep.leaf` liegt drei Ebenen tief (für den
@@ -899,6 +906,186 @@ const SECTIONS: Section[] = [
       }
     },
   },
+  {
+    key: "repair",
+    title: "F — Reparatur per LLM (Fake-Endpunkt, Diff-Modal, Anwenden)",
+    run: async (cdp) => {
+      // Ein Fake-Endpunkt im Node-Prozess: die Antwort steuert der Lauf, damit der Pruefpunkt
+      // die Reparatur misst und nicht die Laune eines Modells. `letzter` haelt den Request
+      // fest, den das Plugin wirklich gesendet hat.
+      let modus: "ok" | "kaputt" = "ok";
+      let letzter: Record<string, unknown> | null = null;
+      const server: Server = createServer((req, res) => {
+        const antwort = (code: number, body: unknown): void => {
+          res.writeHead(code, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(body));
+        };
+        if (req.method === "GET" && req.url?.startsWith("/v1/models")) {
+          antwort(200, { data: [{ id: "qwen/qwen3.8-27b" }] });
+          return;
+        }
+        if (req.method === "POST" && req.url?.startsWith("/v1/chat/completions")) {
+          let raw = "";
+          req.on("data", (c: Buffer) => { raw += c.toString(); });
+          req.on("end", () => {
+            letzter = JSON.parse(raw) as Record<string, unknown>;
+            const content = modus === "ok" ? '{"a": 1, "b": [1, 2]}' : '{"a": 1,}';
+            antwort(200, { model: "qwen/qwen3.8-27b", choices: [{ message: { content }, finish_reason: "stop" }] });
+          });
+          return;
+        }
+        antwort(404, {});
+      });
+      await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+      const fakePort = (server.address() as { port: number }).port;
+      try {
+        await cdp.evaluate(`
+          const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+          plugin.settings.endpoints = [{ url: "http://127.0.0.1:${fakePort}", model: "qwen/qwen3.8-27b" }];
+          plugin.settings.choice = {};
+          plugin.repairService.invalidate();
+          return true;
+        `);
+
+        const notiz = (block: string): string =>
+          ["# Repair", "", `${fence}json`, block, fence, "", "danach steht Text", ""].join("\n");
+        const vorher = notiz('{"a": 1, "b": [1, 2,,]');
+        createdFiles.add(SMOKE_REPAIR_NOTE);
+        await cdp.evaluate(`
+          const path = ${JSON.stringify(SMOKE_REPAIR_NOTE)};
+          const body = ${JSON.stringify(vorher)};
+          const existing = app.vault.getAbstractFileByPath(path);
+          if (existing) await app.vault.modify(existing, body);
+          else await app.vault.create(path, body);
+          const file = app.vault.getAbstractFileByPath(path);
+          let leaf = app.workspace.getMostRecentLeaf(app.workspace.rootSplit);
+          if (!leaf || !leaf.parent) leaf = app.workspace.getLeaf(true);
+          await leaf.openFile(file, { state: { mode: "preview" } });
+          app.workspace.setActiveLeaf(leaf, { focus: true });
+          return true;
+        `);
+        const knopfSel = `.markdown-reading-view .json-codeblock.is-error .json-codeblock-repair`;
+        const knopf = await pollUntil<boolean>(
+          cdp,
+          inView(`return root.querySelector(${JSON.stringify(knopfSel)}) ? true : null;`),
+          15_000,
+          400,
+        );
+        check("F1 Fehlerkarte zeigt den Reparatur-Knopf", Boolean(knopf), knopf ? "Knopf in der Titelzeile" : "kein Knopf");
+
+        const geklickt = await klick(cdp, elImView(`return root.querySelector(${JSON.stringify(knopfSel)});`));
+        const diff = geklickt
+          ? await pollUntil<{ links: string; rechts: string; anwenden: boolean }>(
+              cdp,
+              `
+                const cols = document.querySelectorAll(".json-repair-modal .json-repair-col");
+                if (cols.length !== 2) return null;
+                const apply = document.querySelector(".json-repair-modal .modal-button-container button.mod-cta");
+                return { links: cols[0].textContent, rechts: cols[1].textContent, anwenden: Boolean(apply) && !apply.disabled };
+              `,
+              15_000,
+              300,
+            )
+          : null;
+        check(
+          "F2 Klick öffnet das Modal mit Diff, Anwenden ist frei",
+          Boolean(diff) && diff!.links.includes(",,") && !diff!.rechts.includes(",,") && diff!.anwenden,
+          diff ? "Original links, Vorschlag rechts, Anwenden aktiv" : geklickt ? "Modal ohne Diff" : "Knopf nicht klickbar",
+        );
+        const gesendet = letzter as { model?: string; stream?: boolean; temperature?: number; messages?: { content: string }[] } | null;
+        check(
+          "F3 Anfrage trägt Modell, Profilwerte und den Parser-Fehler",
+          gesendet?.model === "qwen/qwen3.8-27b" && gesendet.stream === false && gesendet.temperature === 0.1
+            && (gesendet.messages?.[1]?.content ?? "").includes("Parser error"),
+          gesendet ? `model ${gesendet.model}, temperature ${gesendet.temperature}, stream ${gesendet.stream}` : "kein Request angekommen",
+        );
+        if (shotPfad !== null) {
+          writeFileSync(shotPfad, await capture(cdp));
+          console.log(`    (Screenshot: ${shotPfad})`);
+        }
+
+        // Anwenden: nur der Blockinhalt aendert sich, der Rest der Notiz bleibt byte-gleich.
+        const angewendet = await klick(cdp, `document.querySelector(".json-repair-modal .modal-button-container button.mod-cta")`);
+        const nachher = angewendet
+          ? await pollUntil<string>(
+              cdp,
+              `
+                const file = app.vault.getAbstractFileByPath(${JSON.stringify(SMOKE_REPAIR_NOTE)});
+                const text = await app.vault.read(file);
+                return text.includes('"b": [1, 2]') && !text.includes(",,") ? text : null;
+              `,
+              8000,
+              300,
+            )
+          : null;
+        const soll = vorher.replace('{"a": 1, "b": [1, 2,,]', '{"a": 1, "b": [1, 2]}');
+        check(
+          "F4 Anwenden ersetzt nur den Blockinhalt, der Rest bleibt byte-gleich",
+          nachher === soll,
+          nachher === null ? "Datei unverändert" : nachher === soll ? "Datei = Soll" : "Datei weicht ab",
+        );
+        const zu = await pollUntil<boolean>(cdp, `return document.querySelector(".json-repair-modal") ? null : true;`, 5000, 250);
+        // Ohne Klick gab es nie ein Modal, das sich schliessen koennte — „kein Modal da" waere sonst
+        // ein falsches Gruen (Klick-Gegenprobe, 2026-09-25).
+        check(
+          "F5 Modal schließt nach Anwenden",
+          angewendet && Boolean(zu),
+          !angewendet ? "Anwenden nicht geklickt" : zu ? "geschlossen" : "noch offen",
+        );
+
+        // Ungueltige Modellantwort: Anwenden bleibt gesperrt, die Datei unangetastet.
+        modus = "kaputt";
+        await cdp.evaluate(`
+          const file = app.vault.getAbstractFileByPath(${JSON.stringify(SMOKE_REPAIR_NOTE)});
+          await app.vault.modify(file, ${JSON.stringify(vorher)});
+          return true;
+        `);
+        const wieder = await pollUntil<boolean>(
+          cdp,
+          inView(`return root.querySelector(${JSON.stringify(knopfSel)}) ? true : null;`),
+          15_000,
+          400,
+        );
+        const zweiterKlick = wieder ? await klick(cdp, elImView(`return root.querySelector(${JSON.stringify(knopfSel)});`)) : false;
+        const fehler = zweiterKlick
+          ? await pollUntil<{ text: string; gesperrt: boolean }>(
+              cdp,
+              `
+                const st = document.querySelector(".json-repair-modal .json-repair-status.is-error");
+                if (!st) return null;
+                const apply = document.querySelector(".json-repair-modal .modal-button-container button.mod-cta");
+                return { text: st.textContent, gesperrt: Boolean(apply) && apply.disabled };
+              `,
+              15_000,
+              300,
+            )
+          : null;
+        const unveraendert = await cdp.evaluate<boolean>(`
+          const file = app.vault.getAbstractFileByPath(${JSON.stringify(SMOKE_REPAIR_NOTE)});
+          return (await app.vault.read(file)) === ${JSON.stringify(vorher)};
+        `);
+        check(
+          "F6 Ungültige Antwort sperrt Anwenden und lässt die Notiz unberührt",
+          Boolean(fehler) && fehler!.gesperrt && unveraendert,
+          fehler ? `Fehlertext gezeigt, Anwenden gesperrt, Datei ${unveraendert ? "unberührt" : "GEÄNDERT"}` : "kein Fehlerstatus",
+        );
+        await cdp.evaluate(`
+          const b = document.querySelector(".json-repair-modal .modal-button-container button");
+          if (b) b.click();
+          return true;
+        `);
+      } finally {
+        await new Promise<void>((r) => server.close(() => r()));
+        await cdp
+          .evaluate(`
+            const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+            plugin.repairService.invalidate();
+            return true;
+          `)
+          .catch(() => undefined);
+      }
+    },
+  },
 ];
 
 // --- Lauf --------------------------------------------------------------------
@@ -915,6 +1102,7 @@ async function main(): Promise<void> {
   const sectionArg = flag("section");
   klickOptionen.haltenMs = Number(flag("halten") ?? 0);
   klickOptionen.gegenprobe = argv.includes("--klick-gegenprobe");
+  shotPfad = flag("shot") ?? null;
 
   const sections = sectionArg ? SECTIONS.filter((s) => s.key === sectionArg) : SECTIONS;
   if (sections.length === 0) {

@@ -5,13 +5,13 @@
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![Docs: CC BY-SA 4.0](https://img.shields.io/badge/docs-CC%20BY--SA%204.0-lightgrey.svg)](LICENSE-DOCS)
 [![Release](https://img.shields.io/gitea/v/release/jkaindl/json-editor?gitea_url=https%3A%2F%2Fgit.jkaindl.de&label=release)](https://git.jkaindl.de/jkaindl/json-editor/releases)
-[![Obsidian](https://img.shields.io/badge/obsidian-1.5.7%2B-purple)](https://obsidian.md)
+[![Obsidian](https://img.shields.io/badge/obsidian-1.6.6%2B-purple)](https://obsidian.md)
 
 Renders `` ```json `` and `` ```jsonc `` code blocks inside Markdown notes as collapsible, theme-aware trees, too. Every structural edit on a `.jsonc` file is applied as a targeted text edit, so your comments and formatting stay exactly where you put them.
 
 *Auch auf Deutsch verfügbar: [`README.de.md`](README.de.md).*
 
-**Target platform:** Obsidian 1.5.7+ on desktop and mobile. No external services, no remote resources, no telemetry.
+**Target platform:** Obsidian 1.6.6+ on desktop and mobile. No external services of its own, no remote resources, no telemetry. The optional LLM repair talks only to the endpoint you configure.
 
 > **Status: 1.11.2 released.** Tree mode is a full structural editor — add / delete / rename keys, add / delete items, reorder rows (drag-and-drop or `Alt`+`↑`/`↓`), and switch a value's JSON type. Undo/redo (`Cmd/Ctrl+Z` / `Cmd/Ctrl+Shift+Z`) is unified across tree and source modes. On mobile, a long-press action menu, touch-sized controls and toolbar undo/redo make tree editing fully usable by touch. Optional JSON Schema validation (opt-in) and a large-file guard round out the editor. See [`CHANGELOG.md`](CHANGELOG.md) for the full per-release log.
 
@@ -52,6 +52,7 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 - **Long values are shortened** at 120 characters with a *Show more* chip. Editing and copying always use the full value.
 - **Breadcrumb** showing the current path; clicking a segment scrolls back up the tree.
 - **Copy buttons** on hover — click copies the value, Alt-click copies the JSON path.
+- **Repair broken JSON with an LLM** — an invalid `` ```json `` / `` ```jsonc `` block shows a *Repair* button in its error card (and the command *Repair JSON in the current code block* works at the cursor). The block and the parser error go to a language model; you see a side-by-side line diff and nothing is written until you press *Apply*. See [Repair with an LLM](#repair-with-an-llm).
 - **Theme-aware styling** via Obsidian CSS variables — no hardcoded colors, no theme breakage.
 - **Embedded code blocks** — `` ```json `` and `` ```jsonc `` fences in any Markdown note render as a titled card with a collapsible tree (the `` ```jsonc `` variant tolerates comments). Blocks over 20 lines auto-collapse. Invalid JSON renders as a styled error card with line/column info, not a crash.
 - **Settings** — default mode, indent (2 / 4 / tab), tree marker style (modern / classic), auto-collapse depth, JSON Schema validation (opt-in), companion-schema suffix.
@@ -91,7 +92,7 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 
 | | |
 |---|---|
-| **Obsidian** | 1.5.7 or newer (`minAppVersion`) — the view-local keymap the plugin uses was added in 1.5.7. |
+| **Obsidian** | 1.6.6 or newer (`minAppVersion`) — the settings folder-suggest that ships with the shared kit uses `Vault.getAllFolders`, added in 1.6.6. |
 | **Platform** | Desktop and mobile. Not desktop-only; the tree has a dedicated touch interaction model (long-press menu instead of hover buttons, `Alt`+arrow reorder). |
 | **Dependencies** | None to install. The two runtime libraries (`@cfworker/json-schema`, `jsonc-parser`) are bundled into `main.js`. |
 | **Network** | None. No telemetry, no remote resources, no schema fetching over the network — everything resolves inside the vault. |
@@ -189,8 +190,27 @@ Hover and drag-and-drop don't exist on touch, so the row actions are consolidate
 | Auto-collapse depth | `2` | Tree nodes deeper than this start collapsed. |
 | Validate against JSON schema | `off` | When enabled, auto-loads a companion `*.schema.json` next to the open file and flags validation errors live. Off by default (auto-loading vault files is a trust decision). |
 | Companion schema suffix | `.schema.json` | Suffix used to locate the sibling schema (`data.json` → `data.schema.json`). |
+| Endpoints / endpoint choice | one local endpoint | Where the LLM repair sends its request (see [Repair with an LLM](#repair-with-an-llm)). |
+| Request | model defaults | Sampling values and thinking level of the repair request, per model family. |
+| Timeout (seconds) | `60` | How long to wait for the model's answer. |
 
 Settings live under **Settings → Community plugins → JSON Editor**.
+
+---
+
+## Repair with an LLM
+
+An invalid `` ```json `` or `` ```jsonc `` code block renders as an error card. That card has a **Repair** button in its title row; the command **Repair JSON in the current code block** does the same for the block under the cursor in the editor.
+
+1. The block's text and the parser's error message are sent to a language model, with the instruction to change as little as possible and answer with the document only.
+2. The answer is checked with the same parser that rejected the block. Only a valid answer can be applied; an invalid one shows its reason instead.
+3. A modal shows the original on the left and the proposal on the right, with the changed lines marked. **Apply** replaces only the content of that one code block (the rest of the note stays byte-identical), **Try again** asks the model again, **Discard** writes nothing.
+
+If the note changed between the request and *Apply*, nothing is written and the modal says so.
+
+**Endpoint.** Under *Settings → JSON Editor → Repair with an LLM*. With the *LLM Endpoint Manager* plugin installed, the endpoint, its API key and the model come from there; without it you list your own OpenAI-compatible endpoints (LM Studio, Ollama, a hosted provider). The *Request* section shows the model family and backend the plugin recognised, the exact values sent in the last request and any deviation in the answer; every value can be overridden per model family. The repair uses the *structured* profile (low temperature, thinking off).
+
+The plugin sends nothing until you press *Repair* — the note is never uploaded in the background.
 
 ---
 

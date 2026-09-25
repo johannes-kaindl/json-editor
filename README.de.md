@@ -5,11 +5,11 @@
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![Docs: CC BY-SA 4.0](https://img.shields.io/badge/docs-CC%20BY--SA%204.0-lightgrey.svg)](LICENSE-DOCS)
 [![Release](https://img.shields.io/gitea/v/release/jkaindl/json-editor?gitea_url=https%3A%2F%2Fgit.jkaindl.de&label=release)](https://git.jkaindl.de/jkaindl/json-editor/releases)
-[![Obsidian](https://img.shields.io/badge/obsidian-1.5.7%2B-purple)](https://obsidian.md)
+[![Obsidian](https://img.shields.io/badge/obsidian-1.6.6%2B-purple)](https://obsidian.md)
 
 Rendert außerdem `` ```json ``- und `` ```jsonc ``-Codeblöcke in Markdown-Notizen als aufklappbare, theme-treue Bäume. Jede strukturelle Änderung an einer `.jsonc`-Datei wird als gezielte Textänderung angewendet — Kommentare und Formatierung bleiben genau da, wo du sie hingeschrieben hast.
 
-**Zielplattform:** Obsidian 1.5.7+ auf Desktop und Mobile. Keine externen Dienste, keine entfernten Ressourcen, keine Telemetrie.
+**Zielplattform:** Obsidian 1.6.6+ auf Desktop und Mobile. Keine externen Dienste, keine entfernten Ressourcen, keine Telemetrie.
 
 > **Status: 1.11.2 veröffentlicht.** Der Baum-Modus ist ein vollwertiger Struktur-Editor — Schlüssel anlegen/löschen/umbenennen, Elemente anlegen/löschen, Zeilen umsortieren (Drag-and-Drop oder `Alt`+`↑`/`↓`) und den JSON-Typ eines Wertes wechseln. Rückgängig/Wiederholen (`Cmd/Strg+Z` / `Cmd/Strg+Umschalt+Z`) arbeitet über beide Modi hinweg auf einem gemeinsamen Stapel. Auf Mobilgeräten machen ein Aktionsmenü per Langdruck, touch-gerechte Bedienelemente und Rückgängig-Schaltflächen in der Werkzeugleiste das Bearbeiten im Baum vollständig per Finger nutzbar. Optionale JSON-Schema-Validierung und ein Großdatei-Schutz runden den Editor ab. Die vollständige Historie steht in [`CHANGELOG.md`](CHANGELOG.md).
 
@@ -52,6 +52,7 @@ Alles bleibt in deinem Vault. Das Plugin nutzt Obsidians eigene CSS-Variablen un
 - **Lange Werte werden gekürzt** dargestellt (ab 120 Zeichen, mit *Show more*). Bearbeiten und Kopieren nutzen immer den vollständigen Wert.
 - **Brotkrumen-Leiste** mit dem aktuellen Pfad; ein Klick auf ein Segment scrollt im Baum dorthin zurück.
 - **Kopier-Schaltflächen** beim Überfahren — Klick kopiert den Wert, `Alt`+Klick den JSON-Pfad.
+- **Kaputtes JSON per LLM reparieren** — ein ungültiger `` ```json ``-/`` ```jsonc ``-Block zeigt in seiner Fehlerkarte einen *Reparieren*-Knopf (der Befehl *JSON im aktuellen Codeblock reparieren* wirkt am Cursor). Block und Parser-Fehler gehen an ein Sprachmodell; du siehst einen Zeilen-Diff nebeneinander, und geschrieben wird erst nach *Anwenden*. Siehe [Reparatur per LLM](#reparatur-per-llm).
 - **Theme-treue Gestaltung** über Obsidians CSS-Variablen — keine fest verdrahteten Farben.
 - **Eingebettete Codeblöcke** — `` ```json ``- und `` ```jsonc ``-Blöcke in jeder Markdown-Notiz werden als betitelte Karte mit aufklappbarem Baum gerendert. Blöcke über 20 Zeilen klappen automatisch zu. Ungültiges JSON erscheint als gestaltete Fehlerkarte mit Zeilen-/Spaltenangabe statt als Absturz.
 - **Keine Telemetrie, keine entfernten Ressourcen.** Alle Bestandteile werden mit dem Plugin ausgeliefert.
@@ -90,7 +91,7 @@ Alles bleibt in deinem Vault. Das Plugin nutzt Obsidians eigene CSS-Variablen un
 
 | | |
 |---|---|
-| **Obsidian** | 1.5.7 oder neuer (`minAppVersion`) — die ansichts-lokale Tastenbelegung, die das Plugin nutzt, kam in 1.5.7 dazu. |
+| **Obsidian** | 1.6.6 oder neuer (`minAppVersion`) — die Ordnervorschlags-Funktion in den Einstellungen, die das gemeinsame Kit mitbringt, nutzt `Vault.getAllFolders` (ab 1.6.6). |
 | **Plattform** | Desktop und Mobile. Nicht desktop-only; der Baum hat ein eigenes Touch-Bedienmodell (Langdruck-Menü statt Hover-Schaltflächen, `Alt`+Pfeiltasten zum Umsortieren). |
 | **Abhängigkeiten** | Keine zu installieren. Die beiden Laufzeit-Bibliotheken (`@cfworker/json-schema`, `jsonc-parser`) sind in `main.js` eingebunden. |
 | **Netzwerk** | Keines. Keine Telemetrie, keine entfernten Ressourcen, kein Nachladen von Schemata über das Netz — alles wird innerhalb des Vaults aufgelöst. |
@@ -160,8 +161,27 @@ npm run build
 | Auto-collapse depth | `2` | Baumknoten tiefer als dieser Wert starten zugeklappt. |
 | Validate against JSON schema | `aus` | Lädt bei Aktivierung automatisch eine begleitende `*.schema.json` neben der geöffneten Datei und markiert Validierungsfehler live. Standardmäßig aus (das automatische Laden von Vault-Dateien ist eine Vertrauensentscheidung). |
 | Companion schema suffix | `.schema.json` | Endung, über die das Schwester-Schema gefunden wird (`data.json` → `data.schema.json`). |
+| Endpunkte / Endpunktwahl | ein lokaler Endpunkt | Wohin die LLM-Reparatur ihre Anfrage schickt (siehe [Reparatur per LLM](#reparatur-per-llm)). |
+| Anfrage | Modell-Vorgaben | Sampling-Werte und Denkstufe der Reparatur-Anfrage, je Modellfamilie. |
+| Zeitlimit (Sekunden) | `60` | Wie lange auf die Antwort des Modells gewartet wird. |
 
 Die Einstellungen liegen unter **Einstellungen → Community-Plugins → JSON Editor**.
+
+---
+
+## Reparatur per LLM
+
+Ein ungültiger `` ```json ``- oder `` ```jsonc ``-Codeblock erscheint als Fehlerkarte. Sie hat in der Titelzeile einen **Reparieren**-Knopf; der Befehl **JSON im aktuellen Codeblock reparieren** macht dasselbe für den Block unter dem Cursor im Editor.
+
+1. Der Text des Blocks und die Fehlermeldung des Parsers gehen an ein Sprachmodell, mit der Anweisung, so wenig wie möglich zu ändern und nur das Dokument zu antworten.
+2. Die Antwort wird mit demselben Parser geprüft, der den Block abgelehnt hat. Nur eine gültige Antwort lässt sich anwenden; bei einer ungültigen steht der Grund im Modal.
+3. Ein Modal zeigt links das Original und rechts den Vorschlag, geänderte Zeilen sind markiert. **Anwenden** ersetzt nur den Inhalt genau dieses Codeblocks (der Rest der Notiz bleibt byte-gleich), **Neu versuchen** fragt das Modell erneut, **Verwerfen** schreibt nichts.
+
+Hat sich die Notiz zwischen Anfrage und *Anwenden* geändert, wird nichts geschrieben und das Modal sagt es.
+
+**Endpunkt.** Unter *Einstellungen → JSON Editor → Reparatur per LLM*. Ist das Plugin *LLM Endpoint Manager* installiert, kommen Endpunkt, API-Schlüssel und Modell von dort; ohne es trägst du eigene OpenAI-kompatible Endpunkte ein (LM Studio, Ollama, ein gehosteter Anbieter). Der Abschnitt *Anfrage* zeigt die erkannte Modellfamilie und das Backend, die Werte der letzten Anfrage und Abweichungen der Antwort; jeder Wert lässt sich je Modellfamilie überschreiben. Die Reparatur nutzt das Profil *Strukturiert* (niedrige Temperatur, Denken aus).
+
+Das Plugin sendet nichts, bevor du *Reparieren* drückst — die Notiz wird nie im Hintergrund hochgeladen.
 
 ---
 
