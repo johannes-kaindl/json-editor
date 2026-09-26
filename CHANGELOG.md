@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Changed
-- Endpoint list updated from `obsidian-kit` 0.41.1 to 0.43.0 (`endpoint-list.ts`, pinned on its own; the other kit modules stay on 0.41.1). The kit's CSS now uses child selectors (`.okit-ep-row > .setting-item-control`), so a setting nested inside an endpoint row no longer loses its label. This plugin has no such nested row, so nothing changes visibly in the settings; the `styles.css` copy follows the same rule set.
+- Kit modules updated from `obsidian-kit` 0.41.1 to 0.43.0 (full re-vendoring; apart from the endpoint list only the provenance stamps changed). The endpoint list's CSS now uses child selectors (`.okit-ep-row > .setting-item-control`), so a setting nested inside an endpoint row no longer loses its label. This plugin has no such nested row, so nothing changes visibly in the settings; the `styles.css` copy follows the same rule set.
 
 ## [1.14.0] — 2026-09-26
 
