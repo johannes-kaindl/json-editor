@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- Help row at the top of the settings with links to the documentation and the issue tracker (English and German), from `obsidian-kit` 0.43.0 (`help-setting.ts` vendored on its own).
+
 ## [1.13.1] — 2026-09-26
 
 ### Fixed

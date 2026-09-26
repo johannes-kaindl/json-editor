@@ -7,6 +7,10 @@ import { defineStrings } from "../vendor/kit/i18n";
 
 export const STRINGS = {
   en: {
+    "help.name": "Help",
+    "help.desc": "Getting started, how-tos and troubleshooting",
+    "help.openDocs": "Open documentation",
+    "help.reportIssue": "Report an issue",
     "set.modelHint.unreachable": "Endpoint unreachable — type the model name.",
     "set.modelHint.no-list": "The endpoint returns no model list — type the name.",
     "ep.addPlaceholder": "add another endpoint…",
@@ -159,6 +163,10 @@ export const STRINGS = {
     "repair.aria.right": "Proposed repair",
   },
   de: {
+    "help.name": "Hilfe",
+    "help.desc": "Erste Schritte, Anleitungen und Fehlersuche",
+    "help.openDocs": "Dokumentation öffnen",
+    "help.reportIssue": "Problem melden",
     "set.modelHint.unreachable": "Endpunkt nicht erreichbar — Modellnamen eintippen.",
     "set.modelHint.no-list": "Der Endpunkt gibt keine Modell-Liste heraus — Namen eintippen.",
     "ep.addPlaceholder": "weiterer Endpunkt…",

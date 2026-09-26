@@ -59,10 +59,11 @@ describe("JsonEditorSettingsTab", () => {
     expect(DEFAULT_SETTINGS.timeoutSec).toBe(60);
   });
 
-  it("display() renders the six editor rows plus the repair group (heading + 3 rows)", () => {
+  it("display() renders the help row first, then the six editor rows plus the repair group (heading + 3 rows)", () => {
     tab.display();
     const rows = tab.containerEl.children;
-    expect(rows.length).toBe(10);
+    expect(rows.length).toBe(11);
+    expect(rows[0]?.querySelector("button")?.textContent).toBe("Open documentation");
   });
 
   it("isValidCompanionSuffix accepts conventional suffixes, rejects path-bearing ones (2.20)", () => {

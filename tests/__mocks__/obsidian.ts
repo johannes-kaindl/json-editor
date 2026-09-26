@@ -228,6 +228,34 @@ export class Setting {
     cb(c);
     return this;
   }
+  addButton(cb: (b: ButtonComponent) => void): this {
+    const c = new ButtonComponent();
+    this.settingEl.appendChild(c.buttonEl);
+    cb(c);
+    return this;
+  }
+  addExtraButton(cb: (b: ExtraButtonComponent) => void): this {
+    const c = new ExtraButtonComponent();
+    this.settingEl.appendChild(c.extraEl);
+    cb(c);
+    return this;
+  }
+}
+
+export class ExtraButtonComponent {
+  extraEl: HTMLElement = document.createElement("div");
+  setIcon(icon: string): this {
+    this.extraEl.dataset.icon = icon;
+    return this;
+  }
+  setTooltip(tip: string): this {
+    this.extraEl.setAttribute("aria-label", tip);
+    return this;
+  }
+  onClick(handler: () => void): this {
+    this.extraEl.addEventListener("click", handler);
+    return this;
+  }
 }
 
 export class TextComponent {

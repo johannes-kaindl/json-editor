@@ -3,7 +3,7 @@
 // is why the definitions are the single source and display() just walks them.
 
 import { type App, Plugin } from "obsidian";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_SETTINGS, JsonEditorSettingsTab } from "../../src/obsidian/SettingsTab";
 
 class FakePlugin extends Plugin {
@@ -72,5 +72,51 @@ describe("declarative setting definitions", () => {
     expect(plugin.settings.companionSchemaSuffix).toBe(DEFAULT_SETTINGS.companionSchemaSuffix);
     tab.setControlValue("companionSchemaSuffix", ".s.json");
     expect(plugin.settings.companionSchemaSuffix).toBe(".s.json");
+  });
+
+  it("puts the help row first, with the documentation index and the issue tracker of this repo", () => {
+    const first = tab.getSettingDefinitions()[0] as {
+      name: string;
+      render?: (setting: unknown) => void;
+    };
+    expect(first.name).toBe("Help");
+    expect(typeof first.render).toBe("function");
+
+    const handlers: Array<() => void> = [];
+    const chain = {
+      setName: () => chain,
+      setDesc: () => chain,
+      addButton: (cb: (b: unknown) => void) => {
+        const b = {
+          setButtonText: () => b,
+          onClick: (h: () => void) => {
+            handlers.push(h);
+            return b;
+          },
+        };
+        cb(b);
+        return chain;
+      },
+      addExtraButton: (cb: (b: unknown) => void) => {
+        const b = {
+          setIcon: () => b,
+          setTooltip: () => b,
+          onClick: (h: () => void) => {
+            handlers.push(h);
+            return b;
+          },
+        };
+        cb(b);
+        return chain;
+      },
+    };
+    const open = vi.spyOn(window, "open").mockImplementation(() => null);
+    first.render?.(chain);
+    for (const h of handlers) h();
+    expect(open.mock.calls.map((c) => c[0])).toEqual([
+      "https://github.com/johannes-kaindl/json-editor/blob/main/docs/README.md",
+      "https://github.com/johannes-kaindl/json-editor/issues",
+    ]);
+    open.mockRestore();
   });
 });
