@@ -2,18 +2,18 @@
 
 **View and edit `.json` and `.jsonc` files inside Obsidian, with a Tree↔Source toggle and comments that survive editing.**
 
-[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
-[![Docs: CC BY-SA 4.0](https://img.shields.io/badge/docs-CC%20BY--SA%204.0-lightgrey.svg)](LICENSE-DOCS)
-[![Release](https://img.shields.io/gitea/v/release/jkaindl/json-editor?gitea_url=https%3A%2F%2Fgit.jkaindl.de&label=release)](https://git.jkaindl.de/jkaindl/json-editor/releases)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](https://github.com/johannes-kaindl/json-editor/blob/main/LICENSE)
+[![Docs: CC BY-SA 4.0](https://img.shields.io/badge/docs-CC%20BY--SA%204.0-lightgrey.svg)](https://github.com/johannes-kaindl/json-editor/blob/main/LICENSE-DOCS)
+[![Release](https://img.shields.io/github/v/release/johannes-kaindl/json-editor?label=release)](https://github.com/johannes-kaindl/json-editor/releases)
 [![Obsidian](https://img.shields.io/badge/obsidian-1.6.6%2B-purple)](https://obsidian.md)
 
 Renders `` ```json `` and `` ```jsonc `` code blocks inside Markdown notes as collapsible, theme-aware trees, too. Every structural edit on a `.jsonc` file is applied as a targeted text edit, so your comments and formatting stay exactly where you put them.
 
-*Auch auf Deutsch verfügbar: [`README.de.md`](README.de.md).*
+*Auch auf Deutsch verfügbar: [`README.de.md`](https://github.com/johannes-kaindl/json-editor/blob/main/README.de.md).*
 
 **Target platform:** Obsidian 1.6.6+ on desktop and mobile. No external services of its own, no remote resources, no telemetry. The optional LLM repair talks only to the endpoint you configure.
 
-<img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/hero.png" width="820" alt="A .json file open in Obsidian in tree mode: the file list on the left, and on the right a toolbar with breadcrumb, search field and Tree/Source pills above a colour-coded, collapsible tree of the file.">
+<img src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/main/docs/images/hero.png" width="820" alt="A .json file open in Obsidian in tree mode: the file list on the left, and on the right a toolbar with breadcrumb, search field and Tree/Source pills above a colour-coded, collapsible tree of the file.">
 
 ---
 
@@ -60,27 +60,27 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 
 ## See it in action
 
-<img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/tree-view.png" width="820" alt="Tree mode close up: one row is hovered and shows its per-row actions — copy, change type, rename and delete — with a drag handle on the left, while the breadcrumb above follows the active path.">
+<img src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/main/docs/images/tree-view.png" width="820" alt="Tree mode close up: one row is hovered and shows its per-row actions — copy, change type, rename and delete — with a drag handle on the left, while the breadcrumb above follows the active path.">
 
 <sub>Tree mode: hover a row for rename, delete, type-switch and drag handle; the breadcrumb follows the active path.</sub>
 
-<img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/source-view.png" width="820" alt="Source mode showing a .jsonc file in CodeMirror with line numbers and syntax highlighting; the line and block comments are intact and the Source pill is active.">
+<img src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/main/docs/images/source-view.png" width="820" alt="Source mode showing a .jsonc file in CodeMirror with line numbers and syntax highlighting; the line and block comments are intact and the Source pill is active.">
 
 <sub>Source mode on a <code>.jsonc</code> file — comments and formatting are preserved across tree edits.</sub>
 
-<img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/search.png" width="820" alt="Search in tree mode: the query distanceKm matches three rows, the match counter reads 3 matches, and the tree is filtered down to the matching entries and their parents.">
+<img src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/main/docs/images/search.png" width="820" alt="Search in tree mode: the query distanceKm matches three rows, the match counter reads 3 matches, and the tree is filtered down to the matching entries and their parents.">
 
 <sub><code>Cmd/Ctrl+F</code> filters the tree to matches and counts them; <code>Enter</code> steps from match to match.</sub>
 
-<img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/schema-validation.png" width="820" alt="Optional schema validation: a banner reads 3 schema errors and two rows are outlined in red — a replica count above the allowed maximum and a timeout below the required minimum.">
+<img src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/main/docs/images/schema-validation.png" width="820" alt="Optional schema validation: a banner reads 3 schema errors and two rows are outlined in red — a replica count above the allowed maximum and a timeout below the required minimum.">
 
 <sub>Opt-in schema validation marks the offending rows and counts them in a banner.</sub>
 
-<img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/codeblock-in-note.png" width="820" alt="A ```json fence inside a Markdown note, rendered in reading view as a read-only collapsible tree with a Copy button in its header.">
+<img src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/main/docs/images/codeblock-in-note.png" width="820" alt="A ```json fence inside a Markdown note, rendered in reading view as a read-only collapsible tree with a Copy button in its header.">
 
 <sub>A <code>```json</code> fence in a note, rendered read-only in reading view.</sub>
 
-<a href="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/settings.png"><img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/thumbs/settings.png" width="380" alt="The plugin settings tab with six options: default mode, indent, tree marker style, auto-collapse depth, schema validation and the companion schema suffix."></a>
+<a href="https://raw.githubusercontent.com/johannes-kaindl/json-editor/main/docs/images/settings.png"><img src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/main/docs/images/thumbs/settings.png" width="380" alt="The plugin settings tab with six options: default mode, indent, tree marker style, auto-collapse depth, schema validation and the companion schema suffix."></a>
 
 <sub>Click the preview for the full-size settings tab.</sub>
 
@@ -100,14 +100,14 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 
 ## Install
 
-> **Not currently in the Community Plugin Directory.** The listing was removed in September
-> 2026 for a reason unrelated to this plugin's code: the Directory installs exclusively from
-> GitHub releases, and the maintainer's GitHub account was flagged, which took every plugin
-> distributed through it out of the store at once. The plugin itself is unchanged and
-> actively maintained — releases continue on Forgejo, and the two routes below install and
-> update from there.
+### From Obsidian's Community plugins browser (recommended)
 
-### With AnySource Sideloader (recommended)
+1. **Settings → Community plugins → Browse**, search for **"JSON Editor"**, select **Install**.
+2. **Enable** it.
+
+Updates then arrive like any other community plugin update.
+
+### With AnySource Sideloader
 
 [AnySource Sideloader](https://git.jkaindl.de/jkaindl/anysource-sideloader) installs and
 updates Obsidian plugins from any git forge, which is exactly the single point of failure
@@ -120,16 +120,9 @@ https://git.jkaindl.de/jkaindl/anysource-sideloader/raw/branch/main/catalog.json
 JSON Editor is listed there and installs from its Forgejo release. Updates are then offered
 like any store update — visible, and never applied without confirmation.
 
-### From Obsidian's Community plugins browser
-
-Available again once the store listing returns:
-
-1. **Settings → Community plugins → Browse**, search for **"JSON Editor"**, select **Install**.
-2. **Enable** it.
-
 ### Manually
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest Forgejo release](https://git.jkaindl.de/jkaindl/json-editor/releases/latest).
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/johannes-kaindl/json-editor/releases/latest).
    Each release also ships `checksums.sha256`, so you can verify what you downloaded:
    `shasum -a 256 -c checksums.sha256`
 2. Drop the three files into your vault's `.obsidian/plugins/json-editor/` directory.
@@ -245,16 +238,17 @@ This plugin registers itself as the editor for the `.json` file extension. Obsid
 
 ```bash
 npm install                                # use --legacy-peer-deps if needed; .npmrc handles it
-npm test                                   # 640 Vitest tests, ~3s
+npm test                                   # ~850 Vitest tests, ~4s
 npm run dev                                # esbuild watch mode
 npm run build                              # production build (tsc-check + esbuild)
-npm run lint                               # Biome (format + general lint)
-npm run lint:obsidian                      # eslint-plugin-obsidianmd guideline gate
+npm run lint                               # eslint incl. eslint-plugin-obsidianmd (store scanner mirror)
+npm run lint:biome                         # Biome (format + general lint)
+npm run gate                               # typecheck + tests + both linters + build
 npx vitest run tests/core/parse.test.ts    # single test file
 npx vitest                                 # watch mode
 ```
 
-The codebase is strict TDD — every change in `src/core/` and `src/obsidian/` is backed by a failing test first. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the workflow.
+The codebase is strict TDD — every change in `src/core/` and `src/obsidian/` is backed by a failing test first. See [`CONTRIBUTING.md`](https://github.com/johannes-kaindl/json-editor/blob/main/CONTRIBUTING.md) for the workflow.
 
 ---
 
@@ -319,35 +313,33 @@ json-editor/
 
 ## Documentation
 
-- [`README.de.md`](README.de.md) — deutsche Fassung dieser Datei (the English README is authoritative).
-- [`CHANGELOG.md`](CHANGELOG.md) — per-release notes (Keep-A-Changelog format).
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) — bug reports, pull requests, commit conventions, TDD workflow.
-- [`SECURITY.md`](SECURITY.md) — how to report a security issue.
-- [`docs/superpowers/specs/`](docs/superpowers/specs) — design specs (one per release, brainstormed before implementation).
-- [`docs/superpowers/plans/`](docs/superpowers/plans) — checkbox implementation plans (one per release, task-by-task with TDD steps).
+- [Documentation index](https://github.com/johannes-kaindl/json-editor/blob/main/docs/README.md) — the guides, organised after Diátaxis.
+- [Getting started](https://github.com/johannes-kaindl/json-editor/blob/main/docs/getting-started.md) — from the install to your first edited file.
+- [Troubleshooting](https://github.com/johannes-kaindl/json-editor/blob/main/docs/troubleshooting.md) — the exact message you see, what it means, what to do.
+- [`README.de.md`](https://github.com/johannes-kaindl/json-editor/blob/main/README.de.md) — German version of this file (the English README is authoritative).
+- [`CHANGELOG.md`](https://github.com/johannes-kaindl/json-editor/blob/main/CHANGELOG.md) — per-release notes (Keep-A-Changelog format).
+- [`CONTRIBUTING.md`](https://github.com/johannes-kaindl/json-editor/blob/main/CONTRIBUTING.md) — bug reports, pull requests, commit conventions, TDD workflow.
+- [`SECURITY.md`](https://github.com/johannes-kaindl/json-editor/blob/main/SECURITY.md) — how to report a security issue.
+- Design specs and implementation plans (one each per release, historical): [`docs/superpowers/specs/`](https://github.com/johannes-kaindl/json-editor/tree/main/docs/superpowers/specs), [`docs/superpowers/plans/`](https://github.com/johannes-kaindl/json-editor/tree/main/docs/superpowers/plans).
 
 ---
 
 ## Hosting
 
-This project is mirrored across two forges:
+The canonical repository is on Forgejo; GitHub carries the releases the Community plugins browser installs from.
 
 | Remote | URL | Role |
 |---|---|---|
-| Forgejo | <https://git.jkaindl.de/jkaindl/json-editor> | **Primary** — source development, issues, PRs |
-| GitHub | <https://github.com/johannes-kaindl/json-editor> | Mirror, currently inactive — see below |
+| Forgejo | <https://git.jkaindl.de/jkaindl/json-editor> | **Canonical** — source development, issues, PRs |
+| GitHub | <https://github.com/johannes-kaindl/json-editor> | Releases (Community plugins browser), issues, mirror of the released state |
 
-Issues, pull requests **and releases** belong on **Forgejo**; that is where installs come
-from. The GitHub mirror existed because the Community Plugin Directory links to GitHub
-releases only — since the account was flagged it serves no distribution purpose, and its
-release automation is switched off. It is kept as a mirror of the source, not as a download
-location.
+Bug reports and questions are welcome on either; releases are published from the Forgejo repository to both.
 
 ---
 
 ## Contributing
 
-Bug reports and pull requests are welcome on Forgejo. For larger changes, please open an issue first to discuss the approach. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full workflow — commit conventions, branch naming, TDD requirements, and review notes.
+Bug reports and pull requests are welcome on Forgejo. For larger changes, please open an issue first to discuss the approach. See [`CONTRIBUTING.md`](https://github.com/johannes-kaindl/json-editor/blob/main/CONTRIBUTING.md) for the full workflow — commit conventions, branch naming, TDD requirements, and review notes.
 
 ---
 
@@ -355,14 +347,9 @@ Bug reports and pull requests are welcome on Forgejo. For larger changes, please
 
 Actively maintained by a single maintainer ([@jkaindl](https://git.jkaindl.de/jkaindl) / [@johannes-kaindl](https://github.com/johannes-kaindl)). Built for personal use, released because it might be useful to others.
 
-**Listed in the Community Plugin Directory from 12 July 2026 until September 2026**, passing
-its automated review throughout (that check is automated; no Obsidian staff review is implied).
-The removal was not about this plugin: the Directory distributes from GitHub only, and the
-maintainer's GitHub account was flagged, which removed every plugin published through it. See
-[Install](#install) for the routes that work — development, releases and support continue
-unchanged on Forgejo.
+Listed in the Obsidian Community plugins browser (since 12 July 2026; the listing was interrupted in September 2026 and is live again — see [Install](#install)). Its review is an automated check; no Obsidian staff review is implied.
 
-**Shipped** (see [`CHANGELOG.md`](CHANGELOG.md)): structural tree editing & undo/redo (1.0.0), drag-and-drop reorder + type-switching (1.1.0), unified cross-mode undo/redo (1.2.0), JSON Schema validation (1.3.0, opt-in since 1.5.0), data-integrity & crash hardening (1.5.0), guideline alignment + large-file guard + source-mode search (1.6.0), submission-prep + plugin rename to `json-editor` (1.7.0), mobile interaction model + toolbar polish (1.8.0), pop-out window correctness + community-review cleanup (1.8.1–1.8.2), eval-free schema validation with a ~52% smaller bundle (1.9.0), `.jsonc` support with comment-preserving tree editing (1.10.0–1.10.1), tree-rendering polish (1.10.2), storefront description (1.10.3), tree navigation & comfort — collapse-all, remembered collapse state, match-to-match search, go-to-path, shortened long values (1.11.0), portal-review hygiene: zero reviewer warnings, declarative settings (1.11.1).
+**Shipped** (see [`CHANGELOG.md`](https://github.com/johannes-kaindl/json-editor/blob/main/CHANGELOG.md)): structural tree editing & undo/redo (1.0.0), drag-and-drop reorder + type-switching (1.1.0), unified cross-mode undo/redo (1.2.0), JSON Schema validation (1.3.0, opt-in since 1.5.0), data-integrity & crash hardening (1.5.0), guideline alignment + large-file guard + source-mode search (1.6.0), submission-prep + plugin rename to `json-editor` (1.7.0), mobile interaction model + toolbar polish (1.8.0), pop-out window correctness + community-review cleanup (1.8.1–1.8.2), eval-free schema validation with a ~52% smaller bundle (1.9.0), `.jsonc` support with comment-preserving tree editing (1.10.0–1.10.1), tree-rendering polish (1.10.2), storefront description (1.10.3), tree navigation & comfort — collapse-all, remembered collapse state, match-to-match search, go-to-path, shortened long values (1.11.0), portal-review hygiene: zero reviewer warnings, declarative settings (1.11.1).
 
 **Roadmap (rough, 2.x ideas):**
 1. **Tree search match navigation** — next/prev jumps and match highlighting, beyond the current strict filter.
@@ -372,12 +359,12 @@ unchanged on Forgejo.
 
 ## License
 
-- **Open source (default):** GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later) — see [LICENSE](LICENSE). This applies to everyone by default.
-- **Commercial license (on request):** If the AGPL's copyleft does not fit your use case — for example a **proprietary/closed-source product or an Apple App Store build** (App Store terms are incompatible with the AGPL) — a separate commercial license is available. See [`LICENSING.md`](LICENSING.md).
-- **Contributing:** external contributions are accepted under the [Contributor License Agreement](CLA.md), which keeps the dual-licensing model possible.
-- **Documentation/text:** Creative Commons Attribution-ShareAlike 4.0 (CC BY-SA 4.0) — see [`LICENSE-DOCS`](LICENSE-DOCS).
+- **Open source (default):** GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later) — see [LICENSE](https://github.com/johannes-kaindl/json-editor/blob/main/LICENSE). This applies to everyone by default.
+- **Commercial license (on request):** If the AGPL's copyleft does not fit your use case — for example a **proprietary/closed-source product or an Apple App Store build** (App Store terms are incompatible with the AGPL) — a separate commercial license is available. See [`LICENSING.md`](https://github.com/johannes-kaindl/json-editor/blob/main/LICENSING.md).
+- **Contributing:** external contributions are accepted under the [Contributor License Agreement](https://github.com/johannes-kaindl/json-editor/blob/main/CLA.md), which keeps the dual-licensing model possible.
+- **Documentation/text:** Creative Commons Attribution-ShareAlike 4.0 (CC BY-SA 4.0) — see [`LICENSE-DOCS`](https://github.com/johannes-kaindl/json-editor/blob/main/LICENSE-DOCS).
 
-**Dependency licenses (bundled in `main.js`):** This plugin statically bundles [@cfworker/json-schema](https://github.com/cfworker/cfworker) (MIT) for JSON Schema validation and [jsonc-parser](https://github.com/microsoft/node-jsonc-parser) (MIT) for comment-preserving `.jsonc` editing, plus the source-mode JSON grammar [@codemirror/lang-json](https://github.com/codemirror/lang-json) (MIT) and [@lezer/json](https://github.com/lezer-parser/json) (MIT). All are AGPL-3.0-compatible. Full license texts and copyright notices are in [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md). The remaining `@codemirror/*` and `@lezer/{common,highlight,lr}` packages, and the Obsidian plugin API, are **not bundled** — they are provided by Obsidian at runtime (marked `external` in `esbuild.config.mjs`).
+**Dependency licenses (bundled in `main.js`):** This plugin statically bundles [@cfworker/json-schema](https://github.com/cfworker/cfworker) (MIT) for JSON Schema validation and [jsonc-parser](https://github.com/microsoft/node-jsonc-parser) (MIT) for comment-preserving `.jsonc` editing, plus the source-mode JSON grammar [@codemirror/lang-json](https://github.com/codemirror/lang-json) (MIT) and [@lezer/json](https://github.com/lezer-parser/json) (MIT). All are AGPL-3.0-compatible. Full license texts and copyright notices are in [`THIRD-PARTY-NOTICES.md`](https://github.com/johannes-kaindl/json-editor/blob/main/THIRD-PARTY-NOTICES.md). The remaining `@codemirror/*` and `@lezer/{common,highlight,lr}` packages, and the Obsidian plugin API, are **not bundled** — they are provided by Obsidian at runtime (marked `external` in `esbuild.config.mjs`).
 
 ---
 
