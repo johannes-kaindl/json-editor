@@ -9,7 +9,7 @@
       "file": "help-setting.ts",
       "version": "0.43.0",
       "sha": "bcd1805",
-      "note": "Einzeln vendoriert (git show 0.43.0:src/obsidian/help-setting.ts), NICHT ueber die gemeinsame PURE_MODULE/OBSIDIAN_MODULE-Liste von tools/sync-kit.sh — ein Lauf ohne --single haette beim Aufnehmen dieser Datei alle anderen Module ebenfalls auf diese Ref gehoben. Re-vendor mit MODULE=help-setting REF=<neuer-tag> sh tools/sync-kit.sh --single; Kopf-Stempel und dieser Eintrag ziehen automatisch nach."
+      "note": "Eigener Pin KIT_HELP_REF in tools/sync-kit.sh (git show 0.43.0:src/obsidian/help-setting.ts), NICHT die gemeinsame Ref der Sammelliste. Re-vendor mit KIT_HELP_REF=<neuer-tag> sh tools/sync-kit.sh; Kopf-Stempel und dieser Eintrag ziehen automatisch nach."
     }
   ]
 }

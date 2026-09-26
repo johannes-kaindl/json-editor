@@ -21,6 +21,9 @@ CODE_KIT="${CODE_KIT_DIR:-../../libs/code-kit}"
 # Default ist die package.json-Version der Quelle; ein Upgrade ist eine BEWUSSTE Handlung.
 VER="${KIT_REF:-0.41.1}"
 CODE_VER="${CODE_KIT_REF:-0.7.0}"
+# Eigener Pin, Absicht: help-setting.ts (Hilfe-Zeile, UI-STANDARD 8) kam mit Kit 0.43.0 und haengt an
+# keinem anderen Modul — die uebrigen Module bleiben auf $VER (Vorlage epub-exporter 877eb2c).
+HELP_REF="${KIT_HELP_REF:-0.43.0}"
 for paar in "$KIT|$VER" "$CODE_KIT|$CODE_VER"; do
   repo=${paar%%|*}; ref=${paar##*|}
   git -C "$repo" rev-parse --verify --quiet "$ref^{commit}" >/dev/null || {
@@ -29,7 +32,10 @@ for paar in "$KIT|$VER" "$CODE_KIT|$CODE_VER"; do
     exit 2
   }
 done
+git -C "$KIT" cat-file -e "$HELP_REF:src/obsidian/help-setting.ts" 2>/dev/null || {
+  echo "FEHLER: src/obsidian/help-setting.ts fehlt in Ref $HELP_REF (KIT_HELP_REF setzen)." >&2; exit 2; }
 SHA=$(git -C "$KIT" rev-parse --short "$VER^{commit}")
+HELP_SHA=$(git -C "$KIT" rev-parse --short "$HELP_REF^{commit}")
 
 # Ein pures Modul kann in drei Schichten liegen. Statt fester Zuordnung wird gesucht — die
 # naechste Umschichtung soll dieses Skript nicht wieder toeten, sondern nur einen anderen
@@ -279,6 +285,12 @@ for m in $OBSIDIAN_MODULE; do
   echo "vendored obsidian-kit@$VER/obsidian/$m.ts"
 done
 
+# help-setting.ts aus dem eigenen Pin, nicht aus $VER.
+hole "$KIT" "$HELP_REF" "src/obsidian/help-setting.ts" "src/vendor/kit-obsidian/help-setting.ts" || {
+  echo "FEHLER: $HELP_REF:src/obsidian/help-setting.ts nicht lesbar" >&2; exit 2; }
+stamp "src/vendor/kit-obsidian/help-setting.ts" "src/obsidian/help-setting.ts" obsidian-kit "$HELP_REF"
+echo "vendored obsidian-kit@$HELP_REF/obsidian/help-setting.ts"
+
 cat > src/vendor/kit/VENDOR.json <<JSON
 {
   "source": "obsidian-kit",
@@ -295,7 +307,15 @@ cat > src/vendor/kit-obsidian/VENDOR.json <<JSON
   "version": "$VER",
   "sha": "$SHA",
   "vendored": "$(liste "$OBSIDIAN_MODULE")",
-  "note": "Verbatim snapshot. Never hand-edit. Re-vendor via tools/sync-kit.sh. version/sha gelten AUSSCHLIESSLICH fuer die unter \"vendored\" gelisteten Dateien. clipboard.ts, endpoint-list.ts, model-picker.ts und stable-writer.ts tragen EINE mechanische Abweichung: kit-interne Importe ../vendor/code-kit/{pure,web}/ sind auf ../kit/ umgeschrieben (Vendor-Layout). Bei jedem Re-Vendoring reproduzieren; sonst darf nichts abweichen. Praezedenz: vim-dojo, markdown-presentation, vault-crews, kuro-gamification. Eigene Ablage neben src/vendor/kit/, weil diese Module \"obsidian\" importieren."
+  "note": "Verbatim snapshot. Never hand-edit. Re-vendor via tools/sync-kit.sh. version/sha gelten AUSSCHLIESSLICH fuer die unter \"vendored\" gelisteten Dateien. clipboard.ts, endpoint-list.ts, model-picker.ts und stable-writer.ts tragen EINE mechanische Abweichung: kit-interne Importe ../vendor/code-kit/{pure,web}/ sind auf ../kit/ umgeschrieben (Vendor-Layout). Bei jedem Re-Vendoring reproduzieren; sonst darf nichts abweichen. Praezedenz: vim-dojo, markdown-presentation, vault-crews, kuro-gamification. Eigene Ablage neben src/vendor/kit/, weil diese Module \"obsidian\" importieren.",
+  "vendored_mixed_version": [
+    {
+      "file": "help-setting.ts",
+      "version": "$HELP_REF",
+      "sha": "$HELP_SHA",
+      "note": "Eigener Pin KIT_HELP_REF in tools/sync-kit.sh (git show $HELP_REF:src/obsidian/help-setting.ts), NICHT die gemeinsame Ref der Sammelliste. Re-vendor mit KIT_HELP_REF=<neuer-tag> sh tools/sync-kit.sh; Kopf-Stempel und dieser Eintrag ziehen automatisch nach."
+    }
+  ]
 }
 JSON
 echo "VENDOR.json → $VER ($SHA)"

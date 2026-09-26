@@ -11,7 +11,11 @@ import { deviationDetail } from "../core/request-text";
 import type { CollapsibleStorage } from "../vendor/kit-obsidian/collapsible";
 import { type EndpointListStrings, buildEndpointList } from "../vendor/kit-obsidian/endpoint-list";
 import { buildEndpointSourceSection } from "../vendor/kit-obsidian/endpoint-source";
-import { githubHelpUrls, helpSettingDefinition } from "../vendor/kit-obsidian/help-setting";
+import {
+  HELP_SETTING_TEXTS_EN,
+  githubHelpUrls,
+  helpSettingDefinition,
+} from "../vendor/kit-obsidian/help-setting";
 import { buildRequestSection } from "../vendor/kit-obsidian/request-section";
 import {
   type SettingControlHost,
@@ -119,16 +123,9 @@ export class JsonEditorSettingsTab extends PluginSettingTab implements SettingCo
 
   getSettingDefinitions(): SettingDefinitionItem[] {
     return [
-      // UI-STANDARD §8 „Hilfe-Zeile": als erstes Element, vor jeder Überschrift.
-      helpSettingDefinition({
-        ...githubHelpUrls("json-editor"),
-        texts: {
-          name: t("help.name"),
-          desc: t("help.desc"),
-          openDocs: t("help.openDocs"),
-          reportIssue: t("help.reportIssue"),
-        },
-      }),
+      // UI-STANDARD §8 „Hilfe-Zeile": als erstes Element, vor jeder Überschrift. Nur EN-Texte:
+      // dieser Tab ist englisch, die Zeile spricht die Sprache ihres Tabs.
+      helpSettingDefinition({ ...githubHelpUrls("json-editor"), texts: HELP_SETTING_TEXTS_EN }),
       {
         name: "Default mode",
         desc: "Which view opens by default when a .json file is opened.",
