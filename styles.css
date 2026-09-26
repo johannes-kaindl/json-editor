@@ -662,7 +662,7 @@
    nirgends sichtbar werden darf — aber `display: none` und `visibility: hidden` nehmen
    ein Element aus dem Accessibility-Tree, es wuerde also NIE angesagt. Deshalb der
    Ansatz: im Dokument, im Accessibility-Tree, aber auf 1 px Groesse mit overflow: hidden
-   beschnitten (kein clip-path — der Store meldet ihn als nur teilweise unterstuetzt). */
+   beschnitten (bewusst ohne Clipping-Eigenschaft — der Store-Scan meldet sie als nur teilweise unterstuetzt). */
 .json-a11y-announce {
   position: absolute;
   width: 1px;
