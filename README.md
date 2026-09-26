@@ -13,8 +13,6 @@ Renders `` ```json `` and `` ```jsonc `` code blocks inside Markdown notes as co
 
 **Target platform:** Obsidian 1.6.6+ on desktop and mobile. No external services of its own, no remote resources, no telemetry. The optional LLM repair talks only to the endpoint you configure.
 
-> **Status: 1.11.2 released.** Tree mode is a full structural editor — add / delete / rename keys, add / delete items, reorder rows (drag-and-drop or `Alt`+`↑`/`↓`), and switch a value's JSON type. Undo/redo (`Cmd/Ctrl+Z` / `Cmd/Ctrl+Shift+Z`) is unified across tree and source modes. On mobile, a long-press action menu, touch-sized controls and toolbar undo/redo make tree editing fully usable by touch. Optional JSON Schema validation (opt-in) and a large-file guard round out the editor. See [`CHANGELOG.md`](CHANGELOG.md) for the full per-release log.
-
 <img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/hero.png" width="820" alt="A .json file open in Obsidian in tree mode: the file list on the left, and on the right a toolbar with breadcrumb, search field and Tree/Source pills above a colour-coded, collapsible tree of the file.">
 
 ---

@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+- The screen-reader announcement region no longer uses `clip-path` (the Community Store scan reported it as only partially supported by Obsidian 1.6.5); it stays visually hidden through a 1 px box with `overflow: hidden` and remains readable to assistive technology.
+
+### Changed
+- README: dropped the "Status: 1.11.2 released" line, which had fallen behind; the release badge carries the version.
+
 ## [1.13.0] — 2026-09-25
 
 ### Added

@@ -513,7 +513,7 @@ const SECTIONS: Section[] = [
       }
 
       // B5 — die A11y-Ansage-Region traegt Text, den NIEMAND sehen soll. Der Unit-Test dazu
-      // prueft die CSS-QUELLE (`position: absolute`, `clip-path`, kein `display: none`) und
+      // prueft die CSS-QUELLE (`position: absolute`, 1 px, `overflow: hidden`, kein `display: none`) und
       // kann nicht sagen, ob das auch WIRKT. Genau diese Haelfte misst hier der echte
       // Browser — und zwar in beide Richtungen, denn beide Fehler sind moeglich: sichtbar
       // (Text steht im Baum) und stumm (`display: none` nimmt das Element aus dem

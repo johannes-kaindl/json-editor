@@ -11,8 +11,6 @@ Rendert außerdem `` ```json ``- und `` ```jsonc ``-Codeblöcke in Markdown-Noti
 
 **Zielplattform:** Obsidian 1.6.6+ auf Desktop und Mobile. Keine externen Dienste, keine entfernten Ressourcen, keine Telemetrie.
 
-> **Status: 1.11.2 veröffentlicht.** Der Baum-Modus ist ein vollwertiger Struktur-Editor — Schlüssel anlegen/löschen/umbenennen, Elemente anlegen/löschen, Zeilen umsortieren (Drag-and-Drop oder `Alt`+`↑`/`↓`) und den JSON-Typ eines Wertes wechseln. Rückgängig/Wiederholen (`Cmd/Strg+Z` / `Cmd/Strg+Umschalt+Z`) arbeitet über beide Modi hinweg auf einem gemeinsamen Stapel. Auf Mobilgeräten machen ein Aktionsmenü per Langdruck, touch-gerechte Bedienelemente und Rückgängig-Schaltflächen in der Werkzeugleiste das Bearbeiten im Baum vollständig per Finger nutzbar. Optionale JSON-Schema-Validierung und ein Großdatei-Schutz runden den Editor ab. Die vollständige Historie steht in [`CHANGELOG.md`](CHANGELOG.md).
-
 > **Hinweis:** Diese Übersetzung folgt der englischen [`README.md`](README.md). Bei Abweichungen gilt die englische Fassung.
 
 <img src="https://git.jkaindl.de/jkaindl/json-editor/raw/branch/main/docs/images/hero.png" width="820" alt="Eine .json-Datei im Baummodus in Obsidian: links die Dateiliste, rechts eine Werkzeugleiste mit Brotkrumen, Suchfeld und Tree/Source-Pillen über einem farbig ausgezeichneten, klappbaren Baum der Datei.">

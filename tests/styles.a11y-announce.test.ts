@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 //
 // `display: none` waere die naheliegende Loesung und die falsche: so ausgeblendete
 // Elemente werden aus dem Accessibility-Tree entfernt und nie angesagt. Deshalb der
-// Clip-Ansatz — sichtbar fuer den Screenreader, unsichtbar fuer das Auge.
+// Ansatz (1 px + overflow: hidden, ohne clip-path) — sichtbar fuer den Screenreader, unsichtbar fuer das Auge.
 const css = readFileSync(resolve(process.cwd(), "styles.css"), "utf8");
 
 describe("styles: the live region is invisible but not hidden", () => {
@@ -21,7 +21,13 @@ describe("styles: the live region is invisible but not hidden", () => {
 
   it("takes the text out of the visual flow", () => {
     expect(block).toMatch(/position:\s*absolute/);
-    expect(block).toMatch(/clip-path|clip:/);
+    expect(block).toMatch(/width:\s*1px/);
+    expect(block).toMatch(/height:\s*1px/);
+    expect(block).toMatch(/overflow:\s*hidden/);
+  });
+
+  it("does not use clip-path, which the Community Store scan reports as partially supported", () => {
+    expect(block).not.toMatch(/clip-path/);
   });
 
   it("does not use display:none or visibility:hidden, which would silence it", () => {
