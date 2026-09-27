@@ -1,0 +1,70 @@
+{
+  "sources": {
+    "obsidian-kit": { "ref": "0.43.0" },
+    "code-kit": { "ref": "0.7.0" }
+  },
+  "targets": [
+    {
+      "dir": "src/vendor/kit",
+      "source": "obsidian-kit",
+      "from": "src/pure",
+      "modules": ["endpoint-source"],
+      "rewrite": [["../vendor/code-kit/pure/", "./"], ["../vendor/code-kit/web/", "./"]]
+    },
+    {
+      "dir": "src/vendor/kit",
+      "source": "code-kit",
+      "from": "src/ts/pure",
+      "modules": [
+        "capabilities",
+        "diff",
+        "endpoint_config",
+        "endpoint_diagnostics",
+        "endpoint",
+        "error_body",
+        "i18n",
+        "model-choice",
+        "model-list-cache",
+        "reasoning",
+        "sampling-profiles",
+        "settings",
+        "timeout"
+      ]
+    },
+    {
+      "dir": "src/vendor/kit",
+      "source": "code-kit",
+      "from": "src/ts/web",
+      "modules": ["clipboard"]
+    },
+    {
+      "dir": "src/vendor/kit-obsidian",
+      "source": "obsidian-kit",
+      "from": "src/obsidian",
+      "modules": [
+        "settings_walker",
+        "folder-suggest",
+        "collapsible",
+        { "name": "help-setting", "ref": "0.43.0" }
+      ]
+    },
+    {
+      "dir": "src/vendor/kit-obsidian",
+      "source": "obsidian-kit",
+      "from": "src/obsidian",
+      "modules": [
+        "clipboard",
+        "endpoint-list",
+        "model-picker",
+        "endpoint-source",
+        "request-section",
+        "request-session"
+      ],
+      "rewrite": [
+        ["../pure/", "../kit/"],
+        ["../vendor/code-kit/pure/", "../kit/"],
+        ["../vendor/code-kit/web/", "../kit/"]
+      ]
+    }
+  ]
+}
