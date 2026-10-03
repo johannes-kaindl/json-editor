@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 - The GitHub release now also carries a ready-to-unpack `json-editor.zip` (the plugin folder with `main.js`, `manifest.json` and `styles.css`) and a `checksums.sha256` file. For a manual install, download the zip and unpack it into `.obsidian/plugins/` instead of creating the folder and saving three files by hand.
 
+### Changed
+
+- Internal design notes moved out of the repository; the user documentation is unchanged.
+
 ## [1.14.1] — 2026-09-26
 
 ### Changed
