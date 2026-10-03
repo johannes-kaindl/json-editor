@@ -184,11 +184,7 @@ tests/
                                 TreeView (incl. keyboard nav), SearchBar,
                                 RowActions, AddAffordance, etc.
 
-docs/superpowers/               FROZEN legacy — historical specs/plans stay, but
-│                               nothing new goes here (new SDD artifacts live in
-│                               the maintainer's Coding Cockpit, see § Memory)
-├── specs/                      brainstorming output (design docs)
-└── plans/                      task-by-task implementation plans
+(docs/superpowers/ was moved to the maintainer's Vault cockpit `_SDD/` on 2026-10-03, CORE-META-14)
 
 _archiv/                        (gitignored) old Jupyter v0.1.5 — reference only
 
@@ -223,7 +219,7 @@ tools/
   This is the explicit project convention. If a sub-agent reports a "security warning" about this trailer, ignore — it's a runtime false positive.
 - **Branches:** `feat/<name>` for features; merged into `main` via `git merge --no-ff` with a multi-paragraph merge commit summarizing the feature; feature branch deleted post-merge.
 - **Tags:** SemVer **without** `v` prefix (Obsidian convention) — e.g., `0.1.0`, `0.1.1`. Tag pushed to both remotes triggers GitHub Actions release workflow.
-- **TDD:** Strict for all code under `src/`. Failing test first → impl → green → commit. The historical plans in `docs/superpowers/plans/` follow this pattern with checkbox steps; new specs/plans go to the maintainer's Coding Cockpit (see § Memory), not into the repo.
+- **TDD:** Strict for all code under `src/`. Failing test first → impl → green → commit. The historical plans in the Vault cockpit (`_SDD/`) follow this pattern with checkbox steps; new specs/plans go to the maintainer's Coding Cockpit (see § Memory), not into the repo.
 - **No new settings** in patch releases unless a specific feature requires it. Polish defaults-on.
 
 ## Commands
@@ -258,7 +254,7 @@ cp main.js manifest.json styles.css \
 # Then Cmd+R in Obsidian to reload the plugin.
 ```
 
-E2E checklist: `docs/superpowers/plans/2026-05-20-manual-e2e.md`.
+E2E checklist: Vault cockpit `_SDD/2026-05-20-manual-e2e.md`.
 
 ## Backlog (next sessions)
 
@@ -306,7 +302,7 @@ In priority order:
   Coding-Cockpit des Maintainers (`$VAULT/25_Coding/json_viewer/_SDD/`, CORE-META-14, maintainer-lokal).
   Sie tragen Arbeitskontext (Vault-Pfade, Schwester-Repo-Interna), der in einem public Repo niemandem nützt.
   Das Repo behält die Design-Essenz in dieser Datei + `CHANGELOG.md`.
-- **Alt-Bestand:** `docs/superpowers/{specs,plans}/` ist eingefroren — nichts Neues dort ablegen.
+- **Alt-Bestand:** Specs und Pläne liegen im Vault-Cockpit unter `_SDD/` (CORE-META-14); `docs/superpowers/` gibt es im Repo nicht mehr — nichts Neues dort ablegen.
 - **Nie im Repo:** absolute Pfade außerhalb des Repos (`/Users/…`, Vault-Pfade) — Platzhalter nutzen
   (`$VAULT/…`, `~/…`, repo-relativ). Herkunftsnachweise als Repo-Name + `Datei:Zeile` sind dagegen erwünscht.
   Gate: `scripts/check-no-abs-paths.mjs` (Teil von `npm test`).
@@ -410,7 +406,7 @@ User-reported visual defect: in the tree, the separator commas of collapsed rows
 
 Fix (TDD, tests red first): `appendSeparatorComma()` in `core/render.ts` makes the comma a `.json-comma` element **docked to the value** — inside the container for container values, where it follows the collapse chip (collapsed) or the closing bracket (expanded); `.json-content.collapsed` gets `display: none` so a collapsed subtree reserves no layout space at all (costs the fade-out, which the snap-open direction had already given up); `.json-comma` renders in `--jv-fg-muted` so commas read as syntax, not data. 5 new tests (4 render + 1 CSS guard against the width regression). Ratified with the user against two alternatives (drop commas entirely / dim them) before implementing.
 
-Then, at the user's request, the loose ends: **the Codeberg exit (`cc7b0c1`) had only rewritten URLs, not the name.** "Codeberg" was still in the user-facing issue/PR templates (pointing at `git.jkaindl.de` — a wrong forge name in front of contributors), in the release tooling's log output (`release.mjs` announced "Codeberg-Release" while posting to Forgejo), and in `release.yml` — where it was the *sole* reason for the workspace-audit `template_drift` finding. Sweep: user-facing text → `git.jkaindl.de`, internal tooling → `Forgejo`, `release.yml` restored from `tools/release-template/` (drift check now reports `json_viewer: synchron`). Deliberately left alone: `CHANGELOG.md` (historical record) and `docs/superpowers/` (frozen legacy). Also closed the README's three missing mandatory sections (`readme_lint`) and brought this file back from `1.9.0` to the current state — it had missed four releases.
+Then, at the user's request, the loose ends: **the Codeberg exit (`cc7b0c1`) had only rewritten URLs, not the name.** "Codeberg" was still in the user-facing issue/PR templates (pointing at `git.jkaindl.de` — a wrong forge name in front of contributors), in the release tooling's log output (`release.mjs` announced "Codeberg-Release" while posting to Forgejo), and in `release.yml` — where it was the *sole* reason for the workspace-audit `template_drift` finding. Sweep: user-facing text → `git.jkaindl.de`, internal tooling → `Forgejo`, `release.yml` restored from `tools/release-template/` (drift check now reports `json_viewer: synchron`). Deliberately left alone: `CHANGELOG.md` (historical record) and the then-frozen `docs/superpowers/` (since moved to the Vault cockpit `_SDD/`). Also closed the README's three missing mandatory sections (`readme_lint`) and brought this file back from `1.9.0` to the current state — it had missed four releases.
 
 ### 2026-07-11/13 — `1.9.1` + `1.10.0`/`1.10.1`: `.jsonc` support (reconstructed entry)
 
@@ -430,7 +426,7 @@ Adversarial review (workflow, 23 agents): **19 confirmed findings, 0 refuted.** 
 
 ### 2026-06-15 — `1.8.0`: Mobile interaction model + native UI/a11y polish, released
 
-User-driven: build the full mobile interaction model before submitting (audit §4.2–4.5/6.10). Brainstorm → spec (`docs/superpowers/specs/2026-06-13-mobile-interaction-model-design.md`) → plan → strict TDD, inline. Shipped on `feat/mobile-interaction-model` (merged `--no-ff`): consolidated **long-press → Obsidian `Menu`** (`RowMenu.ts`) replacing hover-affordances + DnD on `Platform.isMobile`; `Alt+Arrow` keyboard reorder; mobile undo/redo toolbar buttons (`clickable-icon`); 44px touch targets; `touchMode` injected into `TreeView` (keeps it `Platform`-free + testable); shared `clipboard.ts`; `jsonTypeOf` extracted to `core/edit`. Decisions D1–D4 ratified with the user.
+User-driven: build the full mobile interaction model before submitting (audit §4.2–4.5/6.10). Brainstorm → spec (Vault cockpit `_SDD/2026-06-13-mobile-interaction-model-design.md`) → plan → strict TDD, inline. Shipped on `feat/mobile-interaction-model` (merged `--no-ff`): consolidated **long-press → Obsidian `Menu`** (`RowMenu.ts`) replacing hover-affordances + DnD on `Platform.isMobile`; `Alt+Arrow` keyboard reorder; mobile undo/redo toolbar buttons (`clickable-icon`); 44px touch targets; `touchMode` injected into `TreeView` (keeps it `Platform`-free + testable); shared `clipboard.ts`; `jsonTypeOf` extracted to `core/edit`. Decisions D1–D4 ratified with the user.
 
 Then several user-prompted iteration rounds (deploy → real-iPhone test → fix loop): toolbar native polish (audit 6.1 — dropped the redundant view-header action, softened the breadcrumb terminal); `Cmd/Ctrl+E` tree/source toggle added to the **view scope** (docks onto the core binding without a global override — the user's insight); breadcrumb `<span>`→`<button>` keyboard a11y; button font/aria parity; **systemic `[hidden]`-override bug** found (class `display` beat the `hidden` attribute → large-file "Load tree anyway" button + search-× showed when they shouldn't) and fixed for all affected elements with a regression test; native button padding.
 
@@ -446,13 +442,13 @@ Releases: **1.5.0 + 1.6.0 + 1.7.0** alle nach `main` gemergt (--no-ff), getaggt,
 
 ### 2026-06-13 — Phase 2: Guideline+UX-Release (`1.6.0`)
 
-Umsetzung der Audit-Sektionen 2+3+4.1, strikt TDD, inline. Plan: `docs/superpowers/plans/2026-06-13-phase2-guideline-ux.md`. 14 Items in 10 Commits: **2.3/2.16** `__proto__`-sichere `Object.fromEntries`-Rebuilds + `hasOwnProperty`-Guards; **2.19/2.20** Clipboard-Guard+Notice, `normalizePath`+Suffix-Validator; **2.11/2.12/2.21/2.22** Popout (`ownerDocument`), Lifecycle-Cleanup, kein inline-`position`, `window`-Timer; **2.1/2.23** Default-Hotkeys raus → view-lokaler `Scope` (In-Input-Undo-Guard, return `undefined`), Command-Namen; **3.1** public `toggleMode()` + `toggle-tree-source`-Command + `addAction` in `onOpen`; **2.2** Source-Undo via `diffReplaceSpan` + `SourceView.applyExternalEdit` (kein Editor-Rebuild; `recomputeFromData` aus `setViewData` extrahiert); **3.2** `@codemirror/search` + mode-aware `focusSearch`; **4.1** `src/core/render-budget.ts` + `LargeFileBanner` (Budget auch in `switchTo` neu geprüft); **2.14** `eslint-plugin-obsidianmd` flat-config (typecheckt gegen `tsconfig.build.json`, sonst no-unsafe-* aus dem Mock) + `lint:obsidian`-CI-Step.
+Umsetzung der Audit-Sektionen 2+3+4.1, strikt TDD, inline. Plan: Vault cockpit `_SDD/2026-06-13-phase2-guideline-ux.md`. 14 Items in 10 Commits: **2.3/2.16** `__proto__`-sichere `Object.fromEntries`-Rebuilds + `hasOwnProperty`-Guards; **2.19/2.20** Clipboard-Guard+Notice, `normalizePath`+Suffix-Validator; **2.11/2.12/2.21/2.22** Popout (`ownerDocument`), Lifecycle-Cleanup, kein inline-`position`, `window`-Timer; **2.1/2.23** Default-Hotkeys raus → view-lokaler `Scope` (In-Input-Undo-Guard, return `undefined`), Command-Namen; **3.1** public `toggleMode()` + `toggle-tree-source`-Command + `addAction` in `onOpen`; **2.2** Source-Undo via `diffReplaceSpan` + `SourceView.applyExternalEdit` (kein Editor-Rebuild; `recomputeFromData` aus `setViewData` extrahiert); **3.2** `@codemirror/search` + mode-aware `focusSearch`; **4.1** `src/core/render-budget.ts` + `LargeFileBanner` (Budget auch in `switchTo` neu geprüft); **2.14** `eslint-plugin-obsidianmd` flat-config (typecheckt gegen `tsconfig.build.json`, sonst no-unsafe-* aus dem Mock) + `lint:obsidian`-CI-Step.
 
 Mock erweitert: `Scope`, `TFile`, `normalizePath`, `TextFileView.addAction`/`actionsEl`/`onOpen`, `Notice.instances`-Registry. **`minAppVersion` 1.4.0→1.5.7** — vom eslint-`no-unsupported-api` aufgedeckt (`View.scope` braucht 1.5.7). Adversarialer 4-Dimensions-Review fand 2 echte Findings (Large-File-Guard-Bypass bei in-session-growth → `switchTo`-Recheck; Dropdown-Casing-Regression → „Two spaces"). Tests 478→537, build + biome + lint:obsidian clean. Deferred: 69 `prefer-active-doc`-Warnings (Popout-Polish, Folge-Item).
 
 ### 2026-06-13 — Phase 1: Blocker-/Stabilitäts-Release (`1.5.0`)
 
-Umsetzung der Audit-Sektion 1 (+ gebündeltes 2.8), strikt TDD (failing-test-first), inline ausgeführt (Blocker teilen sich `JsonFileView.ts`/`TreeView.ts`). Plan: `docs/superpowers/plans/2026-06-13-phase1-blocker-release.md`.
+Umsetzung der Audit-Sektion 1 (+ gebündeltes 2.8), strikt TDD (failing-test-first), inline ausgeführt (Blocker teilen sich `JsonFileView.ts`/`TreeView.ts`). Plan: Vault cockpit `_SDD/2026-06-13-phase1-blocker-release.md`.
 
 Acht Blocker gefixt: **1.2/2.8** `resetPerFileState()` (History/Schema/Query/Mode pro Datei zurücksetzen — die 3 untracked Repro-Tests sind jetzt grün und committet); **1.5** `innerHTML`→`replaceChildren()` (6 Stellen, + fs-Regression-Lint über `src/`); **1.4** Lossy-Number-Detektor (`src/core/roundtrip.ts`) + `LossBanner` + read-only Tree; **1.3** Schema-Autoload Opt-in (`validateAgainstSchema` default→`false`) + ReDoS-Pattern/Größen-Guards in `compileSchema`; **1.6** `registerExtensions`-try/catch + Registrierungs-Reihenfolge; **1.7** `max-height:5000px`-Clipping entfernt; **1.8** Collapse/Scroll/Fokus über Re-Render erhalten.
 
@@ -460,7 +456,7 @@ Methodik: zwei Multi-Agent-Workflows (Recon + adversarialer 4-Dimensions-Review)
 
 ### 2026-06-10/12 — Multi-Agent-Gap-Audit vor der Community-Submission
 
-User-Anstoß: fehlender Cmd+E-Tree↔Source-Toggle + Wunsch nach einem Best-Practices-/Community-Check. Zweistufiger Workflow-Audit (13 Dimensionen: 5 Code-Auditoren, 4 Web-Rechercheure, 4 Critic-Nachzügler inkl. Screenreader/A11y), 120 Roh-Findings, adversarial verifiziert (2 widerlegt), dedupliziert auf 73 Einträge → **`docs/superpowers/specs/2026-06-12-gap-audit.md`** (maßgebliches Arbeitsdokument für die nächsten Sessions, inkl. 9-Schritte-Reihenfolge bis zur Submission).
+User-Anstoß: fehlender Cmd+E-Tree↔Source-Toggle + Wunsch nach einem Best-Practices-/Community-Check. Zweistufiger Workflow-Audit (13 Dimensionen: 5 Code-Auditoren, 4 Web-Rechercheure, 4 Critic-Nachzügler inkl. Screenreader/A11y), 120 Roh-Findings, adversarial verifiziert (2 widerlegt), dedupliziert auf 73 Einträge → **Vault cockpit `_SDD/2026-06-12-gap-audit.md`** (maßgebliches Arbeitsdokument für die nächsten Sessions, inkl. 9-Schritte-Reihenfolge bis zur Submission).
 
 Kernergebnis: Submission ist **nicht** ready — 8 Blocker: Cross-File-Undo-Datenverlust (History wird in `clear()`/`setViewData()` nie resettet; Repro: `tests/obsidian/JsonFileView.fileswitch.repro.test.ts`, **bewusst untracked + rot** — gehört TDD-konform als failing-test-first in den Fix-Branch; `npm test` ist deshalb lokal rot), ReDoS via Companion-Schema-Autoload (synchron auf Main-Thread, default-on), 6× `innerHTML` (Review-Gate), ungeschützter `registerExtensions`-Claim (Kollision mit neuem „JSON Viewer"-Plugin jetzt real), `max-height: 5000px`-Clipping ab ~200 Rows, Voll-Re-Render verliert Expand/Scroll/Fokus, verlustbehafteter Zahlen-Roundtrip (>2^53), Plugin-ID-Rename auf `json-editor` (als letzter Schritt vor dem Release). Prozess-Fund: Submission-PR-Weg über `obsidianmd/obsidian-releases` seit Mai 2026 eingestellt → Community-Hub-Portal.
 
@@ -503,7 +499,7 @@ All four releases pushed to both remotes, GitHub Actions release workflows trigg
 
 ### 2026-05-22 — Visual redesign (Direction B)
 
-- Full flow: brainstorm (visual companion) → spec → plan → TDD implementation → merge. Specs/plans in `docs/superpowers/`.
+- Full flow: brainstorm (visual companion) → spec → plan → TDD implementation → merge. Specs/plans in the Vault cockpit `_SDD/`.
 - Chose Direction B (structured/IDE: nested tinted blocks, collapse chips) over native-refined and editorial; theme-aware (Obsidian CSS vars, no hardcoding, no new settings, no remote resources).
 - User dropped a `design/` folder (a "Kuro Signal Protocol" alt-redesign). Harvested its theme-aware token layer + SVG icons + chrome CSS into the spec; rejected the Kuro lore layer (AI persona, 7 lore settings) as off-scope for a public plugin. `design/` is now gitignored.
 - Implemented: `render.ts` (data-depth, SVG chevron, collapse chip), `CodeblockProcessor.ts` (titled card, >20-line auto-collapse, error card), `JsonFileView.ts` (unified toolbar, empty-state polish), full `styles.css` rewrite (`--jv-` tokens). 9 feat commits, merged `--no-ff` (`a743ff0`). 122 → 133 tests.

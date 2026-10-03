@@ -293,7 +293,6 @@ json-editor/
 │                              codeblock processor, settings, and commands
 ├── tests/                     core/ + obsidian/ + toolchain/ (640 tests)
 │   └── __mocks__/obsidian.ts  Vitest-only mock (resolved via vitest.config + tsconfig.test.json)
-├── docs/superpowers/          design specs and implementation plans (one per release)
 ├── .github/workflows/         release.yml + test.yml (CI: tests, lint:obsidian, build)
 ├── eslint.config.mjs          eslint-plugin-obsidianmd guideline gate
 ├── manifest.json              Obsidian plugin manifest
@@ -320,7 +319,6 @@ json-editor/
 - [`CHANGELOG.md`](https://github.com/johannes-kaindl/json-editor/blob/main/CHANGELOG.md) — per-release notes (Keep-A-Changelog format).
 - [`CONTRIBUTING.md`](https://github.com/johannes-kaindl/json-editor/blob/main/CONTRIBUTING.md) — bug reports, pull requests, commit conventions, TDD workflow.
 - [`SECURITY.md`](https://github.com/johannes-kaindl/json-editor/blob/main/SECURITY.md) — how to report a security issue.
-- Design specs and implementation plans (one each per release, historical): [`docs/superpowers/specs/`](https://github.com/johannes-kaindl/json-editor/tree/main/docs/superpowers/specs), [`docs/superpowers/plans/`](https://github.com/johannes-kaindl/json-editor/tree/main/docs/superpowers/plans).
 
 ---
 

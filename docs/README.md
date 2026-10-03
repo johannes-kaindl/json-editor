@@ -15,4 +15,4 @@ The [README](https://github.com/johannes-kaindl/json-editor/blob/main/README.md)
 
 ---
 
-`SMOKE.md` and `superpowers/` hold maintainer material (the GUI smoke checklist, historical design specs and plans) and are not user documentation.
+`SMOKE.md` holds maintainer material (the GUI smoke checklist) and is not user documentation.

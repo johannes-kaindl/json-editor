@@ -246,7 +246,6 @@ Die Anleitungen sind auf Englisch.
 - [`CHANGELOG.md`](https://github.com/johannes-kaindl/json-editor/blob/main/CHANGELOG.md) — Release-Notizen (Keep-A-Changelog-Format).
 - [`CONTRIBUTING.md`](https://github.com/johannes-kaindl/json-editor/blob/main/CONTRIBUTING.md) — Fehlerberichte, Pull Requests, Commit-Konventionen, TDD-Ablauf.
 - [`SECURITY.md`](https://github.com/johannes-kaindl/json-editor/blob/main/SECURITY.md) — wie man ein Sicherheitsproblem meldet.
-- Design-Spezifikationen und Umsetzungspläne (je eine pro Release, historisch): [`docs/superpowers/specs/`](https://github.com/johannes-kaindl/json-editor/tree/main/docs/superpowers/specs), [`docs/superpowers/plans/`](https://github.com/johannes-kaindl/json-editor/tree/main/docs/superpowers/plans).
 
 ---
 
