@@ -1,7 +1,7 @@
 // Comment- and format-preserving JSONC edit engine, wrapping Microsoft's
 // jsonc-parser. Pure module (no Obsidian imports) — mirrors edit.ts's ops but
 // operates on the SOURCE TEXT so `//`, `/* */` comments and formatting survive
-// every mutation. See docs/superpowers/specs/2026-07-11-jsonc-support-design.md.
+// every mutation. See Vault cockpit `_SDD/2026-07-11-jsonc-support-design.md`.
 import {
   type FormattingOptions,
   type JSONPath,
