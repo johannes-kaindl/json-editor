@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.15.0] — 2026-10-09
+
 ### Changed
 - **Minimum Obsidian version is now 1.11.4** (was 1.6.6, a large jump). API keys for the LLM repair move into Obsidian's keychain, which exists from 1.11.4 on.
 - **API keys are no longer stored in `data.json`.** Keys you entered before are moved into the keychain the first time the plugin looks up an endpoint (at startup or when you open the settings); `data.json` then carries only a reference. Endpoint rows show *saved · change · remove* instead of the key.
