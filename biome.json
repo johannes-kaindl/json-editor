@@ -46,6 +46,7 @@
       "main.js",
       "scripts",
       "src/vendor",
+      "tests/vendor",
       "tests/setup/dom-shim.ts"
     ]
   },
