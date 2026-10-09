@@ -58,7 +58,6 @@ describe("repairFromBlock", () => {
       source: '{"a": 1,}',
       errorMessage: "E",
       lang: "json",
-      timeoutSec: 60,
     });
     await captured?.run(new AbortController().signal);
     expect(service.run).toHaveBeenCalledWith('{"a": 1,}', "E", "json", expect.any(AbortSignal));

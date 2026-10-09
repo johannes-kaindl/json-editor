@@ -39,7 +39,6 @@ describe("declarative setting definitions", () => {
         "defaultMode",
         "indent",
         "markerStyle",
-        "timeoutSec",
         "validateAgainstSchema",
       ].sort(),
     );

@@ -5,13 +5,13 @@
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](https://github.com/johannes-kaindl/json-editor/blob/main/LICENSE)
 [![Docs: CC BY-SA 4.0](https://img.shields.io/badge/docs-CC%20BY--SA%204.0-lightgrey.svg)](https://github.com/johannes-kaindl/json-editor/blob/main/LICENSE-DOCS)
 [![Release](https://img.shields.io/github/v/release/johannes-kaindl/json-editor?label=release)](https://github.com/johannes-kaindl/json-editor/releases)
-[![Obsidian](https://img.shields.io/badge/obsidian-1.6.6%2B-purple)](https://obsidian.md)
+[![Obsidian](https://img.shields.io/badge/obsidian-1.11.4%2B-purple)](https://obsidian.md)
 
 Renders `` ```json `` and `` ```jsonc `` code blocks inside Markdown notes as collapsible, theme-aware trees, too. Every structural edit on a `.jsonc` file is applied as a targeted text edit, so your comments and formatting stay exactly where you put them.
 
 *Auch auf Deutsch verfügbar: [`README.de.md`](https://github.com/johannes-kaindl/json-editor/blob/main/README.de.md).*
 
-**Target platform:** Obsidian 1.6.6+ on desktop and mobile. No external services of its own, no remote resources, no telemetry. The optional LLM repair talks only to the endpoint you configure.
+**Target platform:** Obsidian 1.11.4+ on desktop and mobile. No external services of its own, no remote resources, no telemetry. The optional LLM repair talks only to the endpoint you configure.
 
 <img src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/main/docs/images/hero.png" width="820" alt="A .json file open in Obsidian in tree mode: the file list on the left, and on the right a toolbar with breadcrumb, search field and Tree/Source pills above a colour-coded, collapsible tree of the file.">
 
@@ -90,7 +90,7 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 
 | | |
 |---|---|
-| **Obsidian** | 1.6.6 or newer (`minAppVersion`) — the settings folder-suggest that ships with the shared kit uses `Vault.getAllFolders`, added in 1.6.6. |
+| **Obsidian** | 1.11.4 or newer (`minAppVersion`) — API keys for the LLM repair are stored in Obsidian's keychain (`app.secretStorage`), added in 1.11.4. |
 | **Platform** | Desktop and mobile. Not desktop-only; the tree has a dedicated touch interaction model (long-press menu instead of hover buttons, `Alt`+arrow reorder). |
 | **Dependencies** | None to install. The two runtime libraries (`@cfworker/json-schema`, `jsonc-parser`) are bundled into `main.js`. |
 | **Network** | None. No telemetry, no remote resources, no schema fetching over the network — everything resolves inside the vault. |
@@ -181,9 +181,8 @@ Hover and drag-and-drop don't exist on touch, so the row actions are consolidate
 | Auto-collapse depth | `2` | Tree nodes deeper than this start collapsed. |
 | Validate against JSON schema | `off` | When enabled, auto-loads a companion `*.schema.json` next to the open file and flags validation errors live. Off by default (auto-loading vault files is a trust decision). |
 | Companion schema suffix | `.schema.json` | Suffix used to locate the sibling schema (`data.json` → `data.schema.json`). |
-| Endpoints / endpoint choice | one local endpoint | Where the LLM repair sends its request (see [Repair with an LLM](#repair-with-an-llm)). |
+| Endpoints / endpoint choice | one local endpoint | Where the LLM repair sends its request (see [Repair with an LLM](#repair-with-an-llm)). API keys are kept in Obsidian's keychain, not in `data.json`. |
 | Request | model defaults | Sampling values and thinking level of the repair request, per model family. |
-| Timeout (seconds) | `60` | How long to wait for the model's answer. |
 
 Settings live under **Settings → Community plugins → JSON Editor**.
 
@@ -199,7 +198,7 @@ An invalid `` ```json `` or `` ```jsonc `` code block renders as an error card. 
 
 If the note changed between the request and *Apply*, nothing is written and the modal says so.
 
-**Endpoint.** Under *Settings → JSON Editor → Repair with an LLM*. With the *LLM Endpoint Manager* plugin installed, the endpoint, its API key and the model come from there; without it you list your own OpenAI-compatible endpoints (LM Studio, Ollama, a hosted provider). The *Request* section shows the model family and backend the plugin recognised, the exact values sent in the last request and any deviation in the answer; every value can be overridden per model family. The repair uses the *structured* profile (low temperature, thinking off).
+**Endpoint.** Under *Settings → JSON Editor → Repair with an LLM*. With the *LLM Endpoint Manager* plugin installed, the endpoint, its API key and the model come from there; without it you list your own OpenAI-compatible endpoints (LM Studio, Ollama, a hosted provider). The *Request* section shows the model family and backend the plugin recognised, the exact values sent in the last request and any deviation in the answer; every value can be overridden per model family. The repair uses the *structured* profile (low temperature, thinking off). The request waits up to 15 minutes for the answer; there is no timeout setting. Secrets in the block (API keys, `Bearer` tokens, private-key blocks) are replaced by placeholders before the request leaves your machine and put back into the proposal you see.
 
 The plugin sends nothing until you press *Repair* — the note is never uploaded in the background.
 

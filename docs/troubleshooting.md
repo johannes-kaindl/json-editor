@@ -94,7 +94,7 @@ Each entry starts with what you see — the wording is the plugin's own English 
 |---|---|
 | The cursor is not inside a ```` ```json ```` or ```` ```jsonc ```` code block. | The command *Repair JSON in the current code block* needs the cursor inside a block. |
 | This code block is already valid JSON — nothing to repair. | There is nothing to fix. |
-| The model did not answer within {n} seconds. | Raise **Timeout (seconds)** in the settings. |
+| The model did not answer in time. | The request waits up to 15 minutes; a model that is still loading or a server that went quiet ends it. Load the model first, then press **Try again**. There is no timeout setting. |
 | The model returned the document unchanged. | The model saw nothing to change; try again or edit by hand. |
 | The endpoint's API key is missing in the LLM Endpoint Manager. | Enter the key in the manager. |
 

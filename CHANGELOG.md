@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+- **Minimum Obsidian version is now 1.11.4** (was 1.6.6, a large jump). API keys for the LLM repair move into Obsidian's keychain, which exists from 1.11.4 on.
+- **API keys are no longer stored in `data.json`.** Keys you entered before are moved into the keychain the first time the plugin looks up an endpoint (at startup or when you open the settings); `data.json` then carries only a reference. Endpoint rows show *saved · change · remove* instead of the key.
+- **The LLM repair now uses the shared connection of the kit.** The endpoint list, the *Request* section and the endpoint choice look and behave as in the other plugins of this family. Visible differences: the settings rows use the kit's wording (for example *Test connection*, *Try this endpoint first*, status *Timed out*); the endpoint choice applies only while the LLM Endpoint Manager is installed (without it the local list decides); the endpoint found reachable is remembered until you change the list or the choice, while the Manager is asked on every request; an HTTP error shows more of the server's own message, and a prompt that exceeds the model's context is reported as an endpoint error.
+- **Secrets in the block are redacted before the request is sent.** API keys, `Bearer` tokens and private-key blocks go to the model as placeholders and come back into the proposal as the original text, as valid JSON, so the diff you confirm shows the real document.
+
+### Removed
+- The *Timeout (seconds)* setting. The request now waits up to 15 minutes for the answer; the message *The model did not answer in time.* replaces the one that named a number of seconds. An old `timeoutSec` value in `data.json` is ignored.
+- The *Level picker in chat* switch in the *Request* section: this plugin has no chat, so the switch never did anything.
+
 ## [1.14.2] — 2026-10-03
 
 ### Added

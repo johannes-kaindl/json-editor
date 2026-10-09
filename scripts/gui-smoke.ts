@@ -913,8 +913,9 @@ const SECTIONS: Section[] = [
       // Ein Fake-Endpunkt im Node-Prozess: die Antwort steuert der Lauf, damit der Pruefpunkt
       // die Reparatur misst und nicht die Laune eines Modells. `letzter` haelt den Request
       // fest, den das Plugin wirklich gesendet hat.
-      let modus: "ok" | "kaputt" = "ok";
+      let modus: "ok" | "kaputt" | "echo" = "ok";
       let letzter: Record<string, unknown> | null = null;
+      let letzterRoh = "";
       const server: Server = createServer((req, res) => {
         const antwort = (code: number, body: unknown): void => {
           res.writeHead(code, { "Content-Type": "application/json" });
@@ -929,7 +930,13 @@ const SECTIONS: Section[] = [
           req.on("data", (c: Buffer) => { raw += c.toString(); });
           req.on("end", () => {
             letzter = JSON.parse(raw) as Record<string, unknown>;
-            const content = modus === "ok" ? '{"a": 1, "b": [1, 2]}' : '{"a": 1,}';
+            letzterRoh = raw;
+            // „echo": das Modell gibt das gesendete Dokument zurueck, ein Trennkomma vor `}` weniger —
+            // so misst der Lauf, was von der Schwaerzung auf dem Draht ankommt und was zurueckkehrt.
+            const doc = ((letzter.messages as { content: string }[] | undefined)?.[1]?.content ?? "").split("Document:\n")[1] ?? "";
+            const content = modus === "echo"
+              ? doc.replace(/,(\s*)}/, "$1}")
+              : modus === "ok" ? '{"a": 1, "b": [1, 2]}' : '{"a": 1,}';
             antwort(200, { model: "qwen/qwen3.8-27b", choices: [{ message: { content }, finish_reason: "stop" }] });
           });
           return;
@@ -943,7 +950,7 @@ const SECTIONS: Section[] = [
           const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
           plugin.settings.endpoints = [{ url: "http://127.0.0.1:${fakePort}", model: "qwen/qwen3.8-27b" }];
           plugin.settings.choice = {};
-          plugin.repairService.invalidate();
+          plugin.llm.invalidate();
           return true;
         `);
 
@@ -1074,12 +1081,112 @@ const SECTIONS: Section[] = [
           if (b) b.click();
           return true;
         `);
+
+        // --- Verbindung (Kit): Schwaerzung, Schluesselbund -------------------------------
+        // Ein Block mit Geheimnis durch das Modal schicken und die Spalten lesen.
+        modus = "echo";
+        const durchsModal = async (block: string): Promise<{ links: string; rechts: string } | null> => {
+          letzterRoh = "";
+          await cdp.evaluate(`
+            const file = app.vault.getAbstractFileByPath(${JSON.stringify(SMOKE_REPAIR_NOTE)});
+            await app.vault.modify(file, ${JSON.stringify(notiz(block))});
+            return true;
+          `);
+          const da = await pollUntil<boolean>(
+            cdp,
+            inView(`return root.querySelector(${JSON.stringify(knopfSel)}) ? true : null;`),
+            15_000,
+            400,
+          );
+          if (!da) return null;
+          if (!(await klick(cdp, elImView(`return root.querySelector(${JSON.stringify(knopfSel)});`)))) return null;
+          const spalten = await pollUntil<{ links: string; rechts: string }>(
+            cdp,
+            `
+              const cols = document.querySelectorAll(".json-repair-modal .json-repair-col");
+              if (cols.length !== 2) return null;
+              return { links: cols[0].textContent, rechts: cols[1].textContent };
+            `,
+            15_000,
+            300,
+          );
+          await cdp.evaluate(`
+            const b = document.querySelector(".json-repair-modal .modal-button-container button");
+            if (b) b.click();
+            return true;
+          `);
+          await pollUntil<boolean>(cdp, `return document.querySelector(".json-repair-modal") ? null : true;`, 5000, 250);
+          return spalten;
+        };
+        const gueltig = (text: string): boolean => {
+          try {
+            JSON.parse(text);
+            return true;
+          } catch {
+            return false;
+          }
+        };
+
+        const bearer = "Bearer sk-live-abcdef0123456789ABCDEF";
+        const v1 = await durchsModal(`{"auth": "${bearer}", "a": 1,}`);
+        check(
+          "G1 Bearer-Token geht geschwärzt raus, der Vorschlag trägt das Original zurück",
+          Boolean(v1) && letzterRoh !== "" && !letzterRoh.includes("sk-live-abcdef0123456789ABCDEF")
+            && v1!.rechts.includes(bearer) && gueltig(v1!.rechts),
+          v1
+            ? `Draht ${letzterRoh.includes("sk-live-") ? "TRÄGT den Token" : "ohne Token"}, Vorschlag ${v1.rechts.includes(bearer) ? "mit Original" : "OHNE Original"}, JSON ${gueltig(v1.rechts) ? "gültig" : "UNGÜLTIG"}`
+            : "kein Vorschlag",
+        );
+
+        const pemKoerper = "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7";
+        const pemEsc = `-----BEGIN PRIVATE KEY-----\\n${pemKoerper}\\n-----END PRIVATE KEY-----`;
+        const v2 = await durchsModal(`{"key": "${pemEsc}", "a": 1,}`);
+        check(
+          "G2 PEM als JSON-String (\\n escaped) geht geschwärzt raus und kommt als gültiges JSON zurück",
+          Boolean(v2) && letzterRoh !== "" && !letzterRoh.includes(pemKoerper)
+            && v2!.rechts.includes(pemKoerper) && gueltig(v2!.rechts),
+          v2
+            ? `Draht ${letzterRoh.includes(pemKoerper) ? "TRÄGT den Schlüssel" : "ohne Schlüssel"}, JSON ${gueltig(v2.rechts) ? "gültig" : "UNGÜLTIG"}`
+            : "kein Vorschlag",
+        );
+
+        const pemEcht = `-----BEGIN PRIVATE KEY-----\n${pemKoerper}\n-----END PRIVATE KEY-----`;
+        const v3 = await durchsModal(`{"key": "${pemEcht}", "a": 1}`);
+        check(
+          "G3 PEM mit echten Zeilenumbrüchen (kaputtes JSON) kommt als gültiges JSON zurück",
+          Boolean(v3) && letzterRoh !== "" && !letzterRoh.includes(pemKoerper) && gueltig(v3!.rechts),
+          v3
+            ? `Draht ${letzterRoh.includes(pemKoerper) ? "TRÄGT den Schlüssel" : "ohne Schlüssel"}, JSON ${gueltig(v3.rechts) ? "gültig" : "UNGÜLTIG"}`
+            : "kein Vorschlag",
+        );
+
+        // Schluesselbund: ein Endpunkt MIT Schluessel, dann die Aufloesung erzwingen und data.json lesen.
+        const schluessel = await cdp.evaluate<{ apiKeyInData: boolean; secretId: boolean; hydrated: boolean }>(`
+          const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+          plugin.settings.endpoints = [{ url: "http://127.0.0.1:${fakePort}", model: "qwen/qwen3.8-27b", apiKey: "sk-smoke-keychain-0123456789" }];
+          plugin.llm.invalidate();
+          const src = await plugin.llm.resolve({ force: true });
+          await new Promise((r) => setTimeout(r, 800));
+          const pfad = app.vault.configDir + "/plugins/" + ${JSON.stringify(PLUGIN_ID)} + "/data.json";
+          const data = JSON.parse(await app.vault.adapter.read(pfad));
+          const eps = data.endpoints ?? [];
+          return {
+            apiKeyInData: JSON.stringify(data).includes("sk-smoke-keychain") || eps.some((e) => "apiKey" in e),
+            secretId: eps.some((e) => typeof e.secretId === "string" && e.secretId !== ""),
+            hydrated: src.config?.apiKey === "sk-smoke-keychain-0123456789",
+          };
+        `);
+        check(
+          "G4 Kein apiKey in data.json — der Schlüssel liegt im Schlüsselbund",
+          !schluessel.apiKeyInData && schluessel.secretId && schluessel.hydrated,
+          `apiKey in data.json: ${schluessel.apiKeyInData ? "JA" : "nein"}, secretId: ${schluessel.secretId ? "ja" : "NEIN"}, Aufloesung traegt den Schlüssel: ${schluessel.hydrated ? "ja" : "NEIN"}`,
+        );
       } finally {
         await new Promise<void>((r) => server.close(() => r()));
         await cdp
           .evaluate(`
             const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
-            plugin.repairService.invalidate();
+            plugin.llm.invalidate();
             return true;
           `)
           .catch(() => undefined);

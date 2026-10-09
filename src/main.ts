@@ -11,7 +11,7 @@ import {
 } from "./obsidian/SettingsTab";
 import { repairAtCursor, repairFromBlock } from "./obsidian/repair-flow";
 import { RepairService } from "./obsidian/repair-service";
-import { onEndpointManagerChanged } from "./vendor/kit-obsidian/endpoint-source";
+import type { LlmConnection } from "./vendor/kit-obsidian/llm-connection";
 import { pickLang, setLang, t } from "./vendor/kit/i18n";
 import { mergeSettings } from "./vendor/kit/settings";
 
@@ -30,10 +30,15 @@ export default class JsonEditorPlugin extends Plugin {
   private collapseStates: CollapseStates = {};
   readonly repairService = new RepairService(
     this.app,
+    this.manifest.id,
     () => this.settings,
     () => this.saveSettings(),
   );
-  private unsubscribeManager: () => void = () => {};
+
+  /** Die LLM-Anbindung der Reparatur (Kit-Verbindung). */
+  get llm(): LlmConnection {
+    return this.repairService.llm;
+  }
 
   async onload() {
     setLang(pickLang(safeGetLanguage()));
@@ -47,14 +52,10 @@ export default class JsonEditorPlugin extends Plugin {
       new Notice(t("request.dropped", String(dropped.length)));
       console.warn("json-editor: request settings dropped", dropped);
     }
-    // Nicht awaiten: onload darf nicht an einer Netz-Probe haengen. Der Manager kann jederzeit
-    // installiert, deaktiviert oder umkonfiguriert werden — dann frisch aufloesen.
+    // Nicht awaiten: onload darf nicht an einer Netz-Probe haengen. Die erste Aufloesung zieht
+    // vorhandene Klartext-Schluessel in den Schluesselbund, auch wenn nie ein Tab geoeffnet wird.
     this.app.workspace.onLayoutReady(() => {
-      void this.repairService.resolve();
-      this.unsubscribeManager = onEndpointManagerChanged(this.app, () => {
-        this.repairService.invalidate();
-        void this.repairService.resolve();
-      });
+      void this.llm.resolve().catch(() => undefined);
     });
     const deps = { app: this.app, service: this.repairService, settings: () => this.settings };
 
@@ -208,10 +209,6 @@ export default class JsonEditorPlugin extends Plugin {
         "JSON editor: another plugin already handles .jsonc — file view disabled, code-block rendering still active.",
       );
     }
-  }
-
-  onunload(): void {
-    this.unsubscribeManager();
   }
 
   /**

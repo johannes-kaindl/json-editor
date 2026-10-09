@@ -1,7 +1,7 @@
 import type { App } from "obsidian";
 import { describe, expect, it, vi } from "vitest";
+import type { RepairResult } from "../../src/core/repair/client";
 import { RepairModal, type RepairModalOptions } from "../../src/obsidian/RepairModal";
-import type { RepairOutcome } from "../../src/obsidian/repair-service";
 
 const SOURCE = '{\n  "a": 1,\n}';
 const FIXED = '{\n  "a": 1\n}';
@@ -10,10 +10,9 @@ const flush = async (): Promise<void> => {
 };
 
 function open(over: Partial<RepairModalOptions> = {}) {
-  const run = vi.fn<(s: AbortSignal) => Promise<RepairOutcome>>(async () => ({
+  const run = vi.fn<(s: AbortSignal) => Promise<RepairResult>>(async () => ({
     ok: true,
     text: FIXED,
-    facts: { status: 200, content: FIXED },
   }));
   const apply = vi.fn(async () => "ok" as const);
   const notice = vi.fn();
@@ -24,7 +23,6 @@ function open(over: Partial<RepairModalOptions> = {}) {
     run,
     apply,
     notice,
-    timeoutSec: 60,
     ...over,
   });
   modal.open();
@@ -37,11 +35,11 @@ function open(over: Partial<RepairModalOptions> = {}) {
 
 describe("RepairModal", () => {
   it("shows the parser error, asks the model once and locks Apply while waiting", async () => {
-    let release!: (o: RepairOutcome) => void;
+    let release!: (o: RepairResult) => void;
     const { modal, run, buttons } = open({
       run: vi.fn(
         () =>
-          new Promise<RepairOutcome>((r) => {
+          new Promise<RepairResult>((r) => {
             release = r;
           }),
       ),
@@ -81,7 +79,7 @@ describe("RepairModal", () => {
     const { apply, buttons } = open({
       run: vi.fn((s: AbortSignal) => {
         signal = s;
-        return new Promise<RepairOutcome>(() => {});
+        return new Promise<RepairResult>(() => {});
       }),
     });
     buttons().Discard?.click();
@@ -106,19 +104,19 @@ describe("RepairModal", () => {
   });
 
   it.each([
-    [{ ok: false, error: { kind: "no-endpoint" }, facts: null }, "No reachable LLM endpoint"],
     [
-      { ok: false, error: { kind: "no-endpoint", reason: "secret-missing" }, facts: null },
-      "API key is missing",
+      { ok: false, error: { kind: "no-endpoint", detail: "no-endpoint" } },
+      "No reachable LLM endpoint",
     ],
+    [{ ok: false, error: { kind: "no-endpoint", detail: "secret-missing" } }, "API key is missing"],
     [
-      { ok: false, error: { kind: "http", status: 400, detail: "bad model" }, facts: null },
+      { ok: false, error: { kind: "http", status: 400, detail: "bad model" } },
       "error (400): bad model",
     ],
-    [{ ok: false, error: { kind: "timeout" }, facts: null }, "within 60 seconds"],
-    [{ ok: false, error: { kind: "empty" }, facts: null }, "no answer"],
-    [{ ok: false, error: { kind: "network" }, facts: null }, "could not be reached"],
-  ] as [RepairOutcome, string][])("failure %#: says why", async (outcome, text) => {
+    [{ ok: false, error: { kind: "timeout" } }, "did not answer in time"],
+    [{ ok: false, error: { kind: "empty" } }, "no answer"],
+    [{ ok: false, error: { kind: "network" } }, "could not be reached"],
+  ] as [RepairResult, string][])("failure %#: says why", async (outcome, text) => {
     const { modal } = open({ run: async () => outcome });
     await flush();
     expect(modal.contentEl.textContent).toContain(text);
@@ -126,7 +124,7 @@ describe("RepairModal", () => {
 
   it("an unchanged document is reported, not offered as a change", async () => {
     const { modal, buttons } = open({
-      run: async () => ({ ok: true, text: SOURCE, facts: { status: 200, content: SOURCE } }),
+      run: async () => ({ ok: true, text: SOURCE }),
     });
     await flush();
     expect(modal.contentEl.textContent).toContain("unchanged");

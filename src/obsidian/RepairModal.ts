@@ -1,9 +1,9 @@
 import { type App, ButtonComponent, Modal } from "obsidian";
+import type { RepairResult } from "../core/repair/client";
 import { sideBySide } from "../core/repair/diff-view";
 import type { FenceLang } from "../core/repair/fence";
 import { diffLines } from "../vendor/kit/diff";
 import { t } from "../vendor/kit/i18n";
-import type { RepairOutcome } from "./repair-service";
 
 export type ApplyResult = "ok" | "stale" | "no-file";
 
@@ -12,10 +12,9 @@ export interface RepairModalOptions {
   errorMessage: string;
   lang: FenceLang;
   /** Ein Lauf gegen das Modell; das Signal bricht ihn ab (Neu versuchen, Schliessen). */
-  run(signal: AbortSignal): Promise<RepairOutcome>;
+  run(signal: AbortSignal): Promise<RepairResult>;
   /** Schreibt den Vorschlag in den Codeblock — nur nach Bestaetigung, nur dessen Inhalt. */
   apply(text: string): Promise<ApplyResult>;
-  timeoutSec: number;
   notice(text: string): void;
 }
 
@@ -97,17 +96,17 @@ export class RepairModal extends Modal {
     this.applyBtn.setDisabled(false);
   }
 
-  private errorText(out: Extract<RepairOutcome, { ok: false }>): string {
+  private errorText(out: Extract<RepairResult, { ok: false }>): string {
     const e = out.error;
     switch (e.kind) {
       case "no-endpoint":
-        return e.reason === "secret-missing"
+        return e.detail === "secret-missing"
           ? t("repair.noEndpointSecretMissing")
           : t("repair.noEndpoint");
       case "http":
         return t("repair.http", e.status, e.detail);
       case "timeout":
-        return t("repair.timeout", this.opts.timeoutSec);
+        return t("repair.timeout");
       case "empty":
         return t("repair.empty");
       case "invalid":

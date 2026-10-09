@@ -5,11 +5,11 @@
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](https://github.com/johannes-kaindl/json-editor/blob/main/LICENSE)
 [![Docs: CC BY-SA 4.0](https://img.shields.io/badge/docs-CC%20BY--SA%204.0-lightgrey.svg)](https://github.com/johannes-kaindl/json-editor/blob/main/LICENSE-DOCS)
 [![Release](https://img.shields.io/github/v/release/johannes-kaindl/json-editor?label=release)](https://github.com/johannes-kaindl/json-editor/releases)
-[![Obsidian](https://img.shields.io/badge/obsidian-1.6.6%2B-purple)](https://obsidian.md)
+[![Obsidian](https://img.shields.io/badge/obsidian-1.11.4%2B-purple)](https://obsidian.md)
 
 Rendert außerdem `` ```json ``- und `` ```jsonc ``-Codeblöcke in Markdown-Notizen als aufklappbare, theme-treue Bäume. Jede strukturelle Änderung an einer `.jsonc`-Datei wird als gezielte Textänderung angewendet — Kommentare und Formatierung bleiben genau da, wo du sie hingeschrieben hast.
 
-**Zielplattform:** Obsidian 1.6.6+ auf Desktop und Mobile. Keine externen Dienste, keine entfernten Ressourcen, keine Telemetrie.
+**Zielplattform:** Obsidian 1.11.4+ auf Desktop und Mobile. Keine externen Dienste, keine entfernten Ressourcen, keine Telemetrie.
 
 > **Hinweis:** Diese Übersetzung folgt der englischen [`README.md`](README.md). Bei Abweichungen gilt die englische Fassung.
 
@@ -89,7 +89,7 @@ Alles bleibt in deinem Vault. Das Plugin nutzt Obsidians eigene CSS-Variablen un
 
 | | |
 |---|---|
-| **Obsidian** | 1.6.6 oder neuer (`minAppVersion`) — die Ordnervorschlags-Funktion in den Einstellungen, die das gemeinsame Kit mitbringt, nutzt `Vault.getAllFolders` (ab 1.6.6). |
+| **Obsidian** | 1.11.4 oder neuer (`minAppVersion`) — API-Schlüssel der LLM-Reparatur liegen im Obsidian-Schlüsselbund (`app.secretStorage`, ab 1.11.4). |
 | **Plattform** | Desktop und Mobile. Nicht desktop-only; der Baum hat ein eigenes Touch-Bedienmodell (Langdruck-Menü statt Hover-Schaltflächen, `Alt`+Pfeiltasten zum Umsortieren). |
 | **Abhängigkeiten** | Keine zu installieren. Die beiden Laufzeit-Bibliotheken (`@cfworker/json-schema`, `jsonc-parser`) sind in `main.js` eingebunden. |
 | **Netzwerk** | Keines. Keine Telemetrie, keine entfernten Ressourcen, kein Nachladen von Schemata über das Netz — alles wird innerhalb des Vaults aufgelöst. |
@@ -159,9 +159,8 @@ npm run build
 | Auto-collapse depth | `2` | Baumknoten tiefer als dieser Wert starten zugeklappt. |
 | Validate against JSON schema | `aus` | Lädt bei Aktivierung automatisch eine begleitende `*.schema.json` neben der geöffneten Datei und markiert Validierungsfehler live. Standardmäßig aus (das automatische Laden von Vault-Dateien ist eine Vertrauensentscheidung). |
 | Companion schema suffix | `.schema.json` | Endung, über die das Schwester-Schema gefunden wird (`data.json` → `data.schema.json`). |
-| Endpunkte / Endpunktwahl | ein lokaler Endpunkt | Wohin die LLM-Reparatur ihre Anfrage schickt (siehe [Reparatur per LLM](#reparatur-per-llm)). |
+| Endpunkte / Endpunktwahl | ein lokaler Endpunkt | Wohin die LLM-Reparatur ihre Anfrage schickt (siehe [Reparatur per LLM](#reparatur-per-llm)). API-Schlüssel liegen im Obsidian-Schlüsselbund, nicht in `data.json`. |
 | Anfrage | Modell-Vorgaben | Sampling-Werte und Denkstufe der Reparatur-Anfrage, je Modellfamilie. |
-| Zeitlimit (Sekunden) | `60` | Wie lange auf die Antwort des Modells gewartet wird. |
 
 Die Einstellungen liegen unter **Einstellungen → Community-Plugins → JSON Editor**.
 
@@ -177,7 +176,7 @@ Ein ungültiger `` ```json ``- oder `` ```jsonc ``-Codeblock erscheint als Fehle
 
 Hat sich die Notiz zwischen Anfrage und *Anwenden* geändert, wird nichts geschrieben und das Modal sagt es.
 
-**Endpunkt.** Unter *Einstellungen → JSON Editor → Reparatur per LLM*. Ist das Plugin *LLM Endpoint Manager* installiert, kommen Endpunkt, API-Schlüssel und Modell von dort; ohne es trägst du eigene OpenAI-kompatible Endpunkte ein (LM Studio, Ollama, ein gehosteter Anbieter). Der Abschnitt *Anfrage* zeigt die erkannte Modellfamilie und das Backend, die Werte der letzten Anfrage und Abweichungen der Antwort; jeder Wert lässt sich je Modellfamilie überschreiben. Die Reparatur nutzt das Profil *Strukturiert* (niedrige Temperatur, Denken aus).
+**Endpunkt.** Unter *Einstellungen → JSON Editor → Reparatur per LLM*. Ist das Plugin *LLM Endpoint Manager* installiert, kommen Endpunkt, API-Schlüssel und Modell von dort; ohne es trägst du eigene OpenAI-kompatible Endpunkte ein (LM Studio, Ollama, ein gehosteter Anbieter). Der Abschnitt *Anfrage* zeigt die erkannte Modellfamilie und das Backend, die Werte der letzten Anfrage und Abweichungen der Antwort; jeder Wert lässt sich je Modellfamilie überschreiben. Die Reparatur nutzt das Profil *Strukturiert* (niedrige Temperatur, Denken aus). Die Anfrage wartet bis zu 15 Minuten auf die Antwort; eine Zeitlimit-Einstellung gibt es nicht. Geheimnisse im Block (API-Schlüssel, `Bearer`-Token, Private-Key-Blöcke) werden vor dem Senden durch Platzhalter ersetzt und im Vorschlag, den du siehst, wieder eingesetzt.
 
 Das Plugin sendet nichts, bevor du *Reparieren* drückst — die Notiz wird nie im Hintergrund hochgeladen.
 

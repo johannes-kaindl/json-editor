@@ -26,7 +26,6 @@ function open(
     lang,
     apply,
     run: (signal) => deps.service.run(source, errorMessage, lang, signal),
-    timeoutSec: deps.settings().timeoutSec,
     notice: (text) => {
       new Notice(text);
     },
