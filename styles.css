@@ -966,7 +966,7 @@ body.is-mobile .json-large-file-load {
 
 /* ─── LLM-Reparatur ───────────────────────────────────────────────── */
 
-/* uebernommen aus src/vendor/kit-obsidian/collapsible.ts (COLLAPSIBLE_CSS), obsidian-kit 0.51.2 — Kit-Vertrag: Consumer kopieren, das Kit injiziert kein CSS */
+/* uebernommen aus src/vendor/kit-obsidian/collapsible.ts (COLLAPSIBLE_CSS), obsidian-kit 0.51.3 — Kit-Vertrag: Consumer kopieren, das Kit injiziert kein CSS */
 .okit-collapsible-header {
   display: flex; align-items: center; gap: var(--size-4-2);
   cursor: pointer; padding: var(--size-4-2) 0;
@@ -983,7 +983,7 @@ body.is-mobile .json-large-file-load {
 .okit-collapsible-body { padding-top: var(--size-4-2); }
 .okit-collapsible-body.is-collapsed { display: none; }
 
-/* uebernommen aus src/vendor/kit-obsidian/endpoint-list.ts (ENDPOINT_LIST_CSS), obsidian-kit 0.51.2 — Kit-Vertrag: Consumer kopieren, das Kit injiziert kein CSS */
+/* uebernommen aus src/vendor/kit-obsidian/endpoint-list.ts (ENDPOINT_LIST_CSS), obsidian-kit 0.51.3 — Kit-Vertrag: Consumer kopieren, das Kit injiziert kein CSS */
 /* Pro-Zeile-Status der Endpunkt-Fallback-Liste: Form trägt die Bedeutung, Farbe sekundär (WCAG 1.4.1). */
 .okit-ep-status { display: inline-flex; align-items: center; margin-right: 8px; vertical-align: middle; color: var(--text-muted); }
 .okit-ep-status svg { width: 14px; height: 14px; }
@@ -1055,7 +1055,7 @@ body.is-mobile .json-large-file-load {
   min-width: 0;
 }
 
-/* uebernommen aus src/vendor/kit-obsidian/request-section.ts (REQUEST_SECTION_CSS), obsidian-kit 0.51.2 — Kit-Vertrag: Consumer kopieren, das Kit injiziert kein CSS */
+/* uebernommen aus src/vendor/kit-obsidian/request-section.ts (REQUEST_SECTION_CSS), obsidian-kit 0.51.3 — Kit-Vertrag: Consumer kopieren, das Kit injiziert kein CSS */
 .okit-request-warning { color: var(--text-warning); margin: var(--size-4-2) 0; }
 .okit-request-note { color: var(--text-muted); font-size: var(--font-ui-small); }
 .okit-request-own { border-color: var(--interactive-accent); }
