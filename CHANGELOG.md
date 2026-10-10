@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Documentation
+- Re-captured the settings screenshot to show the shared endpoint list and request section.
+
 ## [1.15.0] — 2026-10-09
 
 ### Changed
