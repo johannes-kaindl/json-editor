@@ -3,7 +3,7 @@ import { json } from "@codemirror/lang-json";
 import { highlightSelectionMatches, openSearchPanel, searchKeymap } from "@codemirror/search";
 import { EditorState, Transaction } from "@codemirror/state";
 import { EditorView, keymap, lineNumbers } from "@codemirror/view";
-import { diffReplaceSpan } from "../core/textdiff";
+import { diffReplaceSpan } from "../vendor/kit/replace-span";
 
 export interface SourceViewOptions {
   onChange?: (newText: string) => void;

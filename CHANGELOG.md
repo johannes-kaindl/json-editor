@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+- Removing a model's `<think>` block from a repair answer no longer slows down quadratically on an answer with very many unclosed `<think>` tags (50,000 of them took about 2.6 seconds); it is now linear.
+
+### Changed
+- The source view's cursor-preserving external edit (`diffReplaceSpan`) now comes from the shared kit instead of a local copy. Behaviour is unchanged.
+
 ## [1.15.1] — 2026-10-10
 
 ### Documentation

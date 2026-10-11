@@ -20,6 +20,19 @@ describe("buildRepairMessages", () => {
 });
 
 describe("extractDocument", () => {
+  it("bleibt linear bei vielen nie geschlossenen <think>", () => {
+    const zeit = (n: number) => {
+      const t = performance.now();
+      extractDocument(`${"<think>".repeat(n)}{"a":1}`);
+      return performance.now() - t;
+    };
+    zeit(1000);
+    const klein = zeit(10_000);
+    const gross = zeit(50_000);
+    // quadratisch waeren 25x; linear etwa 5x. Grosszuegige Grenze gegen Rauschen.
+    expect(gross).toBeLessThan(Math.max(klein, 5) * 15);
+    expect(gross).toBeLessThan(500);
+  });
   it("entfernt Denkbloecke und einen umschliessenden Zaun", () => {
     expect(extractDocument('<think>hm</think>\n```json\n{"a":1}\n```')).toBe('{"a":1}');
     expect(extractDocument('  {"a":1}  ')).toBe('{"a":1}');

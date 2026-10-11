@@ -1,3 +1,4 @@
+import { stripThinkBlocks } from "../../vendor/kit/think-splitter";
 import { jsoncParse } from "../jsonc";
 import { parse } from "../parse";
 import type { FenceLang } from "./fence";
@@ -29,13 +30,12 @@ export function buildRepairMessages(
   ];
 }
 
-const THINK_BLOCK = /<think>[\s\S]*?<\/think>/g;
 const FENCED = /^```[a-z]*\s*\n([\s\S]*?)\n?```\s*$/i;
 
 /** Zieht das Dokument aus der Antwort: Denkbloecke weg, ein umschliessender Markdown-Zaun weg.
  *  Mehr nicht — was danach nicht parst, ist ein Fehler, keine Reparatur wert. */
 export function extractDocument(answer: string): string {
-  const bare = answer.replace(THINK_BLOCK, "").trim();
+  const bare = stripThinkBlocks(answer).trim();
   const fenced = FENCED.exec(bare);
   return (fenced ? (fenced[1] ?? "") : bare).trim();
 }
