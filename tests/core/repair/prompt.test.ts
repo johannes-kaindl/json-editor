@@ -33,6 +33,19 @@ describe("extractDocument", () => {
     expect(gross).toBeLessThan(Math.max(klein, 5) * 15);
     expect(gross).toBeLessThan(500);
   });
+  it("bleibt linear bei einem Zaun mit vielen Leerzeilen, der nie schliesst", () => {
+    // Praefix, das FENCED anlaufen laesst, ohne dass es passt: Zaun, dann Leerzeilen, dann kein Schluss.
+    const zeit = (n: number) => {
+      const t = performance.now();
+      extractDocument(`\`\`\`${" \n".repeat(n)}x`);
+      return performance.now() - t;
+    };
+    zeit(1000);
+    const klein = zeit(10_000);
+    const gross = zeit(50_000);
+    expect(gross).toBeLessThan(Math.max(klein, 5) * 15);
+    expect(gross).toBeLessThan(500);
+  });
   it("entfernt Denkbloecke und einen umschliessenden Zaun", () => {
     expect(extractDocument('<think>hm</think>\n```json\n{"a":1}\n```')).toBe('{"a":1}');
     expect(extractDocument('  {"a":1}  ')).toBe('{"a":1}');

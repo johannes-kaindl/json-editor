@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+- Stripping the Markdown code fence from a repair answer no longer slows down quadratically on an answer that opens a fence and then continues with very many blank lines without ever closing it (50,000 of them took about 0.6 seconds); it is now linear.
+
 ## [1.15.2] — 2026-10-11
 
 ### Fixed

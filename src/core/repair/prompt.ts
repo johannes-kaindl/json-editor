@@ -30,7 +30,7 @@ export function buildRepairMessages(
   ];
 }
 
-const FENCED = /^```[a-z]*\s*\n([\s\S]*?)\n?```\s*$/i;
+const FENCED = /^```[a-z]*[ \t]*\r?\n([\s\S]*?)\n?```\s*$/i;
 
 /** Zieht das Dokument aus der Antwort: Denkbloecke weg, ein umschliessender Markdown-Zaun weg.
  *  Mehr nicht — was danach nicht parst, ist ein Fehler, keine Reparatur wert. */
