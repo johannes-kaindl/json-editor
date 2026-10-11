@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Removing a model's `<think>` block from a repair answer no longer slows down quadratically on an answer with very many unclosed `<think>` tags (50,000 of them took about 2.6 seconds); it is now linear.
 
 ### Changed
+- The redaction of secrets before an LLM repair now masks `Bearer` tokens more broadly (from 8 characters on, in any letter case, `=` allowed inside the token). A block containing `"Authorization": "Bearer abcdefgh"` therefore goes to the model as `Bearer [redacted-token]`; the proposal still comes back with the original text, so the diff you confirm shows the real document. Prose such as "Bearer authentication" in a string value is masked the same way on the wire.
 - The source view's cursor-preserving external edit (`diffReplaceSpan`) now comes from the shared kit instead of a local copy. Behaviour is unchanged.
 
 ## [1.15.1] — 2026-10-10
