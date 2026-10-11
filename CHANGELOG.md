@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.15.2] — 2026-10-11
+
 ### Fixed
 - Removing a model's `<think>` block from a repair answer no longer slows down quadratically on an answer with very many unclosed `<think>` tags (50,000 of them took about 2.6 seconds); it is now linear.
 
