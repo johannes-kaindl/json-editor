@@ -50,7 +50,6 @@
  * der Ansicht leer und man debuggt ein Phantom (CORE-TEST-02).
  */
 
-import { type Server, createServer } from "node:http";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { cwd } from "node:process";
@@ -65,6 +64,7 @@ import {
   releaseAlwaysOnTop,
   requireVisible,
 } from "../../tools/obsidian-cdp/cdp.js";
+import { echoText, startLlmStub } from "../../tools/obsidian-cdp/llm-stub.js";
 import { type Bilanz, createBilanz, parseArgs, runDriver } from "../../tools/obsidian-cdp/bilanz.js";
 import { capture } from "../../tools/obsidian-cdp/shot.js";
 import { buildHerkunft, requireEigenerBuild } from "../../tools/obsidian-cdp/vault.js";
@@ -938,41 +938,25 @@ const SECTIONS: Section[] = [
     key: "repair",
     title: "F — Reparatur per LLM (Fake-Endpunkt, Diff-Modal, Anwenden)",
     run: async (cdp) => {
-      // Ein Fake-Endpunkt im Node-Prozess: die Antwort steuert der Lauf, damit der Pruefpunkt
-      // die Reparatur misst und nicht die Laune eines Modells. `letzter` haelt den Request
-      // fest, den das Plugin wirklich gesendet hat.
+      // Ein Fake-Endpunkt im Node-Prozess (zentraler LLM-Stub): die Antwort steuert der Lauf, damit der Pruefpunkt
+      // die Reparatur misst und nicht die Laune eines Modells. Der Mitschnitt haelt den Request fest, den das
+      // Plugin wirklich gesendet hat. Bewusst OHNE CORS (`cors: false`): die Reparatur fragt mit `stream: false`
+      // ueber den Obsidian-Transport (`src/obsidian/repair-service.ts`), nicht ueber den Browser.
       let modus: "ok" | "kaputt" | "echo" = "ok";
-      let letzter: Record<string, unknown> | null = null;
-      let letzterRoh = "";
-      const server: Server = createServer((req, res) => {
-        const antwort = (code: number, body: unknown): void => {
-          res.writeHead(code, { "Content-Type": "application/json" });
-          res.end(JSON.stringify(body));
-        };
-        if (req.method === "GET" && req.url?.startsWith("/v1/models")) {
-          antwort(200, { data: [{ id: "qwen/qwen3.8-27b" }] });
-          return;
-        }
-        if (req.method === "POST" && req.url?.startsWith("/v1/chat/completions")) {
-          let raw = "";
-          req.on("data", (c: Buffer) => { raw += c.toString(); });
-          req.on("end", () => {
-            letzter = JSON.parse(raw) as Record<string, unknown>;
-            letzterRoh = raw;
-            // „echo": das Modell gibt das gesendete Dokument zurueck, ein Trennkomma vor `}` weniger —
-            // so misst der Lauf, was von der Schwaerzung auf dem Draht ankommt und was zurueckkehrt.
-            const doc = ((letzter.messages as { content: string }[] | undefined)?.[1]?.content ?? "").split("Document:\n")[1] ?? "";
-            const content = modus === "echo"
-              ? doc.replace(/,(\s*)}/, "$1}")
-              : modus === "ok" ? '{"a": 1, "b": [1, 2]}' : '{"a": 1,}';
-            antwort(200, { model: "qwen/qwen3.8-27b", choices: [{ message: { content }, finish_reason: "stop" }] });
-          });
-          return;
-        }
-        antwort(404, {});
+      const stub = await startLlmStub({
+        cors: false,
+        models: ["qwen/qwen3.8-27b"],
+        antwort: (a) => {
+          // „echo": das Modell gibt das gesendete Dokument zurueck, ein Trennkomma vor `}` weniger —
+          // so misst der Lauf, was von der Schwaerzung auf dem Draht ankommt und was zurueckkehrt.
+          const doc = (echoText(a.json) ?? "").split("Document:\n")[1] ?? "";
+          const text = modus === "echo" ? doc.replace(/,(\s*)}/, "$1}") : modus === "ok" ? '{"a": 1, "b": [1, 2]}' : '{"a": 1,}';
+          return { text, model: "qwen/qwen3.8-27b" };
+        },
       });
-      await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
-      const fakePort = (server.address() as { port: number }).port;
+      const fakePort = stub.port;
+      const letzter = (): Record<string, unknown> | null => (stub.letzte("chat")?.json as Record<string, unknown> | null | undefined) ?? null;
+      const letzterRoh = (): string => stub.letzte("chat")?.body ?? "";
       try {
         await cdp.evaluate(`
           const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
@@ -1027,7 +1011,7 @@ const SECTIONS: Section[] = [
           Boolean(diff) && diff!.links.includes(",,") && !diff!.rechts.includes(",,") && diff!.anwenden,
           diff ? "Original links, Vorschlag rechts, Anwenden aktiv" : geklickt ? "Modal ohne Diff" : "Knopf nicht klickbar",
         );
-        const gesendet = letzter as { model?: string; stream?: boolean; temperature?: number; messages?: { content: string }[] } | null;
+        const gesendet = letzter() as { model?: string; stream?: boolean; temperature?: number; messages?: { content: string }[] } | null;
         check(
           "F3 Anfrage trägt Modell, Profilwerte und den Parser-Fehler",
           gesendet?.model === "qwen/qwen3.8-27b" && gesendet.stream === false && gesendet.temperature === 0.1
@@ -1114,7 +1098,7 @@ const SECTIONS: Section[] = [
         // Ein Block mit Geheimnis durch das Modal schicken und die Spalten lesen.
         modus = "echo";
         const durchsModal = async (block: string): Promise<{ links: string; rechts: string } | null> => {
-          letzterRoh = "";
+          stub.loescheMitschnitt();
           await cdp.evaluate(`
             const file = app.vault.getAbstractFileByPath(${JSON.stringify(SMOKE_REPAIR_NOTE)});
             await app.vault.modify(file, ${JSON.stringify(notiz(block))});
@@ -1159,10 +1143,10 @@ const SECTIONS: Section[] = [
         const v1 = await durchsModal(`{"auth": "${bearer}", "a": 1,}`);
         check(
           "G1 Bearer-Token geht geschwärzt raus, der Vorschlag trägt das Original zurück",
-          Boolean(v1) && letzterRoh !== "" && !letzterRoh.includes("sk-live-abcdef0123456789ABCDEF")
+          Boolean(v1) && letzterRoh() !== "" && !letzterRoh().includes("sk-live-abcdef0123456789ABCDEF")
             && v1!.rechts.includes(bearer) && gueltig(v1!.rechts),
           v1
-            ? `Draht ${letzterRoh.includes("sk-live-") ? "TRÄGT den Token" : "ohne Token"}, Vorschlag ${v1.rechts.includes(bearer) ? "mit Original" : "OHNE Original"}, JSON ${gueltig(v1.rechts) ? "gültig" : "UNGÜLTIG"}`
+            ? `Draht ${letzterRoh().includes("sk-live-") ? "TRÄGT den Token" : "ohne Token"}, Vorschlag ${v1.rechts.includes(bearer) ? "mit Original" : "OHNE Original"}, JSON ${gueltig(v1.rechts) ? "gültig" : "UNGÜLTIG"}`
             : "kein Vorschlag",
         );
 
@@ -1171,10 +1155,10 @@ const SECTIONS: Section[] = [
         const v2 = await durchsModal(`{"key": "${pemEsc}", "a": 1,}`);
         check(
           "G2 PEM als JSON-String (\\n escaped) geht geschwärzt raus und kommt als gültiges JSON zurück",
-          Boolean(v2) && letzterRoh !== "" && !letzterRoh.includes(pemKoerper)
+          Boolean(v2) && letzterRoh() !== "" && !letzterRoh().includes(pemKoerper)
             && v2!.rechts.includes(pemKoerper) && gueltig(v2!.rechts),
           v2
-            ? `Draht ${letzterRoh.includes(pemKoerper) ? "TRÄGT den Schlüssel" : "ohne Schlüssel"}, JSON ${gueltig(v2.rechts) ? "gültig" : "UNGÜLTIG"}`
+            ? `Draht ${letzterRoh().includes(pemKoerper) ? "TRÄGT den Schlüssel" : "ohne Schlüssel"}, JSON ${gueltig(v2.rechts) ? "gültig" : "UNGÜLTIG"}`
             : "kein Vorschlag",
         );
 
@@ -1182,9 +1166,9 @@ const SECTIONS: Section[] = [
         const v3 = await durchsModal(`{"key": "${pemEcht}", "a": 1}`);
         check(
           "G3 PEM mit echten Zeilenumbrüchen (kaputtes JSON) kommt als gültiges JSON zurück",
-          Boolean(v3) && letzterRoh !== "" && !letzterRoh.includes(pemKoerper) && gueltig(v3!.rechts),
+          Boolean(v3) && letzterRoh() !== "" && !letzterRoh().includes(pemKoerper) && gueltig(v3!.rechts),
           v3
-            ? `Draht ${letzterRoh.includes(pemKoerper) ? "TRÄGT den Schlüssel" : "ohne Schlüssel"}, JSON ${gueltig(v3.rechts) ? "gültig" : "UNGÜLTIG"}`
+            ? `Draht ${letzterRoh().includes(pemKoerper) ? "TRÄGT den Schlüssel" : "ohne Schlüssel"}, JSON ${gueltig(v3.rechts) ? "gültig" : "UNGÜLTIG"}`
             : "kein Vorschlag",
         );
 
@@ -1210,7 +1194,7 @@ const SECTIONS: Section[] = [
           `apiKey in data.json: ${schluessel.apiKeyInData ? "JA" : "nein"}, secretId: ${schluessel.secretId ? "ja" : "NEIN"}, Aufloesung traegt den Schlüssel: ${schluessel.hydrated ? "ja" : "NEIN"}`,
         );
       } finally {
-        await new Promise<void>((r) => server.close(() => r()));
+        await stub.stop();
         await cdp
           .evaluate(`
             const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
