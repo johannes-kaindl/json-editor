@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.16.1] — 2026-10-12
+
 ### Changed
 - **The endpoint rows keep their buttons together.** The "move up" and "remove endpoint" buttons stay together, and the address and the model ID stay fully visible at normal width; in a narrow window the block of model and buttons moves as a whole to a second line, right-aligned, so the trash can no longer end up alone (obsidian-kit 0.59.1).
 - **The Request section words an unknown model family kindly.** For an endpoint whose family is not known yet it now says "Family: not detected yet · Backend: not detected yet" with a note that this is normal and the LLM Endpoint Manager records family and backend; the fields read "not sent yet — waiting for the model family". Before it read "unknown" (obsidian-kit 0.59.0).
