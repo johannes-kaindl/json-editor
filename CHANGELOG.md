@@ -507,7 +507,15 @@ The original 1.0.0 roadmap conflated all five into one release. Scope-decomposed
 - **Settings tab** — default open mode, indent style (2 / 4 / tab), tree marker style (modern / classic), auto-collapse depth.
 - **GitHub Actions release workflow** — tag push triggers build, test, and GitHub release with `main.js`, `manifest.json`, and `styles.css` as assets.
 
-[Unreleased]: https://git.jkaindl.de/jkaindl/json-editor/compare/1.13.0...HEAD
+[Unreleased]: https://git.jkaindl.de/jkaindl/json-editor/compare/1.16.0...HEAD
+[1.16.0]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/1.16.0
+[1.15.2]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/1.15.2
+[1.15.1]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/1.15.1
+[1.15.0]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/1.15.0
+[1.14.2]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/1.14.2
+[1.14.1]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/1.14.1
+[1.14.0]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/1.14.0
+[1.13.1]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/1.13.1
 [1.13.0]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/1.13.0
 [1.12.0]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/1.12.0
 [1.11.3]: https://git.jkaindl.de/jkaindl/json-editor/releases/tag/1.11.3
