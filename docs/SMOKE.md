@@ -5,6 +5,8 @@ Live-Preview-DOM, echte Klicks (`isTrusted`), echter Speicherpfad, echter Lebens
 Die vitest-Suite (76 Dateien / 722 Tests) misst das strukturell nicht — sie läuft gegen
 happy-dom und einen Obsidian-Mock.
 
+**Bilanz-Format und Exit-Codes (seit Welle 18, 2026-10-12):** Der Treiber nutzt `tools/obsidian-cdp/bilanz.ts`. Die Schlusszeile heißt `N gruen · N rot · N uebersprungen · N nichts gemessen · von N Pruefpunkten`, die Marker je Punkt sind `[ok]`, `[ROT]`, `[--]`, `[??]`. Exit 0 bei grün und übersprungen, **Exit 1 bei rot ODER nichts gemessen**, **Exit 2 bei einem Abbruch des Treibers** (vorher 1). Vor und nach dem Umbau, jeweils im frischen Prozess (Port 9388): 31 grün · 0 rot · 0 übersprungen · 0 nichts gemessen.
+
 Dass das kein theoretischer Unterschied ist, ist hier zweimal belegt:
 
 - **1.10.1** — Bindestriche in `.jsonc`-Kommentaren lösten den Lossy-Number-Guard aus

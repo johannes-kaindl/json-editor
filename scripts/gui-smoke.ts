@@ -71,6 +71,7 @@ import {
   releaseAlwaysOnTop,
   requireVisible,
 } from "../../tools/obsidian-cdp/cdp.js";
+import { createBilanz, parseArgs, runDriver } from "../../tools/obsidian-cdp/bilanz.js";
 import { capture } from "../../tools/obsidian-cdp/shot.js";
 import { buildHerkunft, requireEigenerBuild } from "../../tools/obsidian-cdp/vault.js";
 
@@ -186,25 +187,12 @@ const fence = "```";
 
 // --- Protokoll ---------------------------------------------------------------
 
-interface Result {
-  name: string;
-  passed: boolean;
-  detail: string;
-}
-
-const results: Result[] = [];
-
-function check(name: string, passed: boolean, detail = ""): void {
-  results.push({ name, passed, detail });
-  console.log(`${passed ? "  ✓" : "  ✗"} ${name}${detail ? ` — ${detail}` : ""}`);
-}
-
-/** Was der Lauf bewusst NICHT misst. Steht im Protokoll, damit eine Lücke nicht wie
- *  Abdeckung aussieht — ein stillschweigend ausgelassener Punkt liest sich hinterher
- *  wie ein grüner. */
-function skipped(name: string, reason: string): void {
-  console.log(`  – ${name} — übersprungen: ${reason}`);
-}
+/** Bilanz in vier Zustaenden (CORE-TEST-19) aus dem zentralen Modul `tools/obsidian-cdp/bilanz.ts`; die Aufrufstellen
+ *  behalten ihre Namen. `skipped` heisst „bewusst nicht gemessen“ und zaehlt im Nenner, nie als gruen. Ohne Soll-Liste
+ *  (`punkte`): `--section` fuehrt je Lauf nur einen Teil der Punkte aus, der Nenner ist die Zahl der Eintraege. */
+const bilanz = createBilanz();
+const check = (name: string, passed: boolean, detail = ""): void => bilanz.record(name, passed, detail);
+const skipped = (name: string, reason: string): void => bilanz.skipped(name, reason);
 
 // --- Szenen-Helfer -----------------------------------------------------------
 
@@ -1198,17 +1186,14 @@ const SECTIONS: Section[] = [
 // --- Lauf --------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  const argv = process.argv.slice(2);
-  const flag = (name: string): string | undefined => {
-    const index = argv.indexOf(`--${name}`);
-    return index === -1 ? undefined : argv[index + 1];
-  };
+  const args = parseArgs(process.argv.slice(2));
+  const flag = (name: string): string | undefined => args.value(name);
   const port = Number(flag("port") ?? 9222);
   const vault = flag("vault");
-  const keep = argv.includes("--keep");
+  const keep = args.has("keep");
   const sectionArg = flag("section");
   klickOptionen.haltenMs = Number(flag("halten") ?? 0);
-  klickOptionen.gegenprobe = argv.includes("--klick-gegenprobe");
+  klickOptionen.gegenprobe = args.has("klick-gegenprobe");
   shotPfad = flag("shot") ?? null;
 
   const sections = sectionArg ? SECTIONS.filter((s) => s.key === sectionArg) : SECTIONS;
@@ -1490,19 +1475,10 @@ async function main(): Promise<void> {
     cdp.close();
   }
 
-  const failed = results.filter((r) => !r.passed);
-  console.log(`${results.length - failed.length}/${results.length} gruen`);
   if (herkunftsWarnung !== null) {
     console.log("⚠️  Herkunft des gemessenen Builds ungeprueft — s. Warnung oben.");
   }
-  if (failed.length > 0) {
-    console.log("Rot:");
-    for (const r of failed) console.log(`  - ${r.name}: ${r.detail}`);
-    process.exitCode = 1;
-  }
+  bilanz.abschluss();
 }
 
-main().catch((error: unknown) => {
-  console.error(`\nAbbruch: ${error instanceof Error ? error.message : String(error)}`);
-  process.exitCode = 1;
-});
+runDriver(main);
