@@ -1,4 +1,4 @@
-// vendored from obsidian-kit@0.57.0, src/testing/linear-probe.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from obsidian-kit@0.59.0, src/testing/linear-probe.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 // Linearitätsprobe für Tests (ReDoS-Konvention). Nur in Tests (vitest, Node): importiert `node:vm`.
 //
 // Warum es sie gibt: zweimal wurde eine Regex mit überlinearer Laufzeit veröffentlicht (Welle 15 und 16),
@@ -87,4 +87,111 @@ export function pruefeLinear<T>(fn: (eingabe: T) => unknown, eingabe: string | (
     steps.push({ n, ms: bestOf(() => { fn(arg); }) });
   }
   return verdict(steps, undefined);
+}
+
+/** Ein Befund von {@link pruefeLinearFuzz}. */
+export interface LinearFuzzSuspect {
+  /** Die Einheit, die `n`-mal wiederholt wurde — bei `"verschachtelt"` die Anzeigeform `öffner…mitte…schließer`. */
+  einheit: string;
+  form: "wiederholt" | "verschachtelt";
+  /** Lesbarer Befund mit den Messwerten, für `expect(…, message)`. */
+  message: string;
+}
+
+export interface LinearFuzzOptions {
+  /** Die Zeichen, aus denen die Einheiten gebaut werden: ein Text (zerlegt nach Codepunkten) oder eine Liste (ein Eintrag darf mehrere
+   *  Zeichen haben, etwa `"<think>"`). */
+  alphabet: string | readonly string[];
+  /** Längste Einheit in Alphabet-Einträgen. Default 3. Die Zahl der Einheiten wächst mit `alphabet.length ** maxLaenge`. */
+  maxLaenge?: number;
+  /** Zusätzlich je Paar (öffner, schließer) die Form `öffner.repeat(n) + mitte + schließer.repeat(n)` — die verschachtelte Familie, die
+   *  eine wiederholte Einheit nie erzeugt. Default `true`. */
+  verschachtelt?: boolean;
+  /** Einen Verdacht vor der Meldung einmal frisch nachmessen (Leiter von vorn) und nur melden, wenn er bleibt. Default `true`. */
+  nachmessen?: boolean;
+  /** Das Zeichen zwischen Öffner und Schließer. Default `"x"`. */
+  mitte?: string;
+}
+
+export interface LinearFuzzResult {
+  /** `true`, wenn kein Verdacht übrig blieb. */
+  linear: boolean;
+  verdaechtig: LinearFuzzSuspect[];
+  /** Wie viele Eingaben gemessen wurden (Einheiten plus Paare). */
+  gemessen: number;
+}
+
+/** Ab dieser Zeit bei n = 10 000 UND dem Faktor gegen n = 1 000 gilt eine Einheit schon als überlinear — 50 000 wird dann nie gefahren. */
+const FUZZ_EARLY_MS = 150;
+const FUZZ_EARLY_FACTOR = 30;
+
+/** Die Leiter für EINE Eingabeform: 1 000 und 10 000 zuerst; reißt t(10 000) die Grenze von {@link FUZZ_EARLY_MS} und ist der Faktor gegen
+ *  t(1 000) größer als {@link FUZZ_EARLY_FACTOR}, ist es überlinear und 50 000 entfällt (eine quadratische Funktion hängt dort 6–14 s).
+ *  Sonst das Urteil von {@link pruefeLinear}. Ein Wurf der Funktion beendet den gemessenen Lauf und zählt als dessen Zeit. */
+function leiter(fn: (eingabe: string) => unknown, make: (n: number) => string, label: string): { linear: boolean; message: string } {
+  const lauf = (n: number): LinearProbeStep => {
+    const arg = make(n);
+    return { n, ms: bestOf(() => { try { fn(arg); } catch { /* gemessen wird die Zeit, nicht die Gültigkeit der Eingabe */ } }) };
+  };
+  const s1 = lauf(1_000);
+  const s10 = lauf(10_000);
+  if (s10.ms > FUZZ_EARLY_MS && s10.ms / Math.max(s1.ms, 0.05) > FUZZ_EARLY_FACTOR) {
+    return {
+      linear: false,
+      message: `${label}: überlinear — n=1000: ${s1.ms.toFixed(1)} ms, n=10000: ${s10.ms.toFixed(1)} ms (Faktor ${(s10.ms / Math.max(s1.ms, 0.05)).toFixed(0)}), 50 000 nicht gefahren`,
+    };
+  }
+  const v = verdict([s1, s10, lauf(50_000)], undefined);
+  return { linear: v.linear, message: `${label}: ${v.message}` };
+}
+
+/** Erschöpfender Fuzz für die Linearität (CORE-TEST-26 (b)): misst `fn` für JEDE Einheit aus `alphabet` bis `maxLaenge` Zeichen,
+ *  `n`-mal wiederholt, und — mit `verschachtelt` — für jedes Paar `öffner.repeat(n) + mitte + schließer.repeat(n)`. Handgewählte Eingaben
+ *  erreichen nur die Stellen, die ihr Autor schon verdächtigt; dieser Lauf findet den Rest (am JSON-Leser aus 3d-codeblocks fand er zwei
+ *  quadratische Familien, die kein handgeschriebener Test hatte).
+ *
+ *  Je Eingabe die Leiter von {@link pruefeLinear}, aber mit Abkürzung: 1 000 und 10 000 zuerst, **50 000 nur ohne Verdacht**. Ein Verdacht
+ *  wird vor der Meldung **einmal frisch nachgemessen** (`nachmessen`): Rauschen bei großen Eingaben meldete der erste Prototyp als Befund
+ *  (`{]x` am JSON-Leser — alt und neu linear, Quotient 4,9 und 5,8).
+ *
+ *  Ein Wurf von `fn` bricht den Fuzz nicht ab: gemessen wird die Laufzeit, nicht die Gültigkeit der Eingabe.
+ *
+ *  ⚠️ **Testlaufzeit.** Rund 110 ms je Eingabe (Zeichenketten bis 150 kB aufbauen, Bester von drei). Ein Alphabet von 8 Zeichen mit
+ *  `maxLaenge` 3 sind 584 Einheiten plus 64 Paare und kostet je Funktion 72–90 s; 6 Zeichen etwa 30 s. Das sprengt vitests 5-s-Standard:
+ *  `it(…, 180_000)` setzen und im Kit-Test ein kleines Alphabet wählen. Ein Lauf unter hoher Last wird langsamer, nicht falsch.
+ *
+ *  @example
+ *  const r = pruefeLinearFuzz((s) => extractJson(s), { alphabet: ["[", "]", '"', "\\", "x"] }); // it(…, 180_000)
+ *  expect(r.verdaechtig, JSON.stringify(r.verdaechtig)).toEqual([]);
+ */
+export function pruefeLinearFuzz(fn: (eingabe: string) => unknown, opts: LinearFuzzOptions): LinearFuzzResult {
+  const alphabet = typeof opts.alphabet === "string" ? Array.from(opts.alphabet) : [...opts.alphabet];
+  if (alphabet.length === 0) throw new Error("pruefeLinearFuzz: alphabet ist leer");
+  const maxLaenge = opts.maxLaenge ?? 3;
+  if (!Number.isInteger(maxLaenge) || maxLaenge < 1) throw new Error(`pruefeLinearFuzz: maxLaenge muss eine ganze Zahl ≥ 1 sein, ist ${String(maxLaenge)}`);
+  const verschachtelt = opts.verschachtelt ?? true;
+  const nachmessen = opts.nachmessen ?? true;
+  const mitte = opts.mitte ?? "x";
+
+  const verdaechtig: LinearFuzzSuspect[] = [];
+  let gemessen = 0;
+  const pruefe = (einheit: string, form: LinearFuzzSuspect["form"], make: (n: number) => string): void => {
+    gemessen += 1;
+    let r = leiter(fn, make, einheit);
+    if (!r.linear && nachmessen) r = leiter(fn, make, einheit);
+    if (!r.linear) verdaechtig.push({ einheit, form, message: r.message });
+  };
+
+  // Einheiten nach Länge: erst alle einzelnen Zeichen, dann alle Paare, … — ein Befund kurzer Einheiten steht vorn.
+  let stufe: string[] = [""];
+  for (let laenge = 1; laenge <= maxLaenge; laenge++) {
+    const naechste: string[] = [];
+    for (const vorn of stufe) for (const z of alphabet) naechste.push(vorn + z);
+    for (const einheit of naechste) pruefe(einheit, "wiederholt", (n) => einheit.repeat(n));
+    stufe = naechste;
+  }
+  if (verschachtelt) {
+    for (const o of alphabet) for (const c of alphabet) pruefe(`${o}…${mitte}…${c}`, "verschachtelt", (n) => o.repeat(n) + mitte + c.repeat(n));
+  }
+  return { linear: verdaechtig.length === 0, verdaechtig, gemessen };
 }

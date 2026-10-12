@@ -7,7 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Changed
-- Shared kit updated to obsidian-kit 0.57.0 and code-kit 0.24.0 (from 0.56.0 and 0.23.0). Nothing changes for you: the new kit modules (busy guard, shortcut-failure classification, file-name helper) are not part of this plugin.
+- **The endpoint rows keep their buttons together.** The "move up" and "remove endpoint" buttons now sit in one group, so the trash can no longer end up alone on a second line when the settings pane is narrow; the key and model fields are a little narrower, the address stays fully visible (obsidian-kit 0.59.0).
+- **The Request section words an unknown model family kindly.** For an endpoint whose family is not known yet it now says "Family: not detected yet · Backend: not detected yet" with a note that this is normal and the LLM Endpoint Manager records family and backend; the fields read "not sent yet — waiting for the model family". Before it read "unknown" (obsidian-kit 0.59.0).
+- Shared kit updated to obsidian-kit 0.59.0 and code-kit 0.24.0 (from 0.56.0 and 0.23.0). Apart from the two changes above, nothing changes for you: the new kit modules (busy guard, shortcut-failure classification, file-name helper, a linearity fuzz for tests) are not part of this plugin.
 - The saved endpoint choice (endpoint and model of the LLM repair) is cleaned by the shared kit instead of a local copy; an empty or non-text value is dropped exactly as before.
 
 ## [1.16.0] — 2026-10-12
