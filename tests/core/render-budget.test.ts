@@ -26,12 +26,17 @@ describe("exceedsRenderBudget", () => {
     expect(exceedsRenderBudget("x".repeat(50), 0, { maxBytes: 10 })).toBe(true);
   });
 
-  it("counts nodes with early-exit (does not walk a huge array fully)", () => {
-    // 2 million nodes but the guard must return quickly once the cap is passed.
-    const huge = Array.from({ length: 2_000_000 }, () => 0);
-    const start = performance.now();
+  it("counts nodes with early-exit (the walk stops at the limit, not at the end of the document)", () => {
+    // 2 million nodes, but the guard must stop shortly after `maxNodes`. Counted, not timed: every element read
+    // goes through the proxy, so the number of reads is the number of nodes the walk visited.
+    let gelesen = 0;
+    const huge = new Proxy(Array.from({ length: 2_000_000 }, () => 0), {
+      get(target, key, receiver) {
+        if (typeof key === "string" && /^\d+$/.test(key)) gelesen++;
+        return Reflect.get(target, key, receiver) as unknown;
+      },
+    });
     expect(exceedsRenderBudget("(small)", huge)).toBe(true);
-    // Generous bound; the point is it does not traverse all 2M nodes.
-    expect(performance.now() - start).toBeLessThan(500);
+    expect(gelesen).toBeLessThanOrEqual(MAX_TREE_NODES + 1);
   });
 });
