@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+- Shared kit updated to obsidian-kit 0.57.0 and code-kit 0.24.0 (from 0.56.0 and 0.23.0). Nothing changes for you: the new kit modules (busy guard, shortcut-failure classification, file-name helper) are not part of this plugin.
+- The saved endpoint choice (endpoint and model of the LLM repair) is cleaned by the shared kit instead of a local copy; an empty or non-text value is dropped exactly as before.
+
 ## [1.16.0] — 2026-10-12
 
 ### Fixed
