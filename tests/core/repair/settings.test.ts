@@ -18,6 +18,14 @@ describe("loadLlmSettings", () => {
     expect(llm.choice).toEqual({ endpointId: "e1", model: "x" });
     expect(llm).not.toHaveProperty("timeoutSec");
   });
+  it("saeubert die Wahl: leere und nicht-String-Werte fallen weg, ein Nicht-Objekt ergibt eine leere Wahl", () => {
+    expect(loadLlmSettings({ choice: { endpointId: "", model: "m" } }).llm.choice).toEqual({
+      model: "m",
+    });
+    expect(loadLlmSettings({ choice: { endpointId: 7, model: "" } }).llm.choice).toEqual({});
+    expect(loadLlmSettings({ choice: "e1" }).llm.choice).toEqual({});
+    expect(loadLlmSettings({ choice: null }).llm.choice).toEqual({});
+  });
   it("meldet verworfene Request-Eintraege statt sie still zu verlieren", () => {
     const { llm, dropped } = loadLlmSettings({ request: { thinking: { structured: "bogus" } } });
     expect(dropped.length).toBeGreaterThan(0);

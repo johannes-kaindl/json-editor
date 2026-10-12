@@ -1,4 +1,4 @@
-import type { EndpointChoice } from "../../vendor/kit/endpoint-source";
+import { type EndpointChoice, sanitizeChoice } from "../../vendor/kit/endpoint-source";
 import { type EndpointConfig, migrateEndpointList } from "../../vendor/kit/endpoint_config";
 import {
   DEFAULT_REQUEST_SETTINGS,
@@ -20,17 +20,6 @@ export const DEFAULT_LLM_SETTINGS: LlmSettings = {
   choice: {},
   request: DEFAULT_REQUEST_SETTINGS,
 };
-
-function sanitizeChoice(raw: unknown): EndpointChoice {
-  if (raw === null || typeof raw !== "object") return {};
-  const c = raw as { endpointId?: unknown; model?: unknown };
-  return {
-    ...(typeof c.endpointId === "string" && c.endpointId !== ""
-      ? { endpointId: c.endpointId }
-      : {}),
-    ...(typeof c.model === "string" && c.model !== "" ? { model: c.model } : {}),
-  };
-}
 
 /** Liest den LLM-Teil aus dem gespeicherten `data.json`-Inhalt. `dropped` nennt Pfade, die das
  *  Saeubern des Request-Blocks verworfen hat — der Aufrufer meldet sie, statt sie still zu
