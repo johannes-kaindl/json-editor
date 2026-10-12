@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { pruefeLinear } from "../../vendor/kit/linear-probe";
 import {
   buildRepairMessages,
   extractDocument,
   validateRepair,
 } from "../../../src/core/repair/prompt";
+import { pruefeLinear } from "../../vendor/kit/linear-probe";
 
 describe("buildRepairMessages", () => {
   it("traegt Code und Parser-Fehler und verlangt nur das Dokument", () => {

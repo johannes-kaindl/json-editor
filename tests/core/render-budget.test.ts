@@ -30,12 +30,15 @@ describe("exceedsRenderBudget", () => {
     // 2 million nodes, but the guard must stop shortly after `maxNodes`. Counted, not timed: every element read
     // goes through the proxy, so the number of reads is the number of nodes the walk visited.
     let gelesen = 0;
-    const huge = new Proxy(Array.from({ length: 2_000_000 }, () => 0), {
-      get(target, key, receiver) {
-        if (typeof key === "string" && /^\d+$/.test(key)) gelesen++;
-        return Reflect.get(target, key, receiver) as unknown;
+    const huge = new Proxy(
+      Array.from({ length: 2_000_000 }, () => 0),
+      {
+        get(target, key, receiver) {
+          if (typeof key === "string" && /^\d+$/.test(key)) gelesen++;
+          return Reflect.get(target, key, receiver) as unknown;
+        },
       },
-    });
+    );
     expect(exceedsRenderBudget("(small)", huge)).toBe(true);
     expect(gelesen).toBeLessThanOrEqual(MAX_TREE_NODES + 1);
   });
