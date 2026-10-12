@@ -1,10 +1,10 @@
 {
   "sources": {
     "obsidian-kit": {
-      "ref": "0.53.0"
+      "ref": "0.56.0"
     },
     "code-kit": {
-      "ref": "0.21.1"
+      "ref": "0.23.0"
     }
   },
   "targets": [
@@ -23,12 +23,14 @@
         "backend-probe",
         "capabilities",
         "diff",
+        "embeddings-client",
         "endpoint",
         "endpoint_config",
         "endpoint_diagnostics",
         "error_body",
         "i18n",
         "model-choice",
+        "model-context",
         "model-list-cache",
         "reasoning",
         "redact",
@@ -63,7 +65,10 @@
         "chat-transport",
         "clipboard",
         "clock",
+        "embedding-connection",
         "endpoint-list",
+        "endpoint-plumbing",
+        "endpoint-status-text",
         "endpoint-secrets",
         "endpoint-source",
         "llm-connection",
