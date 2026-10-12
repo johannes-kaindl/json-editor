@@ -12,38 +12,32 @@
  * Geometrie (happy-dom rechnet kein Layout), echtes Live-Preview-DOM, echte Mausklicks
  * (`isTrusted`), den echten Speicherweg auf die Platte, den echten Lebenszyklus.
  *
- * ## Voraussetzung
+ * ## Lauf (Zweitinstanz, eigenes Profil, eigener Port — die reguläre Instanz wird nie angefasst)
  *
- * ⚠️ **Zuerst prüfen, wer sonst an Obsidian hängt.** Obsidian ist Single-Instance — ein
- * `quit` trifft die Instanz, an der möglicherweise eine andere Session arbeitet, und zerstört
- * deren Zustand. Der eigene Lauf ist danach sauber grün; der Schaden entsteht woanders und
- * fällt nicht auf.
+ * `--port` ist Pflicht (kein Standardport; 9222 gehört der regulären Instanz). Vertrauensdialog und Restricted
+ * Mode eines frischen Profils erledigt `bereiteInstanzVor` (zentrale Brücke) vor der ersten Messung.
  *
  * ```bash
- * lsof -nP -iTCP:9222 -sTCP:LISTEN >/dev/null && echo "läuft bereits — NICHT beenden"
+ * echo "$STAGING_VAULTS_DIR"                                       # muss gesetzt sein (~/.zshenv)
+ * D="$STAGING_VAULTS_DIR/json-editor/.obsidian/plugins/json-editor"; mkdir -p "$D"
+ * OBSIDIAN_PLUGIN_DIR="$D" npm run deploy                          # Vault von Hand eingerichtet (kein buildVault)
+ * UD=/tmp/obs-test-json-editor; mkdir -p "$UD"
+ * lsof -nP -iTCP:9398 -sTCP:LISTEN && echo "Port belegt — anderen nehmen"
+ * pgrep -f "user-data-dir=$UD" && echo "Profil belegt — $UD-w19 nehmen, nie beenden"
+ * cp ~/Library/Application\ Support/obsidian/obsidian-*.asar "$UD"/   # aktuelle Version statt gebündelter
+ * node -e 'const p=process.env.STAGING_VAULTS_DIR+"/json-editor";require("fs").writeFileSync(process.argv[1]+"/obsidian.json",JSON.stringify({vaults:{"json-editor":{path:p,ts:Date.now(),open:true}},language:"en"}))' "$UD"
+ * /Applications/Obsidian.app/Contents/MacOS/Obsidian --user-data-dir="$UD" --remote-debugging-port=9398 &   # je Messlauf frischer Prozess, PID merken
+ * python3 ~/.claude/hooks/obsidian-cdp-lock.py acquire --label json-editor --intent "Smoke :9398" --exclusive focus --port 9398 --ttl 300
+ * npm run smoke:gui -- --port 9398 --vault json-editor
+ * npm run smoke:gui -- --port 9398 --vault json-editor --section layout --keep
+ * python3 ~/.claude/hooks/obsidian-cdp-lock.py release            # danach nur die eigene PID beenden
  * ```
  *
- * Hört der Port schon, dann **mitnutzen statt neu starten**: ein eigenes Fenster per
- * `vault-open` über IPC öffnen, dann `attachTo("workspace", port, vault)` — der Vault-Name
- * wählt, nicht die Reihenfolge. ⚠️ Die Port-Prüfung ersetzt die Frage nicht: sie zeigt aktive
- * CDP-Treiber, aber nicht, wer ein Fenster offen hält oder auf den Port wartet.
+ * Der erste Lauf nach der Profilanlage ist ein Aufwärmlauf und zählt nicht.
  *
- * Erst wenn nichts läuft — oder nach Absprache mit dem, der es benutzt — gilt das Rezept unten.
- *
- * Obsidian muss mit offenem Debug-Port laufen (der einzige Handgriff, der Handarbeit
- * bleibt — die App muss dafür neu gestartet werden):
- *
- * ```bash
- * osascript -e 'quit app "Obsidian"'
- * open -a Obsidian --args --remote-debugging-port=9222
- * ```
- *
- * Dann, mit deployter Plugin-Version (`npm run deploy`):
- *
- * ```bash
- * npm run smoke:gui -- --vault <vault-name>
- * npm run smoke:gui -- --port 9222 --section layout --keep
- * ```
+ * Bilanz in vier Zuständen (CORE-TEST-19, `createBilanz`): grün · rot · übersprungen · nichts gemessen. Der
+ * Nenner ist die Soll-Liste der gewählten Abschnitte (`PUNKTE_JE_SECTION`, ohne `--section` alle) plus der
+ * Vorlauf-Punkt; ein nie aufgezeichneter Punkt zählt als „nichts gemessen“ (Exit 1), ein Abbruch ist Exit 2.
  *
  * Zwei Schalter fuer die Klicks selbst — sie pruefen den PRUEFER, nicht den Prueflings:
  *
@@ -56,7 +50,6 @@
  * der Ansicht leer und man debuggt ein Phantom (CORE-TEST-02).
  */
 
-import { execFileSync } from "node:child_process";
 import { type Server, createServer } from "node:http";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -65,13 +58,14 @@ import { cwd } from "node:process";
 import {
   type Cdp,
   attachTo,
+  bereiteInstanzVor,
   clickReal,
   closeExtraLeaves,
   pollUntil,
   releaseAlwaysOnTop,
   requireVisible,
 } from "../../tools/obsidian-cdp/cdp.js";
-import { createBilanz, parseArgs, runDriver } from "../../tools/obsidian-cdp/bilanz.js";
+import { type Bilanz, createBilanz, parseArgs, runDriver } from "../../tools/obsidian-cdp/bilanz.js";
 import { capture } from "../../tools/obsidian-cdp/shot.js";
 import { buildHerkunft, requireEigenerBuild } from "../../tools/obsidian-cdp/vault.js";
 
@@ -187,12 +181,58 @@ const fence = "```";
 
 // --- Protokoll ---------------------------------------------------------------
 
-/** Bilanz in vier Zustaenden (CORE-TEST-19) aus dem zentralen Modul `tools/obsidian-cdp/bilanz.ts`; die Aufrufstellen
- *  behalten ihre Namen. `skipped` heisst „bewusst nicht gemessen“ und zaehlt im Nenner, nie als gruen. Ohne Soll-Liste
- *  (`punkte`): `--section` fuehrt je Lauf nur einen Teil der Punkte aus, der Nenner ist die Zahl der Eintraege. */
-const bilanz = createBilanz();
+/** Soll-Liste je Abschnitt (der Nenner der Bilanz). `--section` fuehrt je Lauf nur einen Abschnitt aus; der Nenner
+ *  ist dann dessen Liste plus der Vorlauf-Punkt, der in jedem Lauf misst. */
+const PUNKTE_VORLAUF = ["Keine liegen gebliebenen Smoke-Dateien aus einem abgebrochenen frueheren Lauf"] as const;
+const PUNKTE_JE_SECTION: Record<string, readonly string[]> = {
+  ansicht: [
+    "A1 .json öffnet in der Plugin-Ansicht",
+    "A2 Tree rendert mit den erwarteten Schlüsseln",
+    "A3 .jsonc mit Kommentar bleibt editierbar (kein Lossy-Banner)",
+    "A4 Kaputtes JSON erzwingt Source-Modus + Fehler-Banner",
+  ],
+  layout: [
+    "B1 Trennkomma dockt am eingeklappten Wert an",
+    "B2 Eingeklappter Teilbaum beansprucht keine Breite",
+    "B3 Theme-Farben greifen (Key ≠ String, beide gesetzt)",
+    "B4 [hidden]-Elemente sind wirklich unsichtbar",
+    "B5 A11y-Ansage-Region ist unsichtbar, aber nicht stumm",
+  ],
+  navigation: [
+    "C1 collapse-all / expand-all wirken auf alle Container",
+    "C2 Sprung in einen eingeklappten Ast macht die Zeile sichtbar",
+    "C3 Suche markiert Treffer und zählt sie",
+  ],
+  editieren: [
+    "D1 Echter Klick auf einen Wert öffnet das Inline-Feld",
+    "D2 Geänderter Wert landet auf der Platte",
+    "D3 Undo stellt den Dateiinhalt wieder her",
+    "D4 .jsonc-Edit erhält die Kommentare",
+    "D5 Reorder nimmt den anhängenden Kommentar mit, den abgetrennten nicht",
+  ],
+  codeblock: [
+    "E1 Gültiger ```json-Block rendert als Tree",
+    "E2 Kaputter Block fällt auf die Fehler-Karte zurück",
+    "E3 Copy-Knopf schreibt in die Zwischenablage",
+  ],
+  repair: [
+    "F1 Fehlerkarte zeigt den Reparatur-Knopf",
+    "F2 Klick öffnet das Modal mit Diff, Anwenden ist frei",
+    "F3 Anfrage trägt Modell, Profilwerte und den Parser-Fehler",
+    "F4 Anwenden ersetzt nur den Blockinhalt, der Rest bleibt byte-gleich",
+    "F5 Modal schließt nach Anwenden",
+    "F6 Ungültige Antwort sperrt Anwenden und lässt die Notiz unberührt",
+    "G1 Bearer-Token geht geschwärzt raus, der Vorschlag trägt das Original zurück",
+    "G2 PEM als JSON-String (\\n escaped) geht geschwärzt raus und kommt als gültiges JSON zurück",
+    "G3 PEM mit echten Zeilenumbrüchen (kaputtes JSON) kommt als gültiges JSON zurück",
+    "G4 Kein apiKey in data.json — der Schlüssel liegt im Schlüsselbund",
+  ],
+};
+/** Wird in `main` mit der Soll-Liste der gewaehlten Abschnitte neu gebildet; bis dahin ohne Nenner. */
+let bilanz: Bilanz = createBilanz();
 const check = (name: string, passed: boolean, detail = ""): void => bilanz.record(name, passed, detail);
-const skipped = (name: string, reason: string): void => bilanz.skipped(name, reason);
+/** „Bewusst nicht gemessen“ = der Gegenstand wurde nicht erreicht (hier: die Szene stellt ihn nicht her) — nichts gemessen, nie gruen. */
+const unmeasured = (name: string, reason: string): void => bilanz.unmeasured(name, reason);
 
 // --- Szenen-Helfer -----------------------------------------------------------
 
@@ -491,7 +531,7 @@ const SECTIONS: Section[] = [
         `),
       );
       if (!versteckt) {
-        skipped("B4 [hidden]-Elemente sind wirklich unsichtbar", "kein [hidden]-Element in dieser Szene");
+        unmeasured("B4 [hidden]-Elemente sind wirklich unsichtbar", "kein [hidden]-Element in dieser Szene");
       } else {
         check(
           "B4 [hidden]-Elemente sind wirklich unsichtbar",
@@ -573,7 +613,7 @@ const SECTIONS: Section[] = [
         inView(`return Boolean(root.querySelector('.json-row[data-path="nested.deep.leaf"]'));`),
       );
       if (!zielVorhanden) {
-        check("C2 Sprung in einen eingeklappten Ast macht die Zeile sichtbar", false, "Zielzeile nicht im Baum");
+        unmeasured("C2 Sprung in einen eingeklappten Ast macht die Zeile sichtbar", "Zielzeile nicht im Baum");
       } else {
         await klick(cdp, elImView(`return root.querySelector('.json-row[data-path="nested.deep.leaf"] .json-key');`));
         await new Promise((r) => setTimeout(r, 400));
@@ -873,7 +913,7 @@ const SECTIONS: Section[] = [
           )
         : null;
       if (!kopiert) {
-        check("E3 Copy-Knopf schreibt in die Zwischenablage", false, "Knopf nicht gefunden");
+        unmeasured("E3 Copy-Knopf schreibt in die Zwischenablage", "Knopf nicht gefunden");
       } else if (inhalt === null) {
         // Zwei zulässige Ausgänge trennen: der Knopf kann geliefert haben, während das
         // LESEN der Zwischenablage im Renderer verweigert wird. Dann belegt die Notice
@@ -1188,8 +1228,11 @@ const SECTIONS: Section[] = [
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   const flag = (name: string): string | undefined => args.value(name);
-  const port = Number(flag("port") ?? 9222);
-  const vault = flag("vault");
+  const port = Number(flag("port"));
+  if (!Number.isInteger(port) || port < 1024 || port > 65535) {
+    throw new Error("--port <1024-65535> ist Pflicht (kein Standardport: 9222 gehoert der regulaeren Instanz). Beispiel: npm run smoke:gui -- --port 9398 --vault json-editor");
+  }
+  const vault = flag("vault") ?? PLUGIN_ID;
   const keep = args.has("keep");
   const sectionArg = flag("section");
   klickOptionen.haltenMs = Number(flag("halten") ?? 0);
@@ -1203,7 +1246,12 @@ async function main(): Promise<void> {
     );
   }
 
-  console.log(`GUI-Smoke — Obsidian auf Port ${port}`);
+  // Soll-Liste der gewaehlten Abschnitte (plus Vorlauf-Punkt) = Nenner der Bilanz.
+  const fehlt = sections.filter((s) => PUNKTE_JE_SECTION[s.key] === undefined).map((s) => s.key);
+  if (fehlt.length > 0) throw new Error(`Abschnitt ohne Soll-Liste in PUNKTE_JE_SECTION: ${fehlt.join(", ")}`);
+  bilanz = createBilanz({ punkte: [...PUNKTE_VORLAUF, ...sections.flatMap((s) => PUNKTE_JE_SECTION[s.key] ?? [])] });
+
+  console.log(`Smoke json-editor — Obsidian auf Port ${port}`);
   if (klickOptionen.gegenprobe) {
     console.log(
       "⚠️  KLICK-GEGENPROBE: es wird nicht geklickt. Jeder klickabhaengige Pruefpunkt MUSS "
@@ -1323,15 +1371,7 @@ async function main(): Promise<void> {
     // Ohne Fokus drosselt Chromium den Renderer: der DOM der Ansicht bleibt leer, waehrend
     // die App-API den Zustand korrekt meldet — man debuggt ein Phantom. `Page.bringToFront`
     // allein genuegt auf macOS NICHT (es holt das Fenster in der App nach vorn, nicht die
-    // App nach vorn), deshalb zusaetzlich `osascript activate`.
-    if (process.platform === "darwin") {
-      try {
-        execFileSync("osascript", ["-e", 'tell application "Obsidian" to activate']);
-        await new Promise((r) => setTimeout(r, 1500));
-      } catch {
-        console.log("  (Hinweis: `osascript activate` schlug fehl — Fenster ggf. von Hand nach vorn holen)");
-      }
-    }
+    // App nach vorn), `requireVisible` erledigt den Rest (KEIN `osascript activate`: das aktiviert die regulaere Instanz statt der Zweitinstanz).
     await requireVisible(cdp);
     await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: true }).catch(() => undefined);
     await new Promise((r) => setTimeout(r, 300));
@@ -1396,6 +1436,7 @@ async function main(): Promise<void> {
     // die Dateien; die laufende Instanz behaelt den alten Code im Speicher — ohne diesen
     // Schritt meldet der Smoke den zuletzt geladenen Stand als Ergebnis fuer den gerade
     // gebauten. (In 3d-codeblocks lief eine absichtlich kaputte Version so 13/13 gruen.)
+    const instanz = await bereiteInstanzVor(cdp, { pluginIds: [PLUGIN_ID], nurVault: PLUGIN_ID, sprache: "en" });
     const plugin = await cdp.evaluate<{ ok: boolean; version?: string }>(`
       const id = ${JSON.stringify(PLUGIN_ID)};
       if (app.plugins.plugins[id]) {
@@ -1407,7 +1448,7 @@ async function main(): Promise<void> {
       const p = app.plugins.plugins[id];
       return p ? { ok: true, version: p.manifest.version } : { ok: false };
     `);
-    if (!plugin.ok) throw new Error(`Plugin ${PLUGIN_ID} ist nicht aktiv. Erst \`npm run deploy\`.`);
+    if (!plugin.ok) throw new Error(`Plugin ${PLUGIN_ID} ist nicht aktiv — ${instanz.hinweis}. Ggf. erst \`npm run deploy\`.`);
     // Die Version aus der DEPLOYTEN Datei, nicht aus `plugin.manifest`: Obsidian liest die
     // Manifeste beim Start und behaelt sie im Speicher — ein `npm run deploy` danach
     // aktualisiert den geladenen Code (enablePlugin liest main.js neu), aber nicht diese
@@ -1473,12 +1514,12 @@ async function main(): Promise<void> {
     process.off("SIGTERM", onAbortSignal);
     await cleanupState();
     cdp.close();
+    // Auch nach einem Abbruch: nie aufgezeichnete Punkte zaehlen als „nichts gemessen“.
+    if (herkunftsWarnung !== null) {
+      console.log("⚠️  Herkunft des gemessenen Builds ungeprueft — s. Warnung oben.");
+    }
+    bilanz.abschluss();
   }
-
-  if (herkunftsWarnung !== null) {
-    console.log("⚠️  Herkunft des gemessenen Builds ungeprueft — s. Warnung oben.");
-  }
-  bilanz.abschluss();
 }
 
 runDriver(main);

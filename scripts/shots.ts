@@ -8,30 +8,24 @@
  *
  * ## Ablauf
  *
- * ⚠️ **Vor dem Quit koordinieren — Obsidian ist geteilte Infrastruktur.** Dieses Rezept
- * braucht den frischen Start (ein Bild pro Start, jeder Lauf hinterlaesst Zustand); Mitnutzen ist
- * hier keine Alternative. Aber Obsidian ist Single-Instance: der Quit trifft die Instanz, an der
- * moeglicherweise eine andere Session arbeitet, und zerstoert deren Zustand. Der eigene Lauf ist
- * danach sauber gruen; der Schaden faellt nicht auf.
+ * ## Zweitinstanz (eigenes Profil, eigener Port — die regulaere Instanz wird nie angefasst und nie beendet)
+ *
+ * `--port` ist Pflicht (oder `SHOTS_PORT`); es gibt keinen Standardport, 9222 gehoert der regulaeren Instanz.
+ * Je Aufnahme ein frischer Prozess der Zweitinstanz, Oberflaeche Englisch (`obsidian.json` UND
+ * `localStorage["language"]`).
  *
  * ```bash
- * lsof -nP -iTCP:9222 -sTCP:LISTEN >/dev/null && echo "belegt — erst fragen, wem"
- * ```
- *
- * Hoert der Port, haengt jemand dran: **erst fragen, dann quitten.** ⚠️ Und die Pruefung ersetzt die
- * Frage nicht — sie zeigt aktive CDP-Treiber, aber nicht, wer ein Fenster offen haelt oder auf den
- * Port wartet; am 2026-08-30 haette sie einen zwei Stunden alten Reindex nicht gezeigt, denn der
- * hing an Ollama, nicht am Port.
- *
- * ```bash
- * export STAGING_VAULTS_DIR="$HOME/StagingVaults"   # einmalig
+ * echo "$STAGING_VAULTS_DIR"                         # muss gesetzt sein (~/.zshenv)
  * npm run build && npm run shots -- --setup         # Vault aus dem Fixture bauen
+ * UD=/tmp/obs-test-json-editor-shots; mkdir -p "$UD"
+ * lsof -nP -iTCP:<port> -sTCP:LISTEN; pgrep -f "user-data-dir=$UD"      # beides leer
+ * cp ~/Library/Application\ Support/obsidian/obsidian-*.asar "$UD"/
+ * node -e 'const p=process.env.STAGING_VAULTS_DIR+"/json-editor";require("fs").writeFileSync(process.argv[1]+"/obsidian.json",JSON.stringify({vaults:{"json-editor":{path:p,ts:Date.now(),open:true}},language:"en"}))' "$UD"
+ * /Applications/Obsidian.app/Contents/MacOS/Obsidian --user-data-dir="$UD" --remote-debugging-port=<port> &
+ * #   ... einmalig den Vertrauensdialog bestaetigen
+ * python3 ~/.claude/hooks/obsidian-cdp-lock.py acquire --label json-editor --intent "shots" --exclusive focus --port <port> --ttl 300
  *
- * osascript -e 'quit app "Obsidian"'                # Handarbeit: Debug-Port
- * open -a Obsidian --args --remote-debugging-port=9222
- * #   ... den Aufnahme-Vault oeffnen und einmalig als vertrauenswuerdig markieren
- *
- * npm run shots -- --deploy                         # alles aufnehmen, vorher deployen
+ * npm run shots -- --port <port> --deploy         # alles aufnehmen, vorher deployen
  * npm run shots -- --only hero.png                  # ein Bild nachziehen
  * npm run shots -- --list                           # Vertrag anzeigen
  * ```
@@ -565,20 +559,18 @@ async function main(): Promise<void> {
       "\n⚠️  Lief Obsidian waehrend dieses Setups, muss es JETZT neu starten. --setup hat\n" +
         "   Notizen, Layout und Plugin-Einstellungen ersetzt; ein laufendes Obsidian haelt\n" +
         "   den alten Stand im Speicher und schreibt ihn zurueck.\n" +
-        "\n⚠️  Erst pruefen, ob schon ein Obsidian laeuft — ein Quit zerstoert den Zustand\n" +
-        "    einer fremden Session, und der eigene Lauf ist danach trotzdem gruen:\n" +
-        "      lsof -nP -iTCP:9222 -sTCP:LISTEN\n" +
-        "    Hoert der Port, haengt jemand dran: erst fragen, dann quitten.\n" +
-        "\nObsidian mit offenem Debug-Port starten und diesen Vault oeffnen:\n" +
-        "  osascript -e 'quit app \"Obsidian\"'\n" +
-        "  open -a Obsidian --args --remote-debugging-port=9222\n" +
+        "\nZweitinstanz mit eigenem Profil und eigenem Port starten (Rezept im Dateikopf), diesen Vault\n" +
+        "eintragen und oeffnen; die regulaere Instanz wird nie beendet:\n" +
         "Beim ersten Mal fragt Obsidian, ob es dem Vault-Autor vertraut — bestaetigen,\n" +
         "sonst laeuft das Plugin nicht und jedes Bild zeigt eine rohe Textdatei.",
     );
     return;
   }
 
-  const port = Number(flag("--port") ?? env.SHOTS_PORT ?? 9222);
+  const port = Number(flag("--port") ?? env.SHOTS_PORT);
+  if (!Number.isInteger(port) || port < 1024 || port > 65535) {
+    throw new Error("--port <1024-65535> (oder SHOTS_PORT) ist Pflicht: der Port der eigenen Zweitinstanz, nie 9222 (Rezept im Dateikopf).");
+  }
   const nur = flag("--only");
   const deployen = argv.includes("--deploy");
 
