@@ -18,31 +18,24 @@ Dass das kein theoretischer Unterschied ist, ist hier zweimal belegt:
 
 ## Automatisiert: `npm run smoke:gui`
 
-⚠️ **Zuerst prüfen, wer sonst an Obsidian hängt.** Obsidian ist Single-Instance — ein
-`quit` trifft die Instanz, an der möglicherweise eine andere Session arbeitet, und zerstört
-deren Zustand. Der eigene Lauf ist danach sauber grün; der Schaden entsteht woanders und
-fällt nicht auf.
+Der Treiber läuft gegen eine **Zweitinstanz** mit eigenem Profil und eigenem Port; die reguläre Instanz (9222) wird nie angefasst und nie beendet. `--port` ist Pflicht. Vertrauensdialog und Restricted Mode eines frischen Profils erledigt `bereiteInstanzVor` aus der zentralen Brücke. Der Vault ist von Hand eingerichtet (kein `buildVault`), das Plugin wird per `npm run deploy` hineinkopiert.
 
 ```bash
-lsof -nP -iTCP:9222 -sTCP:LISTEN >/dev/null && echo "läuft bereits — NICHT beenden"
+echo "$STAGING_VAULTS_DIR"                                       # muss gesetzt sein (~/.zshenv)
+D="$STAGING_VAULTS_DIR/json-editor/.obsidian/plugins/json-editor"; mkdir -p "$D"
+OBSIDIAN_PLUGIN_DIR="$D" npm run deploy
+UD=/tmp/obs-test-json-editor; mkdir -p "$UD"
+lsof -nP -iTCP:9398 -sTCP:LISTEN && echo "Port belegt — anderen nehmen"
+pgrep -f "user-data-dir=$UD" && echo "Profil belegt — $UD-w19 nehmen, nie beenden"
+cp ~/Library/Application\ Support/obsidian/obsidian-*.asar "$UD"/   # aktuelle Version statt gebündelter
+node -e 'const p=process.env.STAGING_VAULTS_DIR+"/json-editor";require("fs").writeFileSync(process.argv[1]+"/obsidian.json",JSON.stringify({vaults:{"json-editor":{path:p,ts:Date.now(),open:true}},language:"en"}))' "$UD"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian --user-data-dir="$UD" --remote-debugging-port=9398 &   # je Messlauf ein frischer Prozess, PID merken
+python3 ~/.claude/hooks/obsidian-cdp-lock.py acquire --label json-editor --intent "Smoke :9398" --exclusive focus --port 9398 --ttl 300
+npm run smoke:gui -- --port 9398 --vault json-editor
+python3 ~/.claude/hooks/obsidian-cdp-lock.py release            # danach nur die eigene PID beenden
 ```
 
-Hört der Port schon, dann **mitnutzen statt neu starten**: ein eigenes Fenster per
-`vault-open` über IPC öffnen, dann `attachTo("workspace", port, vault)` — der Vault-Name
-wählt, nicht die Reihenfolge. ⚠️ Die Port-Prüfung ersetzt die Frage nicht: sie zeigt aktive
-CDP-Treiber, aber nicht, wer ein Fenster offen hält oder auf den Port wartet.
-
-Erst wenn nichts läuft — oder nach Absprache mit dem, der es benutzt — gilt das Rezept unten.
-
-Voraussetzung — der eine Handgriff, der Handarbeit bleibt (Obsidian muss dafür neu
-starten):
-
-```bash
-osascript -e 'quit app "Obsidian"'
-open -a Obsidian --args --remote-debugging-port=9222
-OBSIDIAN_PLUGIN_DIR="<vault>/.obsidian/plugins/json-editor" npm run deploy
-npm run smoke:gui -- --vault <vault-name>
-```
+Der erste Lauf nach der Profilanlage ist ein Aufwärmlauf und zählt nicht. Die Bilanz zählt in vier Zuständen (grün · rot · übersprungen · nichts gemessen); Nenner ist die Soll-Liste der gewählten Abschnitte plus ein Vorlauf-Punkt, ein Abbruch endet mit Exit 2.
 
 Der Plugin-Ordner heißt nach der `manifest.json`-`id` (`json-editor`), nicht nach dem Repo.
 `--keep` lässt die angelegten Prüfdateien stehen, `--section <key>` fährt nur einen
