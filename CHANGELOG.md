@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 - Stripping the Markdown code fence from a repair answer no longer slows down quadratically on an answer that opens a fence and then continues with very many blank lines without ever closing it (50,000 of them took about 0.6 seconds); it is now linear.
+- The check of an LLM repair answer for a hidden `<think>` block is linear now: an answer with tens of thousands of unclosed `<think>` tags took seconds to check and takes under a millisecond.
+
+### Changed
+- **Settings, endpoint list:** under a reachable endpoint row that has a model, the row now shows the model's context length ("Context: loaded N · max M tokens", or only "max M" when the model is not loaded; nothing when the server does not report a number). Asking the server for it times out after 5 seconds. The model drop-down of a row offers "— (server picks)" again: choosing it clears the row's model, and the server answers with the model it has loaded.
+- The status and warning texts of the endpoint row (the tooltips of the status icons and of the input hints) come from the kit's wording now, in English and German.
+- Shared kit updated to obsidian-kit 0.56.0 and code-kit 0.23.0 (from 0.53.0 and 0.21.1).
 
 ## [1.15.2] — 2026-10-11
 
