@@ -77,7 +77,7 @@ function makeCopyButton(doc: Document, source: string): HTMLButtonElement {
   return btn;
 }
 
-function makeRepairButton(doc: Document, onClick: () => void): HTMLButtonElement {
+export function makeRepairButton(doc: Document, onClick: () => void): HTMLButtonElement {
   const btn = makeEl("button", doc);
   btn.className = "json-codeblock-repair";
   btn.type = "button";

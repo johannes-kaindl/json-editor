@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- **A "Repair" button in the parse-error banner of the file view.** For a `.json` or `.jsonc` file that does not parse, the banner now offers the same LLM repair as the code block: you see the diff first, and applying it writes into the file as one edit that undo takes back. It appears only where the plugin has an endpoint for repairs, as for code blocks.
+
+### Fixed
+- The Tree and Source buttons announce their state to screen readers (pressed or not) and follow the mode.
+- A failing write into the source editor can no longer leave it deaf to later typing.
+
+### Changed
+- The "change type" popover and the row menu share one type list internally; nothing looks different.
+
 ## [1.16.1] — 2026-10-12
 
 ### Changed

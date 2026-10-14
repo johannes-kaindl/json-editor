@@ -29,9 +29,15 @@ describe("JsonFileView", () => {
     document.body.appendChild(v.contentEl);
     v.setViewData('{"a":1}', false);
     const pills = v.contentEl.querySelectorAll<HTMLButtonElement>(".json-mode-pill");
-    expect([pills[0]!.getAttribute("aria-pressed"), pills[1]!.getAttribute("aria-pressed")]).toEqual(["true", "false"]);
+    expect([
+      pills[0]!.getAttribute("aria-pressed"),
+      pills[1]!.getAttribute("aria-pressed"),
+    ]).toEqual(["true", "false"]);
     pills[1]!.click();
-    expect([pills[0]!.getAttribute("aria-pressed"), pills[1]!.getAttribute("aria-pressed")]).toEqual(["false", "true"]);
+    expect([
+      pills[0]!.getAttribute("aria-pressed"),
+      pills[1]!.getAttribute("aria-pressed"),
+    ]).toEqual(["false", "true"]);
   });
 
   it("starts in tree mode by default", () => {

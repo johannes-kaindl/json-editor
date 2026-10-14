@@ -8,6 +8,8 @@ import { t } from "../vendor/kit/i18n";
 export type ApplyResult = "ok" | "stale" | "no-file";
 
 export interface RepairModalOptions {
+  /** Wohin der Vorschlag geschrieben wird; bestimmt nur die Texte. Default: ein Codeblock. */
+  target?: "block" | "file";
   source: string;
   errorMessage: string;
   lang: FenceLang;
@@ -145,10 +147,11 @@ export class RepairModal extends Modal {
     this.applyBtn.setDisabled(true);
     const result = await this.opts.apply(this.proposal);
     if (result === "ok") {
-      this.opts.notice(t("repair.applied"));
+      this.opts.notice(t(this.opts.target === "file" ? "repair.appliedFile" : "repair.applied"));
       this.close();
       return;
     }
-    this.status(result === "stale" ? t("repair.stale") : t("repair.noFile"), "error");
+    const stale = this.opts.target === "file" ? "repair.staleFile" : "repair.stale";
+    this.status(result === "stale" ? t(stale) : t("repair.noFile"), "error");
   }
 }

@@ -3,7 +3,6 @@ import type { JsonType } from "../core/edit";
 import { JSON_TYPES, TYPE_LABELS } from "../core/type-labels";
 import type { JsonPath, JsonValue } from "../core/types";
 
-
 export interface RowMenuOptions {
   value: JsonValue;
   path: JsonPath;

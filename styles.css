@@ -420,6 +420,11 @@
   content: "⚠";
   margin-right: var(--jv-space-3);
 }
+.json-error-banner .json-codeblock-repair {
+  margin-left: var(--jv-space-4);
+  vertical-align: middle;
+  font-family: var(--font-interface);
+}
 
 /* ─── Empty state ─────────────────────────────────────────────────── */
 .json-empty-state {

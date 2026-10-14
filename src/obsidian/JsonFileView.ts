@@ -42,6 +42,7 @@ import { type CompiledSchema, type PathError, compileSchema } from "../core/sche
 import { serialize } from "../core/serialize";
 import type { JsonPath, JsonValue } from "../core/types";
 import { Breadcrumb } from "./Breadcrumb";
+import { makeRepairButton } from "./CodeblockProcessor";
 import { GoToPathModal } from "./GoToPathModal";
 import { LargeFileBanner } from "./LargeFileBanner";
 import { LossBanner } from "./LossBanner";
@@ -55,6 +56,7 @@ import { TreeView } from "./TreeView";
 import { closeActiveMenu } from "./TypeMenu";
 import { copyJsonPath, copyJsonValue } from "./clipboard";
 import { makeEl } from "./dom";
+import type { FileRepairRequest } from "./repair-flow";
 
 /**
  * Storage port for the per-file collapse state. Storage-agnostic on purpose —
@@ -109,6 +111,8 @@ export class JsonFileView extends TextFileView {
     leaf: WorkspaceLeaf,
     private settings: JsonEditorSettings,
     private collapseStore?: CollapseStore,
+    /** Reparieren im Parse-Fehler-Banner; ohne Handler (oder ohne konfiguriertes Modell im Wirt) zeigt das Banner keinen Knopf. */
+    private onRepair?: (req: FileRepairRequest) => void,
   ) {
     super(leaf);
     this.mode = settings.defaultMode;
@@ -949,6 +953,29 @@ export class JsonFileView extends TextFileView {
       this.contentEl.insertBefore(this.bannerEl, this.bodyEl);
     }
     this.bannerEl.textContent = message;
+    if (this.onRepair) {
+      const onRepair = this.onRepair;
+      this.bannerEl.appendChild(
+        makeRepairButton(this.bannerEl.ownerDocument, () => {
+          const source = this.data;
+          onRepair({
+            source,
+            errorMessage: message,
+            lang: this.isJsonc ? "jsonc" : "json",
+            apply: (text) => Promise.resolve(this.applyRepair(source, text)),
+          });
+        }),
+      );
+    }
+  }
+
+  /** Schreibt einen bestätigten Reparaturvorschlag in die Datei — nur, wenn der Text noch der ist, den das Modell sah.
+   *  Läuft wie eine Source-Eingabe (Verlauf, Banner, Speichern), damit Rückgängig den alten Text zurückholt. */
+  private applyRepair(source: string, text: string): "ok" | "stale" {
+    if (this.data !== source || !this.sourceView) return "stale";
+    this.sourceView.applyExternalEdit(text);
+    this.handleSourceChange(text);
+    return "ok";
   }
 
   private clearBanner(): void {

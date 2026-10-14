@@ -9,7 +9,7 @@ import {
   type JsonEditorSettings,
   JsonEditorSettingsTab,
 } from "./obsidian/SettingsTab";
-import { repairAtCursor, repairFromBlock } from "./obsidian/repair-flow";
+import { repairAtCursor, repairFromBlock, repairFromFile } from "./obsidian/repair-flow";
 import { RepairService } from "./obsidian/repair-service";
 import type { LlmConnection } from "./vendor/kit-obsidian/llm-connection";
 import { pickLang, setLang, t } from "./vendor/kit/i18n";
@@ -62,15 +62,20 @@ export default class JsonEditorPlugin extends Plugin {
     this.registerView(
       JSON_VIEW_TYPE,
       (leaf: WorkspaceLeaf) =>
-        new JsonFileView(leaf, this.settings, {
-          get: (filePath) => this.collapseStates[filePath]?.collapsed,
-          set: (filePath, collapsedPaths) => {
-            this.collapseStates = capStates(
-              recordFileState(this.collapseStates, filePath, collapsedPaths, Date.now()),
-            );
-            void this.persist();
+        new JsonFileView(
+          leaf,
+          this.settings,
+          {
+            get: (filePath) => this.collapseStates[filePath]?.collapsed,
+            set: (filePath, collapsedPaths) => {
+              this.collapseStates = capStates(
+                recordFileState(this.collapseStates, filePath, collapsedPaths, Date.now()),
+              );
+              void this.persist();
+            },
           },
-        }),
+          (req) => repairFromFile(deps, req),
+        ),
     );
 
     this.registerMarkdownCodeBlockProcessor("json", (src, el, ctx) =>

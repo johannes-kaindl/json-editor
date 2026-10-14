@@ -7,6 +7,14 @@ import { type ApplyResult, RepairModal } from "./RepairModal";
 import type { JsonEditorSettings } from "./SettingsTab";
 import type { RepairService } from "./repair-service";
 
+/** Was die Datei-Ansicht beim Klick auf „Reparieren“ übergibt: der ganze Dateitext, `apply` schreibt ihn zurück. */
+export interface FileRepairRequest {
+  source: string;
+  errorMessage: string;
+  lang: FenceLang;
+  apply: (text: string) => Promise<ApplyResult>;
+}
+
 export interface RepairDeps {
   app: App;
   service: RepairService;
@@ -19,8 +27,10 @@ function open(
   errorMessage: string,
   lang: FenceLang,
   apply: (text: string) => Promise<ApplyResult>,
+  target: "block" | "file" = "block",
 ): void {
   new RepairModal(deps.app, {
+    target,
     source,
     errorMessage,
     lang,
@@ -30,6 +40,11 @@ function open(
       new Notice(text);
     },
   }).open();
+}
+
+/** Knopf im Parse-Fehler-Banner der Datei-Ansicht: derselbe Ablauf, der Dateitext statt des Codeblock-Inhalts. */
+export function repairFromFile(deps: RepairDeps, req: FileRepairRequest): void {
+  open(deps, req.source, req.errorMessage, req.lang, req.apply, "file");
 }
 
 /** Knopf in der Fehler-Titelzeile eines gerenderten Codeblocks. Die Position kommt erst beim

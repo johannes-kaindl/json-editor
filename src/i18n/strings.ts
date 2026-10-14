@@ -33,6 +33,9 @@ export const STRINGS = {
     "repair.applied": "Code block repaired.",
     "repair.stale":
       "The note changed since the request — nothing was written. Run the repair again.",
+    "repair.appliedFile": "JSON file repaired — undo restores the old text.",
+    "repair.staleFile":
+      "The file changed since the request — nothing was written. Run the repair again.",
     "repair.noFile": "The note behind this code block could not be found.",
     "repair.aria.left": "Original code",
     "repair.aria.right": "Proposed repair",
@@ -67,6 +70,9 @@ export const STRINGS = {
     "repair.applied": "Codeblock repariert.",
     "repair.stale":
       "Die Notiz hat sich seit der Anfrage geändert — es wurde nichts geschrieben. Starte die Reparatur neu.",
+    "repair.appliedFile": "JSON-Datei repariert — Rückgängig stellt den alten Text wieder her.",
+    "repair.staleFile":
+      "Die Datei hat sich seit der Anfrage geändert — es wurde nichts geschrieben. Starte die Reparatur neu.",
     "repair.noFile": "Die Notiz zu diesem Codeblock wurde nicht gefunden.",
     "repair.aria.left": "Originalcode",
     "repair.aria.right": "Vorgeschlagene Reparatur",

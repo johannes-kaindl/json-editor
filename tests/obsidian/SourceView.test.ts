@@ -92,18 +92,23 @@ describe("SourceView", () => {
     expect(container.querySelector(".cm-editor")).toBeNull();
   });
 
-  it.each(["setValue", "applyExternalEdit"] as const)("%s: a throwing dispatch does not leave onChange switched off", (method) => {
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-    const changes: string[] = [];
-    const view = new SourceView(container, { onChange: (text) => changes.push(text) });
-    view.setValue("{}");
-    const inner = (view as unknown as { view: { dispatch: (...a: unknown[]) => void } }).view;
-    const real = inner.dispatch.bind(inner);
-    const spy = vi.spyOn(inner, "dispatch").mockImplementationOnce(() => { throw new Error("boom"); });
-    expect(() => view[method]('{"a":1}')).toThrow("boom");
-    spy.mockImplementation(real);
-    view._dispatchInsertForTest(1, '"b":2');
-    expect(changes.length).toBe(1);
-  });
+  it.each(["setValue", "applyExternalEdit"] as const)(
+    "%s: a throwing dispatch does not leave onChange switched off",
+    (method) => {
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      const changes: string[] = [];
+      const view = new SourceView(container, { onChange: (text) => changes.push(text) });
+      view.setValue("{}");
+      const inner = (view as unknown as { view: { dispatch: (...a: unknown[]) => void } }).view;
+      const real = inner.dispatch.bind(inner);
+      const spy = vi.spyOn(inner, "dispatch").mockImplementationOnce(() => {
+        throw new Error("boom");
+      });
+      expect(() => view[method]('{"a":1}')).toThrow("boom");
+      spy.mockImplementation(real);
+      view._dispatchInsertForTest(1, '"b":2');
+      expect(changes.length).toBe(1);
+    },
+  );
 });
