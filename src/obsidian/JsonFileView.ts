@@ -486,7 +486,7 @@ export class JsonFileView extends TextFileView {
 
   /**
    * Public Tree↔Source toggle (audit 3.1) — the binding target for the
-   * toggle-tree-source command and the view-header action. A no-op when the
+   * toggle-tree-source command and the view's own key binding. A no-op when the
    * target would be tree but the JSON is invalid (switchTo guards that).
    */
   toggleMode(): void {
