@@ -588,7 +588,6 @@ async function main(): Promise<void> {
 
   try {
     await requireVisible(cdp);
-    await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: true }).catch(() => undefined);
     await new Promise((r) => setTimeout(r, 500));
 
     // Aufnahmesprache: geprueft wird, was GERENDERT ist. `localStorage["language"]` ist
@@ -688,7 +687,14 @@ async function main(): Promise<void> {
     }
 
     if (!nur || nur === "settings.png") {
-      console.log(`  · ${await settingsBild(cdp, port, opts)}`);
+      // Zaehlt wie die Hauptschleife: ein geschriebenes Bild ist ein Bild, ein Wurf ist offen.
+      try {
+        console.log(`  ✓ ${await settingsBild(cdp, port, opts)}`);
+        ok++;
+      } catch (err) {
+        console.log(`  ✗ settings.png — ${(err as Error).message}`);
+        fehlend++;
+      }
     }
 
     console.log(`\n${ok} Bild(er) geschrieben, ${fehlend} offen.`);

@@ -50,16 +50,18 @@
  * der Ansicht leer und man debuggt ein Phantom (CORE-TEST-02).
  */
 
-import { writeFileSync } from "node:fs";
+import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { cwd } from "node:process";
 
 import {
   type Cdp,
   attachTo,
+  beimAbbruch,
   bereiteInstanzVor,
-  clickReal,
   closeExtraLeaves,
+  istAbgebrochen,
+  klicke,
   pollUntil,
   releaseAlwaysOnTop,
   requireVisible,
@@ -77,51 +79,20 @@ const VIEW_TYPE = "json-editor-view";
 const createdFiles = new Set<string>();
 
 /**
- * Klick-Optionen des Laufs — gesetzt aus `--halten` / `--klick-gegenprobe`.
+ * Klick-Modus des Laufs — gesetzt aus `--halten` / `--klick-gegenprobe` (`parseArgs(...).klickModus()`).
  *
  * **Warum das ein Schalter ist und kein Handgriff:** ein Prüfpunkt hinter einem Klick kann
  * *grün am Falschen* sein — grün, obwohl der Klick nie ankam, weil die Bedingung schon
  * vorher wahr war. Das fällt nur auf, wenn man den Klick wegnimmt und **rot** erwartet.
- * Eine Gegenprobe, die man von Hand herstellt, wird einmal gefahren und danach nie wieder;
- * als Flag ist sie beim nächsten neuen Prüfpunkt einen Aufruf entfernt.
- *
- * `haltenMs` ist die zweite Hälfte derselben Frage: `clickReal` schickt Press und Release
- * ohne Pause. Zeichnet die Ansicht sich dazwischen neu, trifft das Release ein anderes
- * Element und es entsteht **gar kein** `click` — der Punkt wird dann zu Recht rot, aber aus
- * einem Grund, den niemand am Prüfling suchen würde. Die Schwelle, ab der ein Punkt kippt,
- * wird gemessen (`--halten 150`) statt geschätzt.
+ * Die Gegenprobe ist ein Flag, damit sie beim nächsten neuen Prüfpunkt einen Aufruf entfernt ist;
+ * `--halten 150` misst die Schwelle, ab der ein Punkt kippt, statt sie zu schätzen. Der Klick-Weg
+ * selbst (Lage vor dem Klick, Gegenprobe, Haltedauer) liegt zentral: `klicke` in `tools/obsidian-cdp/cdp.ts`.
  */
-const klickOptionen = { haltenMs: 0, gegenprobe: false };
+let klickModus: { haltenMs: number; gegenprobe: boolean } = { haltenMs: 0, gegenprobe: false };
 
-/**
- * Einziger Klick-Weg des Treibers — kein Prüfpunkt ruft `clickReal` direkt auf, sonst
- * greift der Schalter nur bei der Hälfte.
- *
- * In der Gegenprobe wird die *Existenz und Sichtbarkeit* des Ziels weiter geprüft (ein
- * fehlendes Ziel bleibt ein Werkzeugfehler und soll nicht als „Klick wirkt nicht"
- * durchgehen) — nur der Klick selbst unterbleibt.
- */
+/** Einziger Klick-Weg des Treibers — kein Prüfpunkt ruft `clickReal` direkt auf, sonst greift der Schalter nur bei der Hälfte. */
 async function klick(cdp: Cdp, ausdruck: string): Promise<boolean> {
-  // Zuerst die LAGE des Ziels, dann erst der Klick. `clickReal` gibt bei „nicht im DOM" und
-  // bei „da, aber 0x0" dasselbe `false` zurueck — und der Pruefpunkt meldet dann beides als
-  // „Knopf nicht gefunden". Genau diese Verwechslung kostete am 2026-09-02 eine
-  // Viertelstunde: der Knopf war da, nur im unsichtbaren Zwilling-Container der Ansicht.
-  const lage = await cdp.evaluate<{ da: boolean; w: number; h: number }>(`
-    const el = ${ausdruck};
-    if (!el) return { da: false, w: 0, h: 0 };
-    const r = el.getBoundingClientRect();
-    return { da: true, w: r.width, h: r.height };
-  `);
-  if (!lage.da) {
-    console.log("    (Klick-Ziel nicht im DOM)");
-    return false;
-  }
-  if (lage.w === 0 || lage.h === 0) {
-    console.log("    (Klick-Ziel liegt im DOM, ist aber 0x0 — unsichtbar. Falscher Scope?)");
-    return false;
-  }
-  if (klickOptionen.gegenprobe) return true;
-  return clickReal(cdp, ausdruck, klickOptionen.haltenMs);
+  return (await klicke(cdp, ausdruck, klickModus)).ok;
 }
 
 const SMOKE_JSON = "_json-smoke.json";
@@ -1219,8 +1190,7 @@ async function main(): Promise<void> {
   const vault = flag("vault") ?? PLUGIN_ID;
   const keep = args.has("keep");
   const sectionArg = flag("section");
-  klickOptionen.haltenMs = Number(flag("halten") ?? 0);
-  klickOptionen.gegenprobe = args.has("klick-gegenprobe");
+  klickModus = args.klickModus();
   shotPfad = flag("shot") ?? null;
 
   const sections = sectionArg ? SECTIONS.filter((s) => s.key === sectionArg) : SECTIONS;
@@ -1236,13 +1206,13 @@ async function main(): Promise<void> {
   bilanz = createBilanz({ punkte: [...PUNKTE_VORLAUF, ...sections.flatMap((s) => PUNKTE_JE_SECTION[s.key] ?? [])] });
 
   console.log(`Smoke json-editor — Obsidian auf Port ${port}`);
-  if (klickOptionen.gegenprobe) {
+  if (klickModus.gegenprobe) {
     console.log(
       "⚠️  KLICK-GEGENPROBE: es wird nicht geklickt. Jeder klickabhaengige Pruefpunkt MUSS "
         + "rot werden — bleibt einer gruen, misst er etwas, das auch ohne den Klick wahr ist.",
     );
   }
-  if (klickOptionen.haltenMs > 0) console.log(`Klick-Haltedauer: ${klickOptionen.haltenMs} ms`);
+  if (klickModus.haltenMs > 0) console.log(`Klick-Haltedauer: ${klickModus.haltenMs} ms`);
   const cdp = await attachTo("workspace", port, vault);
   if (!cdp) {
     throw new Error(
@@ -1253,6 +1223,7 @@ async function main(): Promise<void> {
 
   // Ausserhalb des `try`, damit das `finally` sie auch nach einem Abbruch mitten im Lauf
   // zurueckschreiben kann.
+  let vaultBasis: string | null = null;
   let previousSettings: string | null = null;
   let previousClipboard: string | null = null;
   // Die `ungeklaert`-Warnung gehoert in die Abschlusszeile, nicht nur nach oben ins
@@ -1260,11 +1231,10 @@ async function main(): Promise<void> {
   // Herkunft ungeprueft blieb, darf nicht aussehen wie einer, der belegt ist.
   let herkunftsWarnung: string | null = null;
 
-  // Dieselbe Aufraeumarbeit wie im `finally` unten — als eigene Funktion, damit der
-  // SIGINT/SIGTERM-Handler sie aufrufen kann, ohne Code zu duplizieren. Ein Ctrl-C mitten
-  // im Lauf ueberspringt das `finally` NICHT (try/catch-Semantik), sondern beendet den
-  // Node-Prozess sofort — ohne eigenen Handler blieben Pruefdateien, veraenderte Clipboard-
-  // und Settings-Inhalte stehen.
+  // EIN Schritt raeumt zurueck, was dieser Lauf am Wirt aendert: der Normalweg im `finally` (`zustand.schliesse()`),
+  // Ctrl-C/SIGTERM ueber das Abbruch-Modul der Bruecke (Hauptzweig gesperrt, der Schritt darf noch senden, danach
+  // Bilanz, Exit 130). Idempotent, im Abbruch ohne Warten. Angelegt wird: Pruefdateien im Vault, Clipboard- und
+  // Settings-Inhalt, Always-on-top des Fensters.
   const cleanupState = async (): Promise<void> => {
     if (previousClipboard) {
       await cdp
@@ -1284,18 +1254,27 @@ async function main(): Promise<void> {
             const datei = blatt.view?.file?.path;
             if (datei && pfade.includes(datei)) blatt.detach();
           }
-          await new Promise((r) => setTimeout(r, 2500));
+          await new Promise((r) => setTimeout(r, ${istAbgebrochen() ? 300 : 2500}));
           for (const path of pfade) {
             const file = app.vault.getAbstractFileByPath(path);
             if (file) await app.fileManager.trashFile(file);
           }
-          await new Promise((r) => setTimeout(r, 800));
+          await new Promise((r) => setTimeout(r, ${istAbgebrochen() ? 0 : 800}));
           return true;
         `)
         .catch(() => undefined);
     } else {
       console.log(`(--keep: ${createdFiles.size} Pruefdatei(en) bleiben im Vault stehen)`);
     }
+    if (!keep && vaultBasis !== null) {
+      // Gegen den Abbruch: die kurze Wartezeit oben genuegt nicht immer, damit das Plugin beim Schliessen nichts mehr
+      // schreibt — was dann noch liegt, nimmt der Node-Prozess weg (idempotent, `force` ohne Fehler bei fehlender Datei).
+      for (const pfad of createdFiles) rmSync(join(vaultBasis, pfad), { force: true });
+    }
+  };
+
+  // Zweiter Schritt: Settings zurueck. Getrennt, weil jeder Schritt im Abbruch hoechstens eine Sekunde hat.
+  const einstellungenZurueck = async (): Promise<void> => {
     if (previousSettings !== null) {
       const zurueck = async (): Promise<string> =>
         cdp
@@ -1309,13 +1288,14 @@ async function main(): Promise<void> {
               if (plugin.collapseStates) delete plugin.collapseStates[pfad];
             }
             await plugin.saveSettings?.();
-            await new Promise((r) => setTimeout(r, 600));
+            await new Promise((r) => setTimeout(r, ${istAbgebrochen() ? 0 : 600}));
             const pfad = app.vault.configDir + "/plugins/" + ${JSON.stringify(PLUGIN_ID)} + "/data.json";
             return JSON.stringify(JSON.parse(await app.vault.adapter.read(pfad)));
           `)
           .catch(() => "(Fehler)");
       let endstand = await zurueck();
-      for (let runde = 0; runde < 5; runde++) {
+      // Im Abbruch nicht warten: der Schritt hat hoechstens eine Sekunde (Abbruch-Modul der Bruecke).
+      for (let runde = 0; runde < 5 && !istAbgebrochen(); runde++) {
         await new Promise((r) => setTimeout(r, 1200));
         const erneut = await zurueck();
         if (erneut === endstand) break;
@@ -1337,19 +1317,11 @@ async function main(): Promise<void> {
     await releaseAlwaysOnTop(cdp).catch(() => undefined);
   };
 
-  let signalCleanupRunning = false;
-  const onAbortSignal = (signal: NodeJS.Signals) => {
-    if (signalCleanupRunning) return;
-    signalCleanupRunning = true;
-    void (async () => {
-      console.log(`\n\nAbbruch durch ${signal} — raeume Smoke-Zustand auf...`);
-      await cleanupState();
-      cdp.close();
-      process.exit(130);
-    })();
-  };
-  process.on("SIGINT", onAbortSignal);
-  process.on("SIGTERM", onAbortSignal);
+  // Vor der ersten Mutation anmelden.
+  // Rueckwaerts abgearbeitet: erst die Dateien, dann die Einstellungen (das Plugin schreibt beim Schliessen eines
+  // Blatts seinen Zustand, die Einstellungen kommen danach).
+  const einstellungen = beimAbbruch(einstellungenZurueck, "Einstellungen zuruecksetzen");
+  const zustand = beimAbbruch(cleanupState, "Pruefdateien und Clipboard zuruecksetzen");
 
   try {
     // Ohne Fokus drosselt Chromium den Renderer: der DOM der Ansicht bleibt leer, waehrend
@@ -1357,7 +1329,6 @@ async function main(): Promise<void> {
     // allein genuegt auf macOS NICHT (es holt das Fenster in der App nach vorn, nicht die
     // App nach vorn), `requireVisible` erledigt den Rest (KEIN `osascript activate`: das aktiviert die regulaere Instanz statt der Zweitinstanz).
     await requireVisible(cdp);
-    await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: true }).catch(() => undefined);
     await new Promise((r) => setTimeout(r, 300));
 
     const vaultInfo = await cdp.evaluate<{ name: string; basePath: string; configDir: string }>(`
@@ -1382,6 +1353,7 @@ async function main(): Promise<void> {
     // lief gegen einen fremden Vault. Ein Check gegen den konventionellen Staging-Pfad
     // haette also eine Datei geprueft, die mit dem Lauf nichts zu tun hat. Geprueft wird,
     // was gemessen wird (Lesson 2026-09-02, kuro-gamification).
+    vaultBasis = vaultInfo.basePath;
     const pluginDir = join(vaultInfo.basePath, vaultInfo.configDir, "plugins", PLUGIN_ID);
     requireEigenerBuild(
       join(pluginDir, "main.js"),
@@ -1492,11 +1464,10 @@ async function main(): Promise<void> {
     }
   } finally {
     // Aufraeumen haengt nie am Ergebnis: auch ein abgebrochener Lauf gibt den Vault so
-    // zurueck, wie er ihn vorgefunden hat. Dieselbe Funktion wie der SIGINT/SIGTERM-Handler
-    // oben — kein Doppelcode.
-    process.off("SIGINT", onAbortSignal);
-    process.off("SIGTERM", onAbortSignal);
-    await cleanupState();
+    // zurueck, wie er ihn vorgefunden hat. Derselbe Schritt wie beim Abbruch (`beimAbbruch` oben).
+    await zustand.schliesse();
+    await einstellungen.schliesse();
+    if (istAbgebrochen()) return;   // das Modul druckt die Bilanz und beendet den Prozess selbst
     cdp.close();
     // Auch nach einem Abbruch: nie aufgezeichnete Punkte zaehlen als „nichts gemessen“.
     if (herkunftsWarnung !== null) {
