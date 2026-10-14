@@ -190,11 +190,15 @@ Settings live under **Settings → Community plugins → JSON Editor**.
 
 ## Repair with an LLM
 
-An invalid `` ```json `` or `` ```jsonc `` code block renders as an error card. That card has a **Repair** button in its title row; the command **Repair JSON in the current code block** does the same for the block under the cursor in the editor.
+An invalid `` ```json `` or `` ```jsonc `` code block renders as an error card. That card has a **Repair** button in its title row; the command **Repair JSON in the current code block** does the same for the block under the cursor in the editor. In the file view, a `.json` or `.jsonc` file that does not parse shows the same **Repair** button in its error banner; applying writes into the file as one edit that undo takes back.
 
 1. The block's text and the parser's error message are sent to a language model, with the instruction to change as little as possible and answer with the document only.
 2. The answer is checked with the same parser that rejected the block. Only a valid answer can be applied; an invalid one shows its reason instead.
 3. A modal shows the original on the left and the proposal on the right, with the changed lines marked. **Apply** replaces only the content of that one code block (the rest of the note stays byte-identical), **Try again** asks the model again, **Discard** writes nothing.
+
+<img src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/main/docs/images/repair-modal.png" width="820" alt="The repair dialog: the parser error on top, the original and the proposed document side by side with the line that lacks a comma marked red and its fix green, and Discard, Try again and Apply at the bottom.">
+
+<sub>Original on the left, proposal on the right; nothing is written until you press <em>Apply</em>.</sub>
 
 If the note changed between the request and *Apply*, nothing is written and the modal says so.
 

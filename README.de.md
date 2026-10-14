@@ -168,11 +168,15 @@ Die Einstellungen liegen unter **Einstellungen → Community-Plugins → JSON Ed
 
 ## Reparatur per LLM
 
-Ein ungültiger `` ```json ``- oder `` ```jsonc ``-Codeblock erscheint als Fehlerkarte. Sie hat in der Titelzeile einen **Reparieren**-Knopf; der Befehl **JSON im aktuellen Codeblock reparieren** macht dasselbe für den Block unter dem Cursor im Editor.
+Ein ungültiger `` ```json ``- oder `` ```jsonc ``-Codeblock erscheint als Fehlerkarte. Sie hat in der Titelzeile einen **Reparieren**-Knopf; der Befehl **JSON im aktuellen Codeblock reparieren** macht dasselbe für den Block unter dem Cursor im Editor. In der Datei-Ansicht zeigt eine `.json`- oder `.jsonc`-Datei, die nicht parst, denselben **Reparieren**-Knopf in ihrem Fehler-Banner; Anwenden schreibt als eine Änderung in die Datei, die Rückgängig zurücknimmt.
 
 1. Der Text des Blocks und die Fehlermeldung des Parsers gehen an ein Sprachmodell, mit der Anweisung, so wenig wie möglich zu ändern und nur das Dokument zu antworten.
 2. Die Antwort wird mit demselben Parser geprüft, der den Block abgelehnt hat. Nur eine gültige Antwort lässt sich anwenden; bei einer ungültigen steht der Grund im Modal.
 3. Ein Modal zeigt links das Original und rechts den Vorschlag, geänderte Zeilen sind markiert. **Anwenden** ersetzt nur den Inhalt genau dieses Codeblocks (der Rest der Notiz bleibt byte-gleich), **Neu versuchen** fragt das Modell erneut, **Verwerfen** schreibt nichts.
+
+<img src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/main/docs/images/repair-modal.png" width="820" alt="Der Reparatur-Dialog: oben der Parser-Fehler, darunter Original und Vorschlag nebeneinander, die Zeile mit dem fehlenden Komma rot, ihre Korrektur grün, unten Verwerfen, Neu versuchen und Anwenden.">
+
+<sub>Links das Original, rechts der Vorschlag; geschrieben wird erst nach <em>Anwenden</em>.</sub>
 
 Hat sich die Notiz zwischen Anfrage und *Anwenden* geändert, wird nichts geschrieben und das Modal sagt es.
 

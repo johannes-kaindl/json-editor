@@ -19,6 +19,7 @@ the repo — the fixture therefore uses invented, generic, English sample data.
 | `search.png` | feature | both READMEs | Search active with a live match count, matching rows highlighted, non-matching ones filtered away. |
 | `schema-validation.png` | feature | both READMEs | Opt-in companion-schema validation: the error-count banner above the tree and the offending rows marked inline (`maxElevationGain: 1800` exceeds the schema's maximum, `maintainers` is required and missing). |
 | `codeblock-in-note.png` | feature | both READMEs | A ```` ```json ```` fence inside a Markdown note, rendered read-only as a collapsible tree in reading view — with the note's prose around it, so it is clear this happens *inside* a note. |
+| `repair-modal.png` | feature | both READMEs | The LLM repair dialog on a note with one broken block (a comma missing in the `platforms` list): the parser error on top, original and proposal side by side with the changed line marked in both columns, **Apply** enabled. The proposal comes from a fake endpoint (`node:http`, free port, fixed answer), so the UI is real and no model is loaded. |
 | `settings.png` | detail | both READMEs | The plugin's settings tab in full. Embedded as a 380 px preview linked to the full-size file — a settings page is legitimately tall. |
 
 Classes, display widths, size budgets and the embedding form come from the workspace image

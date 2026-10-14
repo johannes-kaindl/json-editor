@@ -70,6 +70,7 @@ import {
   withMetrics,
   writeShot,
 } from "../../tools/obsidian-cdp/shot.js";
+import { startLlmStub } from "../../tools/obsidian-cdp/llm-stub.js";
 import { buildVault, stagingVaultDir } from "../../tools/obsidian-cdp/vault.js";
 
 const PLUGIN_ID = "json-editor";
@@ -84,6 +85,13 @@ const FENSTER_HOEHE = 900;
 const JSON_DATEI = "trailhead.json";
 const JSONC_DATEI = "tsconfig.jsonc";
 const NOTIZ = "Release notes.md";
+/** Notiz mit einem Block, dem ein Komma fehlt — Motiv des Reparatur-Bildes. */
+const REPARATUR_NOTIZ = "Release checklist.md";
+const REPARATUR_BLOCK_KAPUTT = '  "platforms": ["darwin-arm64", "linux-x64" "win32-x64"],';
+const REPARATUR_BLOCK_HEIL = '  "platforms": ["darwin-arm64", "linux-x64", "win32-x64"],';
+
+/** Der Fake-Endpunkt des Reparatur-Bildes (Zustand eines Laufs, vom naechsten Bild zurueckgesetzt). */
+let reparaturStub: { stop(): Promise<void> } | null = null;
 /** Eigene, kurze Datei fuers Schema-Bild: in `trailhead.json` liegt die verletzte Regel
  *  so weit unten, dass entweder das Fehler-Banner oder die markierte Zeile aus dem
  *  Ausschnitt faellt — ein Bild, das seine eigene Aussage nicht mehr traegt. */
@@ -234,6 +242,21 @@ async function inhaltBox(cdp: Cdp, padding = PADDING): Promise<Rect | null> {
  *  naechste Bild nicht bestimmen: die Suche des Such-Bildes filterte im naechsten Motiv
  *  weiter, und das sah aus wie ein Fehlschlag des Rezepts (gemessen 2026-08-22). */
 async function zustandZuruecksetzen(cdp: Cdp): Promise<void> {
+  // Das Reparatur-Bild laesst Modal, Fake-Endpunkt und dessen Eintrag in den Einstellungen zurueck: sonst
+  // zeigte settings.png einen Endpunkt, den nur der Treiber angelegt hat.
+  if (reparaturStub) {
+    await cdp
+      .evaluate(`
+        for (const m of document.querySelectorAll(".json-repair-modal")) m.querySelector(".modal-button-container button")?.click();
+        const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+        if (plugin && window.__shotsEndpunkteVorher) { plugin.settings.endpoints = window.__shotsEndpunkteVorher; plugin.settings.choice = window.__shotsWahlVorher ?? {}; plugin.llm.invalidate(); await plugin.persist?.(); }
+        delete window.__shotsEndpunkteVorher; delete window.__shotsWahlVorher;
+        return true;
+      `)
+      .catch(() => undefined);
+    await reparaturStub.stop().catch(() => undefined);
+    reparaturStub = null;
+  }
   // Der Auslieferungszustand, nicht der zuletzt gesetzte: das Schema-Bild schaltet die
   // Validierung ein, und ohne dieses Zuruecksetzen trugen ALLE folgenden Bilder das
   // Fehler-Banner — korrektes Verhalten, im falschen Motiv (gemessen 2026-08-22).
@@ -445,6 +468,55 @@ const SHOTS: Shot[] = [
       // ist die halbe Aussage des Bildes.
       const box = await boxOf(cdp, ".markdown-reading-view", 0);
       return box ? kappeVerhaeltnis(box, 1.55) : null;
+    },
+  },
+  {
+    name: "repair-modal.png",
+    klasse: "feature",
+    async run(cdp) {
+      // Fake-Endpunkt statt Modell: die Oberflaeche ist echt, die Antwort steht fest (der Block mit dem fehlenden
+      // Komma, repariert). Kein Modell wird geladen, kein Token fliesst.
+      const quelle = readFileSync(join(cwd(), OUT_DIR, "fixture/notes", REPARATUR_NOTIZ), "utf-8");
+      const block = /```json\n([\s\S]*?)\n```/.exec(quelle)?.[1];
+      if (!block || !block.includes(REPARATUR_BLOCK_KAPUTT)) return null;
+      const heil = block.replace(REPARATUR_BLOCK_KAPUTT, REPARATUR_BLOCK_HEIL);
+      const stub = await startLlmStub({ cors: false, models: ["qwen/qwen3.8-27b"], antwort: () => ({ text: heil, model: "qwen/qwen3.8-27b" }) });
+      reparaturStub = stub;
+      await cdp.evaluate(`
+        const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+        window.__shotsEndpunkteVorher = JSON.parse(JSON.stringify(plugin.settings.endpoints ?? []));
+        window.__shotsWahlVorher = JSON.parse(JSON.stringify(plugin.settings.choice ?? {}));
+        plugin.settings.endpoints = [{ url: "http://127.0.0.1:${stub.port}", model: "qwen/qwen3.8-27b" }];
+        plugin.settings.choice = {};
+        plugin.llm.invalidate();
+        return true;
+      `);
+      if (!(await openExisting(cdp, REPARATUR_NOTIZ, "preview"))) return null;
+      const geklickt = await pollUntil<boolean>(
+        cdp,
+        `
+          const k = document.querySelector(".markdown-reading-view .json-codeblock.is-error .json-codeblock-repair");
+          if (!k || k.getBoundingClientRect().width < 1) return null;
+          k.click();
+          return true;
+        `,
+        15_000,
+        400,
+      );
+      if (!geklickt) return null;
+      // Warten, bis das Modal den Vorschlag zeigt UND Anwenden frei ist — vorher ist es ein Ladebild.
+      const fertig = await pollUntil<boolean>(
+        cdp,
+        `
+          const cols = document.querySelectorAll(".json-repair-modal .json-repair-col");
+          const ok = document.querySelector(".json-repair-modal .modal-button-container button.mod-cta");
+          return cols.length === 2 && ok && !ok.disabled ? true : null;
+        `,
+        20_000,
+        400,
+      );
+      if (!fertig) return null;
+      return await boxOf(cdp, ".json-repair-modal", 0);
     },
   },
 ];
