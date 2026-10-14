@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A failing write into the source editor can no longer leave it deaf to later typing.
 
 ### Changed
+- Kit pins raised to obsidian-kit 0.60.1 / code-kit 0.27.1 (from 0.59.1 / 0.24.0). With the LLM Endpoint Manager installed, the repair dialog now says what is wrong when the manager has no usable endpoint: a missing API key or a switched-off endpoint is named instead of "no reachable endpoint". A warning about discarded request settings lists them sorted. Nothing else changes for you.
 - The "change type" popover and the row menu share one type list internally; nothing looks different.
 
 ## [1.16.1] — 2026-10-12
