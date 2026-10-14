@@ -100,6 +100,7 @@ const SMOKE_JSONC = "_json-smoke.jsonc";
 const SMOKE_BAD = "_json-smoke-bad.json";
 const SMOKE_NOTE = "_json-smoke-block.md";
 const SMOKE_REPAIR_NOTE = "_json-smoke-repair.md";
+const SMOKE_REPAIR_FILE = "_json-smoke-repair.json";
 
 /** `--shot <pfad>`: Screenshot des Reparatur-Modals (Abschnitt F) fuer die Abnahme. */
 let shotPfad: string | null = null;
@@ -161,6 +162,7 @@ const PUNKTE_JE_SECTION: Record<string, readonly string[]> = {
     "A2 Tree rendert mit den erwarteten Schlüsseln",
     "A3 .jsonc mit Kommentar bleibt editierbar (kein Lossy-Banner)",
     "A4 Kaputtes JSON erzwingt Source-Modus + Fehler-Banner",
+    "A5 Tree/Source-Pillen tragen aria-pressed und wechseln mit dem Modus",
   ],
   layout: [
     "B1 Trennkomma dockt am eingeklappten Wert an",
@@ -197,6 +199,12 @@ const PUNKTE_JE_SECTION: Record<string, readonly string[]> = {
     "G2 PEM als JSON-String (\\n escaped) geht geschwärzt raus und kommt als gültiges JSON zurück",
     "G3 PEM mit echten Zeilenumbrüchen (kaputtes JSON) kommt als gültiges JSON zurück",
     "G4 Kein apiKey in data.json — der Schlüssel liegt im Schlüsselbund",
+  ],
+  "repair-datei": [
+    "H1 Das Fehler-Banner der Datei-Ansicht trägt den Reparatur-Knopf",
+    "H2 Klick öffnet das Modal mit Diff, Anwenden ist frei",
+    "H3 Anwenden schreibt den Vorschlag in die Datei, das Banner verschwindet",
+    "H4 Rückgängig holt den kaputten Text zurück",
   ],
 };
 /** Wird in `main` mit der Soll-Liste der gewaehlten Abschnitte neu gebildet; bis dahin ohne Nenner. */
@@ -409,6 +417,30 @@ const SECTIONS: Section[] = [
         "A4 Kaputtes JSON erzwingt Source-Modus + Fehler-Banner",
         Boolean(bad) && bad!.source && /\d/.test(bad!.banner),
         bad ? `„${bad.banner}", CodeMirror: ${bad.source ? "da" : "fehlt"}` : "kein Banner",
+      );
+
+      // A5 — Tree/Source-Pillen sind Zustands-Knoepfe (UI-STANDARD §8): aria-pressed folgt dem Modus.
+      const pillen = `[...root.querySelectorAll(".json-mode-pill")].map((b) => b.getAttribute("aria-pressed"))`;
+      const offen5 = await openJsonFile(cdp, SMOKE_JSON, JSON.stringify(SMOKE_DATA, null, 2));
+      const vorherPillen = offen5 ? await cdp.evaluate<Array<string | null>>(inView(`return ${pillen};`)) : [];
+      const geklickt5 = offen5 && (await klick(cdp, elImView(`return root.querySelectorAll(".json-mode-pill")[1] ?? null;`)));
+      const nachherPillen = geklickt5
+        ? await pollUntil<Array<string | null>>(
+            cdp,
+            inView(`const a = ${pillen}; return a[1] === "true" ? a : null;`),
+            5000,
+            250,
+          )
+        : null;
+      // Zustand zurueck: die folgenden Abschnitte setzen den Tree-Modus voraus (die Ansicht behaelt ihn beim Wiederoeffnen).
+      if (geklickt5) {
+        await klick(cdp, elImView(`return root.querySelectorAll(".json-mode-pill")[0] ?? null;`));
+        await pollUntil<boolean>(cdp, inView(`return root.querySelector(".json-tree-root") ? true : null;`), 5000, 250);
+      }
+      check(
+        "A5 Tree/Source-Pillen tragen aria-pressed und wechseln mit dem Modus",
+        JSON.stringify(vorherPillen) === '["true","false"]' && JSON.stringify(nachherPillen) === '["false","true"]',
+        `vorher ${JSON.stringify(vorherPillen)}, nach Klick auf Source ${JSON.stringify(nachherPillen)}`,
       );
     },
   },
@@ -1164,6 +1196,107 @@ const SECTIONS: Section[] = [
           !schluessel.apiKeyInData && schluessel.secretId && schluessel.hydrated,
           `apiKey in data.json: ${schluessel.apiKeyInData ? "JA" : "nein"}, secretId: ${schluessel.secretId ? "ja" : "NEIN"}, Aufloesung traegt den Schlüssel: ${schluessel.hydrated ? "ja" : "NEIN"}`,
         );
+      } finally {
+        await stub.stop();
+        await cdp
+          .evaluate(`
+            const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+            plugin.llm.invalidate();
+            return true;
+          `)
+          .catch(() => undefined);
+      }
+    },
+  },
+  {
+    key: "repair-datei",
+    title: "H — Reparatur in der Datei-Ansicht (Banner-Knopf, Fake-Endpunkt)",
+    run: async (cdp) => {
+      const stub = await startLlmStub({
+        cors: false,
+        models: ["qwen/qwen3.8-27b"],
+        antwort: () => ({ text: '{"a": 1, "b": 2}', model: "qwen/qwen3.8-27b" }),
+      });
+      const kaputt = '{"a": 1, "b": 2';
+      try {
+        await cdp.evaluate(`
+          const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+          plugin.settings.endpoints = [{ url: "http://127.0.0.1:${stub.port}", model: "qwen/qwen3.8-27b" }];
+          plugin.settings.choice = {};
+          plugin.llm.invalidate();
+          return true;
+        `);
+        const offen = await openJsonFile(cdp, SMOKE_REPAIR_FILE, kaputt);
+        const knopfSel = ".json-error-banner .json-codeblock-repair";
+        const knopf = offen
+          ? await pollUntil<boolean>(cdp, inView(`return root.querySelector(${JSON.stringify(knopfSel)}) ? true : null;`), 8000, 250)
+          : null;
+        check("H1 Das Fehler-Banner der Datei-Ansicht trägt den Reparatur-Knopf", Boolean(knopf), knopf ? "Knopf im Banner" : "kein Knopf");
+
+        const geklickt = Boolean(knopf) && (await klick(cdp, elImView(`return root.querySelector(${JSON.stringify(knopfSel)});`)));
+        const diff = geklickt
+          ? await pollUntil<{ links: string; rechts: string; anwenden: boolean }>(
+              cdp,
+              `
+                const cols = document.querySelectorAll(".json-repair-modal .json-repair-col");
+                if (cols.length !== 2) return null;
+                const apply = document.querySelector(".json-repair-modal .modal-button-container button.mod-cta");
+                return { links: cols[0].textContent, rechts: cols[1].textContent, anwenden: Boolean(apply) && !apply.disabled };
+              `,
+              15_000,
+              300,
+            )
+          : null;
+        check(
+          "H2 Klick öffnet das Modal mit Diff, Anwenden ist frei",
+          Boolean(diff) && diff!.anwenden && diff!.rechts.includes("}") && !diff!.links.includes('2}'),
+          diff ? "Original links, Vorschlag rechts, Anwenden aktiv" : geklickt ? "Modal ohne Diff" : "Knopf nicht klickbar",
+        );
+        if (shotPfad !== null && diff) {
+          writeFileSync(shotPfad.replace(/(\.png)?$/, "-datei.png"), await capture(cdp));
+        }
+
+        const angewendet = Boolean(diff) && (await klick(cdp, `document.querySelector(".json-repair-modal .modal-button-container button.mod-cta")`));
+        const danach = angewendet
+          ? await pollUntil<{ platte: string; banner: boolean }>(
+              cdp,
+              `
+                const file = app.vault.getAbstractFileByPath(${JSON.stringify(SMOKE_REPAIR_FILE)});
+                const platte = await app.vault.read(file);
+                if (platte !== '{"a": 1, "b": 2}') return null;
+                const leaf = app.workspace.getMostRecentLeaf(app.workspace.rootSplit);
+                return { platte, banner: Boolean(leaf?.view?.containerEl?.querySelector(".json-error-banner")) };
+              `,
+              10_000,
+              300,
+            )
+          : null;
+        check(
+          "H3 Anwenden schreibt den Vorschlag in die Datei, das Banner verschwindet",
+          Boolean(danach) && !danach!.banner,
+          danach ? `Datei = Vorschlag, Banner ${danach.banner ? "DA" : "weg"}` : angewendet ? "Datei unverändert" : "Anwenden nicht geklickt",
+        );
+
+        const rueck = danach
+          ? await cdp.evaluate<boolean>(`
+              const leaf = app.workspace.getMostRecentLeaf(app.workspace.rootSplit);
+              leaf.view.undo();
+              return true;
+            `)
+          : false;
+        const zurueck = rueck
+          ? await pollUntil<string>(
+              cdp,
+              `
+                const file = app.vault.getAbstractFileByPath(${JSON.stringify(SMOKE_REPAIR_FILE)});
+                const platte = await app.vault.read(file);
+                return platte === ${JSON.stringify(kaputt)} ? platte : null;
+              `,
+              10_000,
+              300,
+            )
+          : null;
+        check("H4 Rückgängig holt den kaputten Text zurück", zurueck === kaputt, zurueck === kaputt ? "Datei = Original" : rueck ? "Datei weicht ab" : "kein Rückgängig (H3 fehlt)");
       } finally {
         await stub.stop();
         await cdp
