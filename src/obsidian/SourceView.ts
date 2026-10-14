@@ -46,11 +46,15 @@ export class SourceView {
   setValue(text: string): void {
     if (!this.view) return;
     this.suppressChange = true;
-    this.view.dispatch({
-      changes: { from: 0, to: this.view.state.doc.length, insert: text },
-      annotations: Transaction.addToHistory.of(false),
-    });
-    this.suppressChange = false;
+    try {
+      this.view.dispatch({
+        changes: { from: 0, to: this.view.state.doc.length, insert: text },
+        annotations: Transaction.addToHistory.of(false),
+      });
+    } finally {
+      // A throwing dispatch must not leave the flag set: onChange would stay off for good.
+      this.suppressChange = false;
+    }
   }
 
   /**
@@ -63,11 +67,14 @@ export class SourceView {
     if (!this.view) return;
     const span = diffReplaceSpan(this.getValue(), text);
     this.suppressChange = true;
-    this.view.dispatch({
-      changes: { from: span.from, to: span.to, insert: span.insert },
-      annotations: Transaction.addToHistory.of(false),
-    });
-    this.suppressChange = false;
+    try {
+      this.view.dispatch({
+        changes: { from: span.from, to: span.to, insert: span.insert },
+        annotations: Transaction.addToHistory.of(false),
+      });
+    } finally {
+      this.suppressChange = false;
+    }
   }
 
   /** Open the CodeMirror search panel and focus the editor (audit 3.2). */
