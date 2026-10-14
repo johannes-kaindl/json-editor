@@ -1,21 +1,11 @@
 import type { JsonType } from "../core/edit";
+import { JSON_TYPES, TYPE_LABELS } from "../core/type-labels";
 import { makeEl } from "./dom";
 
 export interface TypeMenuOptions {
   currentType: JsonType;
   onPick: (newType: JsonType) => void;
 }
-
-const TYPES: JsonType[] = ["string", "number", "boolean", "null", "object", "array"];
-
-const LABELS: Record<JsonType, string> = {
-  string: "String",
-  number: "Number",
-  boolean: "Boolean",
-  null: "Null",
-  object: "Object",
-  array: "Array",
-};
 
 let activeMenu: { el: HTMLElement; close: () => void } | null = null;
 
@@ -26,12 +16,12 @@ export function openTypeMenu(anchor: HTMLElement, opts: TypeMenuOptions): void {
   menu.className = "json-type-menu";
   menu.setAttribute("role", "menu");
 
-  for (const t of TYPES) {
+  for (const t of JSON_TYPES) {
     const opt = makeEl("button");
     opt.type = "button";
     opt.className = "json-type-option";
     opt.dataset.type = t;
-    opt.textContent = LABELS[t];
+    opt.textContent = TYPE_LABELS[t];
     opt.setAttribute("role", "menuitem");
     if (t === opts.currentType) {
       opt.disabled = true;

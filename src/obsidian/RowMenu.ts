@@ -1,16 +1,8 @@
 import { Menu } from "obsidian";
 import type { JsonType } from "../core/edit";
+import { JSON_TYPES, TYPE_LABELS } from "../core/type-labels";
 import type { JsonPath, JsonValue } from "../core/types";
 
-const TYPES: JsonType[] = ["string", "number", "boolean", "null", "object", "array"];
-const LABELS: Record<JsonType, string> = {
-  string: "String",
-  number: "Number",
-  boolean: "Boolean",
-  null: "Null",
-  object: "Object",
-  array: "Array",
-};
 
 export interface RowMenuOptions {
   value: JsonValue;
@@ -107,9 +99,9 @@ function openTypeChoiceMenu(
   onPick: (t: JsonType) => void,
 ): Menu {
   const menu = new Menu();
-  for (const t of TYPES) {
+  for (const t of JSON_TYPES) {
     menu.addItem((i) => {
-      i.setTitle(LABELS[t]);
+      i.setTitle(TYPE_LABELS[t]);
       if (t === current) i.setDisabled(true);
       else i.onClick(() => onPick(t));
     });
