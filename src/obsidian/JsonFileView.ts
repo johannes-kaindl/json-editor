@@ -111,7 +111,7 @@ export class JsonFileView extends TextFileView {
     leaf: WorkspaceLeaf,
     private settings: JsonEditorSettings,
     private collapseStore?: CollapseStore,
-    /** Reparieren im Parse-Fehler-Banner; ohne Handler (oder ohne konfiguriertes Modell im Wirt) zeigt das Banner keinen Knopf. */
+    /** Reparieren im Parse-Fehler-Banner; ohne Handler zeigt das Banner keinen Knopf. */
     private onRepair?: (req: FileRepairRequest) => void,
   ) {
     super(leaf);
