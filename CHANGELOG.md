@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.17.0] — 2026-10-14
+
 ### Added
 - **A "Repair" button in the parse-error banner of the file view.** For a `.json` or `.jsonc` file that does not parse, the banner now offers the same LLM repair as the code block: you see the diff first, and applying it writes into the file as one edit that undo takes back. Without a reachable endpoint the dialog says so, as for code blocks.
 
