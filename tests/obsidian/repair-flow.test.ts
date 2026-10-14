@@ -4,6 +4,7 @@ import type { RepairModalOptions } from "../../src/obsidian/RepairModal";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
 import { repairAtCursor, repairFromBlock } from "../../src/obsidian/repair-flow";
 import type { RepairService } from "../../src/obsidian/repair-service";
+import { NoticeMock } from "../helpers/mock-obsidian";
 
 let captured: RepairModalOptions | null = null;
 vi.mock("../../src/obsidian/RepairModal", () => ({
@@ -21,7 +22,7 @@ const service = {
 } as unknown as RepairService;
 
 function deps(data: { text: string }) {
-  const file = new TFile("n.md");
+  const file = new (TFile as unknown as new (path: string) => TFile)("n.md");
   const app = {
     vault: {
       getAbstractFileByPath: (p: string) => (p === "n.md" ? file : null),
@@ -43,7 +44,7 @@ const ctxFor = (over: Partial<MarkdownPostProcessorContext> = {}): MarkdownPostP
 describe("repairFromBlock", () => {
   beforeEach(() => {
     captured = null;
-    Notice.instances = [];
+    NoticeMock.instances = [];
   });
 
   it("hands the modal the block's source and error, and runs against the service", async () => {
@@ -127,20 +128,20 @@ function editorOf(text: string, line: number) {
 describe("repairAtCursor", () => {
   beforeEach(() => {
     captured = null;
-    Notice.instances = [];
+    NoticeMock.instances = [];
   });
 
   it("says so when the cursor is outside a json block", () => {
     repairAtCursor(deps({ text: NOTE }), editorOf(NOTE, 0).editor);
     expect(captured).toBeNull();
-    expect(Notice.instances.length).toBe(1);
+    expect(NoticeMock.instances.length).toBe(1);
   });
 
   it("says so when the block is already valid", () => {
     const ok = NOTE.replace('{"a": 1,}', '{"a": 1}');
     repairAtCursor(deps({ text: ok }), editorOf(ok, 3).editor);
     expect(captured).toBeNull();
-    expect(Notice.instances.length).toBe(1);
+    expect(NoticeMock.instances.length).toBe(1);
   });
 
   it("opens the modal for a broken block and applies through the editor", async () => {

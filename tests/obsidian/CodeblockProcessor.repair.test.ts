@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderJsonCodeblock } from "../../src/obsidian/CodeblockProcessor";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
 
-const ctx = { sourcePath: "n.md", getSectionInfo: () => null } as MarkdownPostProcessorContext;
+const ctx = {
+  sourcePath: "n.md",
+  getSectionInfo: () => null,
+} as unknown as MarkdownPostProcessorContext;
 const host = (): HTMLElement => {
   const el = document.createElement("div");
   document.body.appendChild(el);

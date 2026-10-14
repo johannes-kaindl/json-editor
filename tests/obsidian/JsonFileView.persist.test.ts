@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { JsonFileView } from "../../src/obsidian/JsonFileView";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
 
-const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as WorkspaceLeaf;
+const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as unknown as WorkspaceLeaf;
 
 function makeStore() {
   const data = new Map<string, string[]>();

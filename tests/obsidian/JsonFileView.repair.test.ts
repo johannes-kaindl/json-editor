@@ -4,7 +4,7 @@ import { JsonFileView } from "../../src/obsidian/JsonFileView";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
 import type { FileRepairRequest } from "../../src/obsidian/repair-flow";
 
-const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as WorkspaceLeaf;
+const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as unknown as WorkspaceLeaf;
 const BROKEN = '{"a": 1';
 
 function open(text: string, onRepair?: (r: FileRepairRequest) => void, ext = "json") {

@@ -2,13 +2,20 @@
 // collapse state must always go out together. Writing either one on its own
 // silently drops the other — this file nails that down.
 
-import type { PluginManifest } from "obsidian";
+import type { App, PluginManifest } from "obsidian";
 import { describe, expect, it } from "vitest";
 import JsonEditorPlugin from "../../src/main";
 
-const MANIFEST: PluginManifest = { id: "x", name: "x", version: "0.1.0" };
+const MANIFEST: PluginManifest = {
+  id: "x",
+  name: "x",
+  version: "0.1.0",
+  author: "x",
+  minAppVersion: "1.8.7",
+  description: "x",
+};
 // onLayoutReady would start an endpoint probe; the stub never fires it.
-const appStub = () => ({ workspace: { onLayoutReady: () => {} } }) as Record<string, unknown>;
+const appStub = (): App => ({ workspace: { onLayoutReady: () => {} } }) as unknown as App;
 
 type Stored = { collapseState?: Record<string, { collapsed: string[]; touched: number }> } & Record<
   string,

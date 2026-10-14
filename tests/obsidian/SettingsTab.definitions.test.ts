@@ -25,8 +25,15 @@ describe("declarative setting definitions", () => {
 
   beforeEach(() => {
     const app = {} as App;
-    plugin = new FakePlugin(app, { id: "x", name: "x", version: "0.1.0" });
-    tab = new JsonEditorSettingsTab(app, plugin);
+    plugin = new FakePlugin(app, {
+      id: "x",
+      name: "x",
+      version: "0.1.0",
+      author: "x",
+      minAppVersion: "1.8.7",
+      description: "x",
+    });
+    tab = new JsonEditorSettingsTab(app, plugin as never);
   });
 
   it("exposes every setting, so none is missing from settings search", () => {

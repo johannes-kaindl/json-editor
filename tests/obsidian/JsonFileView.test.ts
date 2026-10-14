@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { JSON_VIEW_TYPE, JsonFileView } from "../../src/obsidian/JsonFileView";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
 
-const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as WorkspaceLeaf;
+const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as unknown as WorkspaceLeaf;
 
 describe("JsonFileView", () => {
   beforeEach(() => {
@@ -102,13 +102,13 @@ describe("JsonFileView", () => {
     const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
     document.body.appendChild(v.contentEl);
     v.setViewData('{"name":"jay"}', false);
-    const before = v.saveCount;
+    const before = (v as unknown as { saveCount: number }).saveCount;
     const value = v.contentEl.querySelector(".json-string") as HTMLElement;
     value.click();
     const input = v.contentEl.querySelector(".json-inline-edit") as HTMLInputElement;
     input.value = "sam";
     input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
-    expect(v.saveCount).toBe(before + 1);
+    expect((v as unknown as { saveCount: number }).saveCount).toBe(before + 1);
   });
 
   it("getViewType returns the registered view type", () => {

@@ -1,11 +1,18 @@
 import { Menu } from "obsidian";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { JsonType } from "../../src/core/edit";
-import { openRowMenu } from "../../src/obsidian/RowMenu";
+import type { JsonPath, JsonValue } from "../../src/core/types";
+import { openRowMenu as openRowMenuReal } from "../../src/obsidian/RowMenu";
+import type { Menu as MockMenu } from "../__mocks__/obsidian";
+
+// Vitest resolves "obsidian" to the mock, whose Menu records items; the real typings do not know those members.
+const MenuStatics = Menu as unknown as typeof MockMenu;
+const openRowMenu = (...a: Parameters<typeof openRowMenuReal>): MockMenu =>
+  openRowMenuReal(...a) as unknown as MockMenu;
 
 const baseOpts = () => ({
-  value: "x" as unknown,
-  path: ["a"],
+  value: "x" as JsonValue,
+  path: ["a"] as JsonPath,
   canRename: true,
   currentType: "string" as JsonType,
   readonly: false,
@@ -26,7 +33,7 @@ const evt = () => new MouseEvent("contextmenu");
 describe("openRowMenu", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
-    Menu.instances = [];
+    MenuStatics.instances = [];
   });
 
   it("editable object key: shows copy + rename + change-type + move + delete", () => {
@@ -105,7 +112,7 @@ describe("openRowMenu", () => {
     const menu = openRowMenu(evt(), opts);
     const changeType = menu.items.find((i) => i.titleText === "Change type")!;
     changeType.clickHandler!();
-    const typeMenu = Menu.instances.at(-1)!; // the follow-up menu created by the click
+    const typeMenu = MenuStatics.instances.at(-1)!; // the follow-up menu created by the click
     expect(typeMenu).not.toBe(menu);
     expect(typeMenu.items.length).toBe(6);
     expect(typeMenu.items.find((i) => i.titleText.toLowerCase() === "string")!.disabled).toBe(true);

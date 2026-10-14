@@ -17,7 +17,9 @@ interface FakeVault {
 const leafWith = (vault: FakeVault): WorkspaceLeaf =>
   ({ app: { vault } }) as unknown as WorkspaceLeaf;
 const setFile = (v: JsonFileView, path: string) => {
-  (v as unknown as { file: TFile }).file = new TFile(path);
+  (v as unknown as { file: TFile }).file = new (TFile as unknown as new (path: string) => TFile)(
+    path,
+  );
 };
 const flush = async () => {
   await Promise.resolve();
@@ -30,7 +32,7 @@ describe("JsonFileView companion-schema autoload", () => {
   });
 
   it("does NOT read a sibling schema when validateAgainstSchema is off (consent gate)", async () => {
-    const spy = vi.fn((p: string) => new TFile(p));
+    const spy = vi.fn((p: string) => new (TFile as unknown as new (path: string) => TFile)(p));
     const v = new JsonFileView(
       leafWith({ getAbstractFileByPath: spy, cachedRead: () => Promise.resolve("{}") }),
       {
@@ -46,7 +48,7 @@ describe("JsonFileView companion-schema autoload", () => {
   });
 
   it("auto-loads the sibling schema once when enabled", async () => {
-    const spy = vi.fn((p: string) => new TFile(p));
+    const spy = vi.fn((p: string) => new (TFile as unknown as new (path: string) => TFile)(p));
     const v = new JsonFileView(
       leafWith({
         getAbstractFileByPath: spy,
@@ -62,7 +64,7 @@ describe("JsonFileView companion-schema autoload", () => {
   });
 
   it("normalizes the assembled schema path before lookup (2.20)", async () => {
-    const spy = vi.fn((p: string) => new TFile(p));
+    const spy = vi.fn((p: string) => new (TFile as unknown as new (path: string) => TFile)(p));
     const v = new JsonFileView(
       leafWith({
         getAbstractFileByPath: spy,
@@ -80,7 +82,8 @@ describe("JsonFileView companion-schema autoload", () => {
   it("does not apply a schema loaded for a previous file after a fast switch", async () => {
     const reads: Array<{ path: string; resolve: (t: string) => void }> = [];
     const vault: FakeVault = {
-      getAbstractFileByPath: (p: string) => new TFile(p),
+      getAbstractFileByPath: (p: string) =>
+        new (TFile as unknown as new (path: string) => TFile)(p),
       cachedRead: (f: TFile) =>
         new Promise<string>((resolve) => {
           reads.push({ path: f.path, resolve });

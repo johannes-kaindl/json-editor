@@ -3,9 +3,9 @@ import { renderTree as renderTreeRaw } from "../../src/core/render";
 import type { JsonValue, RenderOptions } from "../../src/core/types";
 
 // renderTree now takes an injected Document; inject happy-dom's so calls stay unchanged.
-const renderTree = (value: JsonValue, opts: Omit<RenderOptions, "doc"> = {}) =>
+const renderTree = (value: JsonValue, opts: Partial<Omit<RenderOptions, "doc" | "makeEl">> = {}) =>
   renderTreeRaw(value, {
-    makeEl: (tag: string) => document.createElement(tag),
+    makeEl: <K extends keyof HTMLElementTagNameMap>(tag: K) => document.createElement(tag),
     ...opts,
     doc: document,
   });

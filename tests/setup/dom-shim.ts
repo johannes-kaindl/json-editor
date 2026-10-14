@@ -23,6 +23,8 @@ type ElInfo = {
   prepend?: boolean;
 };
 
+type CreateEl = (tag: string, o?: ElInfo | string, cb?: (el: HTMLElement) => void) => HTMLElement;
+
 function apply(el: HTMLElement, o?: ElInfo | string): HTMLElement {
   if (!o) return el;
   if (typeof o === 'string') {
@@ -58,10 +60,10 @@ if (typeof globalThis.document !== 'undefined' && typeof globalThis.HTMLElement 
     return el;
   };
   proto.createDiv = function (this: HTMLElement, o?: ElInfo | string, cb?: (el: HTMLElement) => void) {
-    return (this as unknown as { createEl: typeof proto.createEl }).createEl('div', o, cb);
+    return (this as unknown as { createEl: CreateEl }).createEl('div', o, cb);
   };
   proto.createSpan = function (this: HTMLElement, o?: ElInfo | string, cb?: (el: HTMLElement) => void) {
-    return (this as unknown as { createEl: typeof proto.createEl }).createEl('span', o, cb);
+    return (this as unknown as { createEl: CreateEl }).createEl('span', o, cb);
   };
 
   const g = globalThis as unknown as Record<string, unknown>;

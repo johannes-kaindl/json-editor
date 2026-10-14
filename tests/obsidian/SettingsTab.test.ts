@@ -27,7 +27,14 @@ describe("JsonEditorSettingsTab", () => {
     renderSettings.mockClear();
     hideSettings.mockClear();
     app = {} as App;
-    plugin = new FakePlugin(app, { id: "x", name: "x", version: "0.1.0" });
+    plugin = new FakePlugin(app, {
+      id: "x",
+      name: "x",
+      version: "0.1.0",
+      author: "x",
+      minAppVersion: "1.8.7",
+      description: "x",
+    });
     tab = new JsonEditorSettingsTab(app, plugin);
   });
 
@@ -64,6 +71,7 @@ describe("JsonEditorSettingsTab", () => {
 
   it("display() pre-fills current settings into controls", () => {
     plugin.settings = {
+      ...DEFAULT_SETTINGS,
       defaultMode: "source",
       indent: 4,
       markerStyle: "classic",

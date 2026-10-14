@@ -4,7 +4,7 @@ import { jsoncParse } from "../../src/core/jsonc";
 import { JsonFileView } from "../../src/obsidian/JsonFileView";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
 
-const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as WorkspaceLeaf;
+const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as unknown as WorkspaceLeaf;
 
 /** Give the view a `.jsonc` file so isJsonc routing engages. */
 function asJsonc(v: JsonFileView): void {

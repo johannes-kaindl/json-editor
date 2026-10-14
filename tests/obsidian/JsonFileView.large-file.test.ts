@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { JsonFileView } from "../../src/obsidian/JsonFileView";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
 
-const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as WorkspaceLeaf;
+const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as unknown as WorkspaceLeaf;
 // A single huge string trips the byte budget but renders as ONE tree row, so
 // the "load anyway" path stays fast in happy-dom.
 const bigString = JSON.stringify("x".repeat(1_100_000));

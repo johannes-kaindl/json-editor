@@ -1,13 +1,14 @@
 import { Notice } from "obsidian";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createCopyButton } from "../../src/obsidian/CopyButton";
+import { NoticeMock } from "../helpers/mock-obsidian";
 
 describe("createCopyButton", () => {
   let writeText: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     document.body.innerHTML = "";
-    Notice.instances = [];
+    NoticeMock.instances = [];
     vi.useFakeTimers();
     writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", { clipboard: { writeText } });
@@ -70,7 +71,7 @@ describe("createCopyButton", () => {
     await Promise.resolve();
     expect(btn.classList.contains("copied")).toBe(false);
     expect(btn.textContent).toBe("⧉");
-    expect(Notice.instances.some((n) => /copy failed/i.test(n.message))).toBe(true);
+    expect(NoticeMock.instances.some((n) => /copy failed/i.test(n.message))).toBe(true);
   });
 
   it("absent clipboard API does not throw and shows a Copy failed Notice (2.19)", () => {
@@ -78,7 +79,7 @@ describe("createCopyButton", () => {
     const btn = createCopyButton("x", ["a"]);
     document.body.appendChild(btn);
     expect(() => btn.click()).not.toThrow();
-    expect(Notice.instances.some((n) => /copy failed/i.test(n.message))).toBe(true);
+    expect(NoticeMock.instances.some((n) => /copy failed/i.test(n.message))).toBe(true);
     expect(btn.textContent).toBe("⧉");
   });
 });

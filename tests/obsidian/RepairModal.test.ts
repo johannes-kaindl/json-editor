@@ -11,7 +11,7 @@ const flush = async (): Promise<void> => {
 };
 
 function open(over: Partial<RepairModalOptions> = {}) {
-  const run = vi.fn<(s: AbortSignal) => Promise<RepairResult>>(async () => ({
+  const run = vi.fn<[AbortSignal], Promise<RepairResult>>(async () => ({
     ok: true,
     text: FIXED,
   }));
@@ -51,7 +51,7 @@ describe("RepairModal", () => {
     expect(modal.contentEl.querySelector(".json-repair-status.is-working")).not.toBeNull();
     expect(buttons().Apply?.disabled).toBe(true);
     expect(run).toBeDefined();
-    release({ ok: true, text: FIXED, facts: { status: 200, content: FIXED } });
+    release({ ok: true, text: FIXED });
     await flush();
     expect(buttons().Apply?.disabled).toBe(false);
   });

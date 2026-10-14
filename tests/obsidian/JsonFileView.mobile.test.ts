@@ -2,8 +2,9 @@ import { Menu, Platform, type WorkspaceLeaf } from "obsidian";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { JsonFileView } from "../../src/obsidian/JsonFileView";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
+import { MenuMock } from "../helpers/mock-obsidian";
 
-const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as WorkspaceLeaf;
+const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as unknown as WorkspaceLeaf;
 const VALIDATING = { ...DEFAULT_SETTINGS, validateAgainstSchema: true };
 const PERSON_SCHEMA = `{
   "type": "object",
@@ -12,7 +13,7 @@ const PERSON_SCHEMA = `{
 }`;
 const sourceChange = (v: JsonFileView, text: string) =>
   (v as unknown as { handleSourceChange(t: string): void }).handleSourceChange(text);
-const shownMenu = () => Menu.instances.find((m) => m.shown)!;
+const shownMenu = () => MenuMock.instances.find((m) => m.shown)!;
 const longPress = (v: JsonFileView, pathStr: string) => {
   const row = v.contentEl.querySelector<HTMLElement>(`.json-row[data-path="${pathStr}"]`)!;
   row.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
@@ -22,7 +23,7 @@ const longPress = (v: JsonFileView, pathStr: string) => {
 describe("JsonFileView mobile", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
-    Menu.instances = [];
+    MenuMock.instances = [];
     Platform.isMobile = true;
   });
   afterEach(() => {
@@ -67,7 +68,7 @@ describe("JsonFileView mobile", () => {
     v.setViewData('{"a":1,"b":2}', false);
     const row = v.contentEl.querySelector<HTMLElement>('.json-row[data-path="a"]')!;
     row.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
-    const menu = Menu.instances.find((m) => m.shown)!;
+    const menu = MenuMock.instances.find((m) => m.shown)!;
     expect(menu.shown).toBe(true);
     menu.items.find((i) => i.titleText === "Delete")!.clickHandler!();
     expect(JSON.parse(v.getViewData())).toEqual({ b: 2 });
@@ -79,7 +80,7 @@ describe("JsonFileView mobile", () => {
     v.setViewData("[10,20,30]", false);
     const row = v.contentEl.querySelector<HTMLElement>('.json-row[data-path="[0]"]')!;
     row.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
-    const menu = Menu.instances.find((m) => m.shown)!;
+    const menu = MenuMock.instances.find((m) => m.shown)!;
     const moveDown = menu.items.find((i) => i.titleText === "Move down")!;
     expect(moveDown.disabled).toBe(false);
     moveDown.clickHandler!();
@@ -145,7 +146,7 @@ describe("JsonFileView mobile", () => {
     document.body.appendChild(v.contentEl);
     v.setViewData('{"x":"hello"}', false);
     longPress(v, "x").items.find((i) => i.titleText === "Change type")!.clickHandler!();
-    const typeMenu = Menu.instances.at(-1)!; // follow-up menu
+    const typeMenu = MenuMock.instances.at(-1)!; // follow-up menu
     typeMenu.items.find((i) => i.titleText === "Number")!.clickHandler!();
     expect(JSON.parse(v.getViewData())).toEqual({ x: 0 });
   });

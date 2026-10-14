@@ -1,11 +1,12 @@
 import { Notice } from "obsidian";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { copyJsonPath, copyJsonValue } from "../../src/obsidian/clipboard";
+import { NoticeMock } from "../helpers/mock-obsidian";
 
 describe("clipboard util", () => {
   let writeText: ReturnType<typeof vi.fn>;
   beforeEach(() => {
-    Notice.instances = [];
+    NoticeMock.instances = [];
     writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", { clipboard: { writeText } });
   });
@@ -25,6 +26,6 @@ describe("clipboard util", () => {
   it("absent clipboard API shows a Copy failed Notice and does not throw", () => {
     vi.stubGlobal("navigator", {});
     expect(() => copyJsonValue("x")).not.toThrow();
-    expect(Notice.instances.some((n) => /copy failed/i.test(n.message))).toBe(true);
+    expect(NoticeMock.instances.some((n) => /copy failed/i.test(n.message))).toBe(true);
   });
 });

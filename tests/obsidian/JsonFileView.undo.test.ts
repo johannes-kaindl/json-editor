@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { JsonFileView } from "../../src/obsidian/JsonFileView";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
 
-const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as WorkspaceLeaf;
+const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as unknown as WorkspaceLeaf;
 
 describe("JsonFileView undo/redo + structural edits", () => {
   beforeEach(() => {

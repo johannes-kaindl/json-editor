@@ -3,10 +3,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { renderJsonCodeblock } from "../../src/obsidian/CodeblockProcessor";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
 
-const fakeCtx = (): MarkdownPostProcessorContext => ({
-  sourcePath: "fake/path.md",
-  getSectionInfo: () => null,
-});
+const fakeCtx = (): MarkdownPostProcessorContext =>
+  ({
+    sourcePath: "fake/path.md",
+    getSectionInfo: () => null,
+  }) as unknown as MarkdownPostProcessorContext;
 
 describe("renderJsonCodeblock", () => {
   beforeEach(() => {

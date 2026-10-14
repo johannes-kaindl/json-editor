@@ -3,20 +3,32 @@
 // processor, settings, commands). The claim must be guarded and the
 // non-critical registrations must run regardless.
 
-import { Notice, type PluginManifest } from "obsidian";
+import { type App, Notice, type PluginManifest } from "obsidian";
 import { beforeEach, describe, expect, it } from "vitest";
 import JsonEditorPlugin from "../../src/main";
 import { JSON_VIEW_TYPE } from "../../src/obsidian/JsonFileView";
+import type { Notice as MockNotice, Plugin as MockPlugin } from "../__mocks__/obsidian";
 
-const MANIFEST: PluginManifest = { id: "x", name: "x", version: "0.1.0" };
+// Vitest resolves "obsidian" to the mock, which records notices, commands and registrations; the real typings do not know them.
+const NoticeStatics = Notice as unknown as typeof MockNotice;
+const mock = (p: JsonEditorPlugin): MockPlugin => p as unknown as MockPlugin;
+
+const MANIFEST: PluginManifest = {
+  id: "x",
+  name: "x",
+  version: "0.1.0",
+  author: "x",
+  minAppVersion: "1.8.7",
+  description: "x",
+};
 // onload reads loadData(); a minimal app stub is enough (commands gate on
 // workspace only when invoked, not at registration time).
 // onLayoutReady would start an endpoint probe; the stub never fires it.
-const appStub = () => ({ workspace: { onLayoutReady: () => {} } }) as Record<string, unknown>;
+const appStub = (): App => ({ workspace: { onLayoutReady: () => {} } }) as unknown as App;
 
 describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
   beforeEach(() => {
-    Notice.instances = [];
+    NoticeStatics.instances = [];
   });
 
   it("survives a .json extension collision and still registers everything else", async () => {
@@ -30,10 +42,10 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
 
     await expect(plugin.onload()).resolves.toBeUndefined();
 
-    expect(plugin.postprocessors.json).toBeDefined(); // codeblock processor survived
-    expect(plugin.postprocessors.jsonc).toBeDefined(); // jsonc codeblock survived too
-    expect(plugin.settingTabs.length).toBe(1);
-    expect(plugin.commands.length).toBe(9);
+    expect(mock(plugin).postprocessors.json).toBeDefined(); // codeblock processor survived
+    expect(mock(plugin).postprocessors.jsonc).toBeDefined(); // jsonc codeblock survived too
+    expect(mock(plugin).settingTabs.length).toBe(1);
+    expect(mock(plugin).commands.length).toBe(9);
   });
 
   it("shows an explanatory Notice naming the .json conflict on collision", async () => {
@@ -44,9 +56,9 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
     }
     await new CollidingPlugin(appStub(), MANIFEST).onload();
 
-    expect(Notice.instances.length).toBe(1);
-    expect(Notice.instances[0].message.toLowerCase()).toMatch(/\.json|json/);
-    expect(Notice.instances[0].message.toLowerCase()).toMatch(/disabled|code.?block|still/);
+    expect(NoticeStatics.instances.length).toBe(1);
+    expect(NoticeStatics.instances[0].message.toLowerCase()).toMatch(/\.json|json/);
+    expect(NoticeStatics.instances[0].message.toLowerCase()).toMatch(/disabled|code.?block|still/);
   });
 
   it("happy path: claims the json + jsonc extensions and shows no Notice", async () => {
@@ -62,7 +74,7 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
       [["json"], JSON_VIEW_TYPE],
       [["jsonc"], JSON_VIEW_TYPE],
     ]);
-    expect(Notice.instances.length).toBe(0);
+    expect(NoticeStatics.instances.length).toBe(0);
   });
 
   it("a .jsonc collision alone still registers .json and warns only about .jsonc", async () => {
@@ -72,8 +84,8 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
       }
     }
     await new JsoncCollides(appStub(), MANIFEST).onload();
-    expect(Notice.instances.length).toBe(1);
-    expect(Notice.instances[0].message.toLowerCase()).toMatch(/\.jsonc/);
+    expect(NoticeStatics.instances.length).toBe(1);
+    expect(NoticeStatics.instances[0].message.toLowerCase()).toMatch(/\.jsonc/);
   });
 
   it("registers no default hotkey on any command (audit 2.1)", async () => {
@@ -82,7 +94,7 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
     }
     const plugin = new OkPlugin(appStub(), MANIFEST);
     await plugin.onload();
-    for (const cmd of plugin.commands as Array<{ hotkeys?: unknown }>) {
+    for (const cmd of mock(plugin).commands as Array<{ hotkeys?: unknown }>) {
       expect(cmd.hotkeys).toBeUndefined();
     }
   });
@@ -93,7 +105,7 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
     }
     const plugin = new OkPlugin(appStub(), MANIFEST);
     await plugin.onload();
-    const names = (plugin.commands as Array<{ name: string }>).map((c) => c.name);
+    const names = (mock(plugin).commands as Array<{ name: string }>).map((c) => c.name);
     expect(names).toContain("Focus search");
     expect(names).toContain("Undo edit");
     expect(names).toContain("Redo edit");
@@ -105,9 +117,9 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
     }
     const plugin = new OkPlugin(appStub(), MANIFEST);
     await plugin.onload();
-    const toggle = (plugin.commands as Array<{ id: string; name: string; hotkeys?: unknown }>).find(
-      (c) => c.id === "toggle-tree-source",
-    );
+    const toggle = (
+      mock(plugin).commands as Array<{ id: string; name: string; hotkeys?: unknown }>
+    ).find((c) => c.id === "toggle-tree-source");
     expect(toggle).toBeTruthy();
     expect(toggle?.hotkeys).toBeUndefined();
     expect(toggle?.name).toBe("Toggle tree/source view");

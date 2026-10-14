@@ -9,7 +9,7 @@ import { JsonFileView } from "../../src/obsidian/JsonFileView";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
 import { closeActiveMenu, openTypeMenu } from "../../src/obsidian/TypeMenu";
 
-const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as WorkspaceLeaf;
+const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as unknown as WorkspaceLeaf;
 
 describe("JsonFileView / TypeMenu lifecycle (2.12)", () => {
   beforeEach(() => {

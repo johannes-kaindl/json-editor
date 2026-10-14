@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { JsonFileView } from "../../src/obsidian/JsonFileView";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
 
-const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as WorkspaceLeaf;
+const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as unknown as WorkspaceLeaf;
 
 // validateAgainstSchema is forced on here because this suite exercises schema
 // state directly via setSchema(); the autoload default is opt-out (blocker 1.3).

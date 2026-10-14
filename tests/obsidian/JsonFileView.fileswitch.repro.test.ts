@@ -15,7 +15,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { JsonFileView } from "../../src/obsidian/JsonFileView";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
 
-const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as WorkspaceLeaf;
+const fakeLeaf = (): WorkspaceLeaf => ({ app: {} }) as unknown as WorkspaceLeaf;
 
 /** Simulate one tree-mode value edit (same pattern as JsonFileView.undo.test.ts). */
 function editFirstString(v: JsonFileView, newText: string): void {
