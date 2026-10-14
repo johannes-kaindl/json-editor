@@ -2,8 +2,14 @@ import { type App, ButtonComponent, Modal } from "obsidian";
 import type { RepairResult } from "../core/repair/client";
 import { sideBySide } from "../core/repair/diff-view";
 import type { FenceLang } from "../core/repair/fence";
+import {
+  LLM_CONNECTION_STRINGS_DE,
+  LLM_CONNECTION_STRINGS_EN,
+  isManagerErrorCode,
+  managerErrorText,
+} from "../vendor/kit-obsidian/llm-connection-strings";
 import { diffLines } from "../vendor/kit/diff";
-import { t } from "../vendor/kit/i18n";
+import { getLang, t } from "../vendor/kit/i18n";
 
 export type ApplyResult = "ok" | "stale" | "no-file";
 
@@ -102,8 +108,14 @@ export class RepairModal extends Modal {
     const e = out.error;
     switch (e.kind) {
       case "no-endpoint":
-        return e.detail === "secret-missing"
-          ? t("repair.noEndpointSecretMissing")
+        // Ein Manager-Code mit eigener Abhilfe (abgeschaltet, Schluessel fehlt, Manager antwortet nicht, Wahl verwaist)
+        // bekommt den Kit-Text. `no-endpoint` selbst und eine Konfigurationsmeldung bleiben beim lokalen Text:
+        // dort entscheidet nicht der Manager, und der Text nennt die Plugin-Einstellungen.
+        return isManagerErrorCode(e.detail) && e.detail !== "no-endpoint"
+          ? managerErrorText(
+              getLang() === "de" ? LLM_CONNECTION_STRINGS_DE : LLM_CONNECTION_STRINGS_EN,
+              e.detail,
+            )
           : t("repair.noEndpoint");
       case "http":
         return t("repair.http", e.status, e.detail);

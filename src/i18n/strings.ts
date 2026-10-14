@@ -22,8 +22,6 @@ export const STRINGS = {
     "repair.noChanges": "The model returned the document unchanged.",
     "repair.invalid": "The model's answer is not valid JSON: {0}",
     "repair.noEndpoint": "No reachable LLM endpoint — set one up in the plugin settings.",
-    "repair.noEndpointSecretMissing":
-      "The endpoint's API key is missing in the LLM Endpoint Manager.",
     "repair.http": "The endpoint answered with an error ({0}): {1}",
     "repair.network": "The endpoint could not be reached.",
     "repair.timeout": "The model did not answer in time.",
@@ -59,8 +57,6 @@ export const STRINGS = {
     "repair.invalid": "Die Antwort des Modells ist kein gültiges JSON: {0}",
     "repair.noEndpoint":
       "Kein erreichbarer LLM-Endpunkt — richte einen in den Plugin-Einstellungen ein.",
-    "repair.noEndpointSecretMissing":
-      "Der API-Schlüssel des Endpunkts fehlt im LLM Endpoint Manager.",
     "repair.http": "Der Endpunkt antwortete mit einem Fehler ({0}): {1}",
     "repair.network": "Der Endpunkt war nicht erreichbar.",
     "repair.timeout": "Das Modell hat nicht rechtzeitig geantwortet.",

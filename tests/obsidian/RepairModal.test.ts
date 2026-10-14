@@ -2,6 +2,7 @@ import type { App } from "obsidian";
 import { describe, expect, it, vi } from "vitest";
 import type { RepairResult } from "../../src/core/repair/client";
 import { RepairModal, type RepairModalOptions } from "../../src/obsidian/RepairModal";
+import { setLang } from "../../src/vendor/kit/i18n";
 
 const SOURCE = '{\n  "a": 1,\n}';
 const FIXED = '{\n  "a": 1\n}';
@@ -108,7 +109,28 @@ describe("RepairModal", () => {
       { ok: false, error: { kind: "no-endpoint", detail: "no-endpoint" } },
       "No reachable LLM endpoint",
     ],
-    [{ ok: false, error: { kind: "no-endpoint", detail: "secret-missing" } }, "API key is missing"],
+    // Je Code des LLM Endpoint Managers ein eigener Text (Kit `managerErrorText`), jeder nennt die Stelle der Abhilfe.
+    [
+      { ok: false, error: { kind: "no-endpoint", detail: "secret-missing" } },
+      "needs an API key that isn't stored yet",
+    ],
+    [
+      { ok: false, error: { kind: "no-endpoint", detail: "disabled" } },
+      "switched off in the LLM Endpoint Manager",
+    ],
+    [
+      { ok: false, error: { kind: "no-endpoint", detail: "not-found" } },
+      "no longer exists in the LLM Endpoint Manager",
+    ],
+    [
+      { ok: false, error: { kind: "no-endpoint", detail: "unreachable" } },
+      "Manager did not answer",
+    ],
+    // Eine Konfigurationsmeldung (kein Manager-Code) ist keine Manager-Aussage: der lokale Text bleibt.
+    [
+      { ok: false, error: { kind: "no-endpoint", detail: "Endpoint URL is not valid" } },
+      "No reachable LLM endpoint",
+    ],
     [
       { ok: false, error: { kind: "http", status: 400, detail: "bad model" } },
       "error (400): bad model",
@@ -120,6 +142,19 @@ describe("RepairModal", () => {
     const { modal } = open({ run: async () => outcome });
     await flush();
     expect(modal.contentEl.textContent).toContain(text);
+  });
+
+  it("the manager texts follow the interface language", async () => {
+    setLang("de");
+    try {
+      const { modal } = open({
+        run: async () => ({ ok: false, error: { kind: "no-endpoint", detail: "secret-missing" } }),
+      });
+      await flush();
+      expect(modal.contentEl.textContent).toContain("API-Schlüssel");
+    } finally {
+      setLang("en");
+    }
   });
 
   it("an unchanged document is reported, not offered as a change", async () => {
