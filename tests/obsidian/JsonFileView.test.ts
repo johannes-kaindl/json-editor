@@ -24,6 +24,16 @@ describe("JsonFileView", () => {
     expect(pills[1].textContent).toBe("Source");
   });
 
+  it("the mode pills carry aria-pressed and follow the mode (UI-STANDARD §8 toggle)", () => {
+    const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
+    document.body.appendChild(v.contentEl);
+    v.setViewData('{"a":1}', false);
+    const pills = v.contentEl.querySelectorAll<HTMLButtonElement>(".json-mode-pill");
+    expect([pills[0]!.getAttribute("aria-pressed"), pills[1]!.getAttribute("aria-pressed")]).toEqual(["true", "false"]);
+    pills[1]!.click();
+    expect([pills[0]!.getAttribute("aria-pressed"), pills[1]!.getAttribute("aria-pressed")]).toEqual(["false", "true"]);
+  });
+
   it("starts in tree mode by default", () => {
     const v = new JsonFileView(fakeLeaf(), DEFAULT_SETTINGS);
     document.body.appendChild(v.contentEl);

@@ -165,9 +165,11 @@ export class JsonFileView extends TextFileView {
 
   override setViewData(data: string, clear: boolean): void {
     // A truthy `clear` flag means Obsidian is loading a *different* file into
-    // this reused view (file switch or external reload) — per the TextFileView
-    // contract, drop all per-file state. Internal undo/redo restores pass
-    // clear=false so the unified history survives those.
+    // this reused view (a file switch) — per the TextFileView contract, drop all
+    // per-file state. Internal undo/redo restores pass clear=false so the unified
+    // history survives those. An external change to the open file also arrives
+    // as clear=false (measured on 1.14.4 in 3d-codeblocks): the cursor stays and
+    // Obsidian merges the typed and the external text itself.
     if (clear) this.resetPerFileState();
     // The file's extension decides the parser + mutation path. `file` is set by
     // Obsidian's onLoadFile before setViewData; recompute here so leaf reuse
@@ -495,6 +497,8 @@ export class JsonFileView extends TextFileView {
 
     this.treePillEl.classList.toggle("active", this.mode === "tree");
     this.sourcePillEl.classList.toggle("active", this.mode === "source");
+    this.treePillEl.setAttribute("aria-pressed", String(this.mode === "tree"));
+    this.sourcePillEl.setAttribute("aria-pressed", String(this.mode === "source"));
 
     if (this.mode === "tree" && this.currentValue !== null) {
       this.treeView = new TreeView(this.bodyEl, {
