@@ -1,4 +1,4 @@
-// vendored from obsidian-kit@0.60.1, src/testing/linear-probe.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from obsidian-kit@0.61.0, src/testing/linear-probe.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 // Linearitätsprobe für Tests (ReDoS-Konvention). Nur in Tests (vitest, Node): importiert `node:vm`.
 //
 // Warum es sie gibt: zweimal wurde eine Regex mit überlinearer Laufzeit veröffentlicht (Welle 15 und 16),

@@ -1,4 +1,4 @@
-// vendored from code-kit@0.27.1, src/ts/pure/replace-span.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from code-kit@0.28.0, src/ts/pure/replace-span.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 // uebernommen aus json-editor/src/core/textdiff.ts (3d-codeblocks/src/core/textdiff.ts war dieselbe Funktion, Byte-Kopie bis auf die Stempelzeilen), 2026-10-11
 /** The smallest single span that turns one text into another — NOT a line diff (that is `diff.ts`).
  *

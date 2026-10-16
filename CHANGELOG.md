@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+- **The LLM repair no longer shows Gemma 4's thinking as part of the proposal.** Gemma 4 on LM Studio writes its reasoning into the answer text and ends it with `<channel|>`; the repair now drops that part and proposes only the JSON that follows (obsidian-kit 0.61.0, code-kit 0.28.0).
+- Gemma 4 on LM Studio thinks a little even with "Thinking off" (LM Studio ignores the off value for this model, so the lowest level is sent); the Request section says so. A backend or model family this version does not know no longer breaks a repair.
+- Kit pin `obsidian-kit` 0.60.1 → 0.61.0 and `code-kit` 0.27.1 → 0.28.0; `lib` in `tsconfig.json`, `tsconfig.build.json` and `tsconfig.test.json` raised to ES2022 (types only).
+
 ## [1.17.0] — 2026-10-14
 
 ### Added

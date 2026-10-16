@@ -5,7 +5,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "lib": ["DOM", "DOM.Iterable", "ES2020"],
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "noEmit": true
   },
   "include": ["src/**/*.ts", "tests/**/*.ts"],
