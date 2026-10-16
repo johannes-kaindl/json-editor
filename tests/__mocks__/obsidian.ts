@@ -196,6 +196,7 @@ export class Notice {
   ) {
     Notice.instances.push(this);
   }
+  hide(): void {}
 }
 
 export class Setting {

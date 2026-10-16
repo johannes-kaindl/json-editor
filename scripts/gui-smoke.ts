@@ -184,6 +184,7 @@ const PUNKTE_JE_SECTION: Record<string, readonly string[]> = {
     "D3 Undo stellt den Dateiinhalt wieder her",
     "D4 .jsonc-Edit erhält die Kommentare",
     "D5 Reorder nimmt den anhängenden Kommentar mit, den abgetrennten nicht",
+    "D6 Löschen eines Objekts mit Kindern: keine Rückfrage, Meldung mit Rückgängig, der Knopf stellt es wieder her",
   ],
   codeblock: [
     "E1 Gültiger ```json-Block rendert als Tree",
@@ -836,6 +837,37 @@ const SECTIONS: Section[] = [
             : abschnittBlieb
               ? "anhängend gewandert, abgetrennt geblieben"
               : "der durch eine Leerzeile abgetrennte Kommentar ist mitgewandert",
+      );
+
+      // D6 — Löschen mit Inhalt (Welle 23, Entscheidung Johannes 2026-10-15): keine Rückfrage, die Zeile ist sofort weg, die Meldung
+      // nennt sie und trägt „Undo“. Gemessen werden beide Hälften an der Datei auf der Platte: weg nach dem Löschen, zurück nach dem
+      // Klick auf den Knopf der Meldung. Die Meldung ist Obsidians geteilter Toast; gesucht wird nach dem eigenen Knopf.
+      await openJsonFile(cdp, SMOKE_JSON, JSON.stringify(SMOKE_DATA, null, 2));
+      await runCommand(cdp, "expand-all");
+      const geloescht = await klick(
+        cdp,
+        elImView(`return [...root.querySelectorAll('.json-row[data-path="liste"] .json-row-delete')].at(-1) ?? null;`),
+      );
+      const weg = geloescht ? await pollUntil<boolean>(cdp, `
+        const f = app.vault.getAbstractFileByPath(${JSON.stringify(SMOKE_JSON)});
+        const t = await app.vault.read(f);
+        return t.includes("alpha") ? null : true;
+      `, 8000, 300) : null;
+      const meldung = weg
+        ? await pollUntil<string>(cdp, `
+            const k = [...(typeof activeDocument !== "undefined" ? activeDocument : document).querySelectorAll(".notice .json-delete-undo")][0];
+            return k ? (k.parentElement?.textContent ?? "") : null;
+          `, 4000, 200)
+        : null;
+      if (shotPfad !== null && meldung) writeFileSync(shotPfad.replace(/(\.png)?$/, "-loeschen.png"), await capture(cdp));
+      const zurueck = meldung
+        ? await klick(cdp, `[...(typeof activeDocument !== "undefined" ? activeDocument : document).querySelectorAll(".notice .json-delete-undo")][0] ?? null`)
+        : false;
+      const wieder = zurueck ? await fileContains(cdp, SMOKE_JSON, "alpha") : null;
+      check(
+        "D6 Löschen eines Objekts mit Kindern: keine Rückfrage, Meldung mit Rückgängig, der Knopf stellt es wieder her",
+        Boolean(weg) && Boolean(meldung) && Boolean(wieder),
+        !geloescht ? "Löschen-Knopf nicht klickbar" : !weg ? "Zeile blieb in der Datei" : !meldung ? "keine Meldung mit Rückgängig-Knopf" : wieder ? `weg, Meldung „${meldung.trim()}“, per Knopf zurück` : "Knopf stellte die Zeile nicht wieder her",
       );
     },
   },

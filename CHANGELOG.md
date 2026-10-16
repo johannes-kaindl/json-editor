@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Added
+- **Deleting an object or list that has contents shows what is gone, with an Undo button.** There is still no confirmation question: the row disappears at once, and a message ("Deleted \"liste\" with 2 entries.") offers *Undo* for eight seconds. Scalars and empty containers delete silently as before; the undo history is unchanged.
 - **`![[file.json]]` in reading view shows the file's content as a collapsed, read-only tree.** Until now Obsidian showed only a file chip. The tree has the same look as a code block, with the file name in the title row; it works for `.json` and `.jsonc`. Files over 512 KB and embeds with a heading or block part (`![[file.json#part]]`) keep the chip, and a file that does not parse shows the error card.
 
 ### Changed

@@ -41,6 +41,7 @@ import { hasNumberRoundtripLoss } from "../core/roundtrip";
 import { type CompiledSchema, type PathError, compileSchema } from "../core/schema";
 import { serialize } from "../core/serialize";
 import type { JsonPath, JsonValue } from "../core/types";
+import { t } from "../vendor/kit/i18n";
 import { Breadcrumb } from "./Breadcrumb";
 import { makeRepairButton } from "./CodeblockProcessor";
 import { GoToPathModal } from "./GoToPathModal";
@@ -712,11 +713,48 @@ export class JsonFileView extends TextFileView {
 
   private handleDelete(path: JsonPath): void {
     try {
+      const children = this.childCountAt(path);
       if (this.isJsonc) this.commitJsonc(jsoncDelete(this.data, path));
       else this.applyMutation(deleteAt(this.currentValue, path), "Delete row");
+      // Keine Rueckfrage, aber ein Objekt oder eine Liste mit Inhalt faellt nicht still weg: die Meldung nennt, was fehlt,
+      // und bietet das Rueckgaengig an derselben Stelle an (Entscheidung Johannes 2026-10-15).
+      if (children > 0) this.noticeDeleted(path, children);
     } catch (e) {
       new Notice((e as Error).message);
     }
+  }
+
+  /** Zahl der Kinder des Werts an `path` (0 fuer Skalare und leere Container, auch bei ungueltigem Pfad). */
+  private childCountAt(path: JsonPath): number {
+    let cur: unknown = this.currentValue;
+    for (const seg of path) {
+      if (cur === null || typeof cur !== "object") return 0;
+      cur = (cur as Record<string | number, unknown>)[seg];
+    }
+    if (Array.isArray(cur)) return cur.length;
+    if (cur !== null && typeof cur === "object") return Object.keys(cur).length;
+    return 0;
+  }
+
+  private noticeDeleted(path: JsonPath, children: number): void {
+    const last = path[path.length - 1];
+    const name = typeof last === "number" ? `[${last}]` : (last ?? "");
+    const doc = this.contentEl.ownerDocument;
+    const frag = (doc.win as Window & { createFragment(): DocumentFragment }).createFragment();
+    const text = makeEl("span", doc);
+    text.textContent = `${t("delete.done", name, String(children))} `;
+    frag.appendChild(text);
+    const undo = makeEl("button", doc);
+    undo.type = "button";
+    undo.className = "json-delete-undo";
+    undo.textContent = t("delete.undo");
+    let notice: Notice | null = null;
+    undo.addEventListener("click", () => {
+      this.undo();
+      notice?.hide();
+    });
+    frag.appendChild(undo);
+    notice = new Notice(frag, 8000);
   }
 
   private handleRename(path: JsonPath, newKey: string): void {
