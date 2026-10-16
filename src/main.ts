@@ -3,6 +3,7 @@ import "./i18n/strings";
 import { type CollapseStates, capStates, recordFileState } from "./core/collapse-state";
 import { loadLlmSettings } from "./core/repair/settings";
 import { renderJsonCodeblock } from "./obsidian/CodeblockProcessor";
+import { processJsonFileEmbeds } from "./obsidian/FileEmbedProcessor";
 import { JSON_VIEW_TYPE, JsonFileView } from "./obsidian/JsonFileView";
 import {
   DEFAULT_SETTINGS,
@@ -88,6 +89,11 @@ export default class JsonEditorPlugin extends Plugin {
       renderJsonCodeblock(src, el, ctx, this.settings, "jsonc", (b) =>
         repairFromBlock(deps, { ...b, ctx }),
       ),
+    );
+
+    // `![[Datei.json]]` im Lesemodus: der Inhalt als eingeklappter Baum statt des Datei-Chips.
+    this.registerMarkdownPostProcessor((el, ctx) =>
+      processJsonFileEmbeds(this.app, el, ctx, this.settings),
     );
 
     this.addSettingTab(new JsonEditorSettingsTab(this.app, this));

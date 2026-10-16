@@ -99,6 +99,8 @@ const SMOKE_JSON = "_json-smoke.json";
 const SMOKE_JSONC = "_json-smoke.jsonc";
 const SMOKE_BAD = "_json-smoke-bad.json";
 const SMOKE_NOTE = "_json-smoke-block.md";
+const SMOKE_EMBED_NOTE = "_json-smoke-embed.md";
+const SMOKE_EMBED_FILE = "_json-smoke-embed.json";
 const SMOKE_REPAIR_NOTE = "_json-smoke-repair.md";
 const SMOKE_REPAIR_FILE = "_json-smoke-repair.json";
 
@@ -187,6 +189,8 @@ const PUNKTE_JE_SECTION: Record<string, readonly string[]> = {
     "E1 Gültiger ```json-Block rendert als Tree",
     "E2 Kaputter Block fällt auf die Fehler-Karte zurück",
     "E3 Copy-Knopf schreibt in die Zwischenablage",
+    "E4 ![[Datei.json]] zeigt im Lesemodus den eingeklappten Baum statt des Datei-Chips",
+    "E5 Der Embed-Baum klappt auf Klick auf, und die Kopfzeile trägt den Dateinamen",
   ],
   repair: [
     "F1 Fehlerkarte zeigt den Reparatur-Knopf",
@@ -936,6 +940,70 @@ const SECTIONS: Section[] = [
       } else {
         check("E3 Copy-Knopf schreibt in die Zwischenablage", true, "Zwischenablage trägt den Blockinhalt");
       }
+
+      // E4/E5 — Datei-Embed im Lesemodus (Welle 23): `![[x.json]]` zeigt den Inhalt als eingeklappten Baum statt des Datei-Chips.
+      // Gemessen am sichtbaren Lesemodus-Container wie E1/E2. Der Chip ist Obsidians Standard fuer ein Embed ohne eigene Darstellung;
+      // Gegenprobe ist die Abwesenheit des Posters (Registrierung entfernen: kein `.json-file-embed`, E4 rot).
+      createdFiles.add(SMOKE_EMBED_NOTE);
+      createdFiles.add(SMOKE_EMBED_FILE);
+      const embedDaten = JSON.stringify({ name: "embed-probe", settings: { depth: { deep: 1 } }, list: [1, 2, 3] }, null, 2);
+      await cdp.evaluate(`
+        const schreibe = async (path, body) => {
+          const existing = app.vault.getAbstractFileByPath(path);
+          if (existing) await app.vault.modify(existing, body);
+          else await app.vault.create(path, body);
+        };
+        await schreibe(${JSON.stringify(SMOKE_EMBED_FILE)}, ${JSON.stringify(embedDaten)});
+        await schreibe(${JSON.stringify(SMOKE_EMBED_NOTE)}, ${JSON.stringify(`# Embed\n\nVorher.\n\n![[${SMOKE_EMBED_FILE}]]\n\nNachher.\n`)});
+        const file = app.vault.getAbstractFileByPath(${JSON.stringify(SMOKE_EMBED_NOTE)});
+        let leaf = app.workspace.getMostRecentLeaf(app.workspace.rootSplit);
+        if (!leaf || !leaf.parent) leaf = app.workspace.getLeaf(true);
+        await leaf.openFile(file, { state: { mode: "preview" } });
+        app.workspace.setActiveLeaf(leaf, { focus: true });
+        return true;
+      `);
+      const embed = await pollUntil<{ baum: boolean; zeilen: number; eingeklappt: number; chip: boolean; label: string }>(
+        cdp,
+        `
+          const preview = document.querySelector(".markdown-reading-view");
+          const el = preview?.querySelector(".json-file-embed");
+          if (!el || !el.querySelector(".json-tree-root")) return null;
+          return {
+            baum: true,
+            zeilen: el.querySelectorAll(".json-row").length,
+            eingeklappt: el.querySelectorAll(".json-content.collapsed").length,
+            chip: Boolean(preview.querySelector(".file-embed-title")),
+            label: (el.querySelector(".json-codeblock-label")?.textContent ?? "").trim(),
+          };
+        `,
+        15_000,
+        400,
+      );
+      check(
+        "E4 ![[Datei.json]] zeigt im Lesemodus den eingeklappten Baum statt des Datei-Chips",
+        Boolean(embed) && embed!.eingeklappt > 0 && embed!.zeilen > 0,
+        embed ? `${embed.zeilen} Zeile(n), ${embed.eingeklappt} eingeklappte(r) Teilbaum/-bäume, Datei-Chip ${embed.chip ? "DA" : "weg"}` : "kein Baum im Embed (Standard-Chip?)",
+      );
+      if (shotPfad !== null && embed) writeFileSync(shotPfad.replace(/(\.png)?$/, "-embed.png"), await capture(cdp));
+      const aufgeklappt = embed
+        ? await klick(cdp, `document.querySelector(".markdown-reading-view .json-file-embed .json-container.is-collapsed .json-collapse-toggle")`)
+        : false;
+      const nachKlick = aufgeklappt
+        ? await pollUntil<number>(
+            cdp,
+            `
+              const n = document.querySelectorAll(".markdown-reading-view .json-file-embed .json-content.collapsed").length;
+              return n < ${embed ? embed.eingeklappt : 0} ? n : null;
+            `,
+            6000,
+            300,
+          )
+        : null;
+      check(
+        "E5 Der Embed-Baum klappt auf Klick auf, und die Kopfzeile trägt den Dateinamen",
+        embed !== null && embed.label === SMOKE_EMBED_FILE && nachKlick !== null,
+        embed ? `Kopfzeile „${embed.label}“, ${aufgeklappt ? (nachKlick !== null ? `nach Klick ${nachKlick} eingeklappt` : "Klick ohne Wirkung") : "Toggle nicht klickbar"}` : "nicht messbar (E4 fehlt)",
+      );
     },
   },
   {

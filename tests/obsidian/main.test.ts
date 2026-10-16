@@ -77,6 +77,17 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
     expect(NoticeStatics.instances.length).toBe(0);
   });
 
+  it("registers the post-processor that renders ![[file.json]] embeds", async () => {
+    class OkPlugin extends JsonEditorPlugin {
+      override registerExtensions(): void {}
+    }
+    const plugin = new OkPlugin(appStub(), MANIFEST);
+    await plugin.onload();
+    expect(
+      (plugin as unknown as { markdownPostProcessors: unknown[] }).markdownPostProcessors.length,
+    ).toBe(1);
+  });
+
   it("a .jsonc collision alone still registers .json and warns only about .jsonc", async () => {
     class JsoncCollides extends JsonEditorPlugin {
       override registerExtensions(exts: string[]): void {

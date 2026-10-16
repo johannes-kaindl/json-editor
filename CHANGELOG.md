@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- **`![[file.json]]` in reading view shows the file's content as a collapsed, read-only tree.** Until now Obsidian showed only a file chip. The tree has the same look as a code block, with the file name in the title row; it works for `.json` and `.jsonc`. Files over 512 KB and embeds with a heading or block part (`![[file.json#part]]`) keep the chip, and a file that does not parse shows the error card.
+
 ### Changed
 - **The LLM repair no longer shows Gemma 4's thinking as part of the proposal.** Gemma 4 on LM Studio writes its reasoning into the answer text and ends it with `<channel|>`; the repair now drops that part and proposes only the JSON that follows (obsidian-kit 0.61.0, code-kit 0.28.0).
 - Gemma 4 on LM Studio thinks a little even with "Thinking off" (LM Studio ignores the off value for this model, so the lowest level is sent); the Request section says so. A backend or model family this version does not know no longer breaks a repair.

@@ -53,6 +53,7 @@ Alles bleibt in deinem Vault. Das Plugin nutzt Obsidians eigene CSS-Variablen un
 - **Kaputtes JSON per LLM reparieren** — ein ungültiger `` ```json ``-/`` ```jsonc ``-Block zeigt in seiner Fehlerkarte einen *Reparieren*-Knopf (der Befehl *JSON im aktuellen Codeblock reparieren* wirkt am Cursor). Block und Parser-Fehler gehen an ein Sprachmodell; du siehst einen Zeilen-Diff nebeneinander, und geschrieben wird erst nach *Anwenden*. Siehe [Reparatur per LLM](#reparatur-per-llm).
 - **Theme-treue Gestaltung** über Obsidians CSS-Variablen — keine fest verdrahteten Farben.
 - **Eingebettete Codeblöcke** — `` ```json ``- und `` ```jsonc ``-Blöcke in jeder Markdown-Notiz werden als betitelte Karte mit aufklappbarem Baum gerendert. Blöcke über 20 Zeilen klappen automatisch zu. Ungültiges JSON erscheint als gestaltete Fehlerkarte mit Zeilen-/Spaltenangabe statt als Absturz.
+- **Eingebettete JSON-Dateien** — `![[settings.json]]` (oder `.jsonc`) in einer Notiz zeigt im Lesemodus den Inhalt der Datei als eingeklappten, schreibgeschützten Baum mit dem Dateinamen als Titel, statt nur eines Datei-Chips. Ausnahmen: Dateien über 512 KB, `![[datei.json#teil]]` und Dateien, die sich nicht parsen lassen (Fehlerkarte); bearbeitet wird dort nichts, dafür die Datei öffnen.
 - **Keine Telemetrie, keine entfernten Ressourcen.** Alle Bestandteile werden mit dem Plugin ausgeliefert.
 
 ---

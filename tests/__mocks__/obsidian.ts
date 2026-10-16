@@ -38,6 +38,13 @@ export class Plugin {
   ) {
     this.postprocessors[lang] = handler as (...args: unknown[]) => unknown;
   }
+  markdownPostProcessors: Array<(el: HTMLElement, ctx: MarkdownPostProcessorContext) => void> = [];
+  registerMarkdownPostProcessor(
+    handler: (el: HTMLElement, ctx: MarkdownPostProcessorContext) => void,
+  ) {
+    this.markdownPostProcessors.push(handler);
+    return handler;
+  }
   addSettingTab(tab: PluginSettingTab) {
     this.settingTabs.push(tab);
   }

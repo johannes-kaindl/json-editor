@@ -53,6 +53,7 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 - **Repair broken JSON with an LLM** — an invalid `` ```json `` / `` ```jsonc `` block shows a *Repair* button in its error card (and the command *Repair JSON in the current code block* works at the cursor). The block and the parser error go to a language model; you see a side-by-side line diff and nothing is written until you press *Apply*. See [Repair with an LLM](#repair-with-an-llm).
 - **Theme-aware styling** via Obsidian CSS variables — no hardcoded colors, no theme breakage.
 - **Embedded code blocks** — `` ```json `` and `` ```jsonc `` fences in any Markdown note render as a titled card with a collapsible tree (the `` ```jsonc `` variant tolerates comments). Blocks over 20 lines auto-collapse. Invalid JSON renders as a styled error card with line/column info, not a crash.
+- **Embedded JSON files** — `![[settings.json]]` (or `.jsonc`) in a note shows the file's content in reading view as a collapsed, read-only tree titled with the file name, instead of a bare file chip. Files over 512 KB, `![[file.json#part]]` and files that fail to parse (error card) are the exceptions; nothing is edited there, open the file for that.
 - **Settings** — default mode, indent (2 / 4 / tab), tree marker style (modern / classic), auto-collapse depth, JSON Schema validation (opt-in), companion-schema suffix.
 - **No telemetry, no remote resources.** All assets ship with the plugin.
 
