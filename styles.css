@@ -508,6 +508,12 @@
 }
 
 /* ─── Code-block embed ────────────────────────────────────────────── */
+/* `![[file.json]]`: Obsidians Datei-Embed (.internal-embed.file-embed) zentriert seinen Inhalt, und die Wurzelzeile des Baums
+   erbte es (Klammern mitten im Block). Der Baum liest wie im Code-Block am Zeilenanfang. */
+.markdown-preview-view .internal-embed.json-file-embed,
+.json-file-embed .json-codeblock {
+  text-align: start;
+}
 .json-codeblock {
   margin: var(--jv-space-4) 0;
   border: 1px solid var(--jv-border);

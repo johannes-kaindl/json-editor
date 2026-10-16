@@ -192,6 +192,7 @@ const PUNKTE_JE_SECTION: Record<string, readonly string[]> = {
     "E3 Copy-Knopf schreibt in die Zwischenablage",
     "E4 ![[Datei.json]] zeigt im Lesemodus den eingeklappten Baum statt des Datei-Chips",
     "E5 Der Embed-Baum klappt auf Klick auf, und die Kopfzeile trägt den Dateinamen",
+    "E6 Im Embed steht die Wurzel-Klammer links, nicht zentriert",
   ],
   repair: [
     "F1 Fehlerkarte zeigt den Reparatur-Knopf",
@@ -1035,6 +1036,22 @@ const SECTIONS: Section[] = [
         "E5 Der Embed-Baum klappt auf Klick auf, und die Kopfzeile trägt den Dateinamen",
         embed !== null && embed.label === SMOKE_EMBED_FILE && nachKlick !== null,
         embed ? `Kopfzeile „${embed.label}“, ${aufgeklappt ? (nachKlick !== null ? `nach Klick ${nachKlick} eingeklappt` : "Klick ohne Wirkung") : "Toggle nicht klickbar"}` : "nicht messbar (E4 fehlt)",
+      );
+
+      // E6 — der Datei-Embed ist Obsidians `.internal-embed.file-embed`; sein Theme setzt `text-align: center`, und die
+      // Wurzelzeile erbte es (Klammern mitten im Block, Abnahme des Masters am Screenshot, Welle 23). Gemessen wird die Lage
+      // der oeffnenden Wurzel-Klammer im Embed: links, also nahe dem linken Rand des Baums, und `text-align` nicht `center`.
+      const lage = await cdp.evaluate<{ align: string; links: number; breite: number } | null>(`
+        const el = document.querySelector(".markdown-reading-view .json-file-embed");
+        const klammer = el?.querySelector(".json-tree-root > .json-container > .json-bracket");
+        if (!el || !klammer) return null;
+        const root = el.querySelector(".json-tree-root").getBoundingClientRect();
+        return { align: getComputedStyle(klammer).textAlign, links: klammer.getBoundingClientRect().left - root.left, breite: root.width };
+      `);
+      check(
+        "E6 Im Embed steht die Wurzel-Klammer links, nicht zentriert",
+        lage !== null && lage.align !== "center" && lage.links < lage.breite * 0.25,
+        lage ? `text-align ${lage.align}, Klammer ${Math.round(lage.links)} px vom linken Rand bei ${Math.round(lage.breite)} px Breite` : "Klammer nicht gefunden",
       );
     },
   },
