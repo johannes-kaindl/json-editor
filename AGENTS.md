@@ -3,7 +3,7 @@
 Orientation for AI agents (Claude Code, Codex, …) and contributors working on this repository.
 
 > **Workspace standards (maintainer-local):** The binding Leitkonvention lives in `_docs/CONVENTIONS.md`
-> in the maintainer's multi-project workspace, `../../_docs` relative to this repo — not part of this
+> in the maintainer's multi-project workspace, `../../workspace/_docs` relative to this repo — not part of this
 > repository, ignore if absent in your clone. Model: comply-or-explain.
 
 ## Project character
@@ -142,6 +142,7 @@ src/
 │   │                           1.2.0+ has NO local history() — unified stack
 │   │                           lives in JsonFileView
 │   ├── CodeblockProcessor.ts   read-only tree for ```json blocks in notes
+│   ├── FileEmbedProcessor.ts   `![[file.json]]` in reading view: collapsed read-only tree instead of the file chip (≤ 512 KB, no `#part`)
 │   ├── RepairModal.ts          LLM repair: original | proposal diff, Apply / Try again / Discard
 │   ├── repair-service.ts       builds the kit connection (createLlmConnection), runs one repair
 │   │                           and maps the result (toRepairResult)
