@@ -205,6 +205,7 @@ const PUNKTE_JE_SECTION: Record<string, readonly string[]> = {
     "H2 Klick öffnet das Modal mit Diff, Anwenden ist frei",
     "H3 Anwenden schreibt den Vorschlag in die Datei, das Banner verschwindet",
     "H4 Rückgängig holt den kaputten Text zurück",
+    "H5 Gemma 4 ohne Öffner: der Vorschlag ist das JSON, der Denktext steht nicht darin",
   ],
 };
 /** Wird in `main` mit der Soll-Liste der gewaehlten Abschnitte neu gebildet; bis dahin ohne Nenner. */
@@ -1297,6 +1298,52 @@ const SECTIONS: Section[] = [
             )
           : null;
         check("H4 Rückgängig holt den kaputten Text zurück", zurueck === kaputt, zurueck === kaputt ? "Datei = Original" : rueck ? "Datei weicht ab" : "kein Rückgängig (H3 fehlt)");
+
+        // H5 — Gemma 4 auf LM Studio schreibt das Denken OHNE Öffner in `content` und beendet es mit `<channel|>`; das JSON folgt.
+        // Der Stub antwortet so (Modell `google/gemma-4-e4b`). Ohne die Kit-Behandlung (obsidian-kit ab 0.60.3) stünde der Denktext samt
+        // `<channel|>` im Vorschlag — die Reparatur zeigte Müll als „Vorschlag“ oder verwürfe ihn als ungültig.
+        const denken = "Ich prüfe, welche Klammer fehlt.";
+        await stub.stop();
+        const gemmaStub = await startLlmStub({
+          cors: false,
+          models: ["google/gemma-4-e4b"],
+          antwort: () => ({ text: `${denken}<channel|>{"a": 1, "b": 2}`, model: "google/gemma-4-e4b" }),
+        });
+        try {
+          await cdp.evaluate(`
+            const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+            plugin.settings.endpoints = [{ url: "http://127.0.0.1:${gemmaStub.port}", model: "google/gemma-4-e4b" }];
+            plugin.settings.choice = {};
+            plugin.llm.invalidate();
+            return true;
+          `);
+          const offen5 = await openJsonFile(cdp, SMOKE_REPAIR_FILE, kaputt);
+          const knopf5 = offen5
+            ? await pollUntil<boolean>(cdp, inView(`return root.querySelector(${JSON.stringify(knopfSel)}) ? true : null;`), 8000, 250)
+            : null;
+          const geklickt5 = Boolean(knopf5) && (await klick(cdp, elImView(`return root.querySelector(${JSON.stringify(knopfSel)});`)));
+          const diff5 = geklickt5
+            ? await pollUntil<{ rechts: string; anwenden: boolean }>(
+                cdp,
+                `
+                  const cols = document.querySelectorAll(".json-repair-modal .json-repair-col");
+                  if (cols.length !== 2) return null;
+                  const apply = document.querySelector(".json-repair-modal .modal-button-container button.mod-cta");
+                  return { rechts: cols[1].textContent, anwenden: Boolean(apply) && !apply.disabled };
+                `,
+                15_000,
+                300,
+              )
+            : null;
+          check(
+            "H5 Gemma 4 ohne Öffner: der Vorschlag ist das JSON, der Denktext steht nicht darin",
+            Boolean(diff5) && diff5!.anwenden && diff5!.rechts.includes('"b": 2') && !diff5!.rechts.includes("channel") && !diff5!.rechts.includes("Klammer"),
+            diff5 ? `Vorschlag „${diff5.rechts.slice(0, 60).replace(/\s+/g, " ")}“, Anwenden ${diff5.anwenden ? "aktiv" : "gesperrt"}` : geklickt5 ? "Modal ohne Diff" : "Knopf nicht klickbar",
+          );
+          await cdp.evaluate(`document.querySelector(".json-repair-modal .modal-button-container button:not(.mod-cta)")?.click(); return true;`).catch(() => undefined);
+        } finally {
+          await gemmaStub.stop();
+        }
       } finally {
         await stub.stop();
         await cdp
