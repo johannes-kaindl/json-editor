@@ -72,7 +72,7 @@ import { capture } from "../../tools/obsidian-cdp/shot.js";
 import { buildHerkunft, requireEigenerBuild } from "../../tools/obsidian-cdp/vault.js";
 
 const PLUGIN_ID = "json-editor";
-/** Interner View-Registrierungs-Key — NICHT die Plugin-id (AGENTS.md: nie ändern). */
+/** Interner View-Registrierungs-Key — NICHT die Plugin-id (`.claude/rules/ansicht-und-start.md`: nie ändern). */
 const VIEW_TYPE = "json-editor-view";
 
 /** Vom Lauf angelegte Dateien — das `finally` wirft sie gebündelt in den Papierkorb. */

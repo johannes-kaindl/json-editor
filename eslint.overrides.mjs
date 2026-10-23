@@ -16,7 +16,7 @@ export default [
     // sonst macht der Mock (`App = Record<string, unknown>`) jeden app.*-Zugriff
     // zu no-unsafe-*. tsconfig.build.json statt tsconfig.json, weil dessen
     // "exclude" zusaetzlich src/__mocks__ ausklammert (historische Mock-Alias-Falle,
-    // gefixt im Portal-eslint-Root-Fix 1.9.0 — siehe AGENTS.md).
+    // gefixt im Portal-eslint-Root-Fix 1.9.0 — siehe `.claude/rules/vendor-und-lint.md`).
     files: ["src/**/*.ts"],
     languageOptions: {
       parserOptions: {
