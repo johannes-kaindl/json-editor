@@ -9,7 +9,7 @@
 
 Rendert außerdem `` ```json ``- und `` ```jsonc ``-Codeblöcke in Markdown-Notizen als aufklappbare, theme-treue Bäume. Jede strukturelle Änderung an einer `.jsonc`-Datei wird als gezielte Textänderung angewendet — Kommentare und Formatierung bleiben genau da, wo du sie hingeschrieben hast.
 
-**Zielplattform:** Obsidian 1.11.4+ auf Desktop und Mobile. Keine externen Dienste, keine entfernten Ressourcen, keine Telemetrie.
+**Zielplattform:** Obsidian 1.11.4+ auf Desktop und Mobile. Keine entfernten Ressourcen, keine Telemetrie; ein externer Dienst nur, wenn du für die optionale LLM-Reparatur selbst einen gehosteten Endpunkt einträgst.
 
 > **Hinweis:** Diese Übersetzung folgt der englischen [`README.md`](README.md). Bei Abweichungen gilt die englische Fassung.
 
@@ -93,7 +93,7 @@ Alles bleibt in deinem Vault. Das Plugin nutzt Obsidians eigene CSS-Variablen un
 | **Obsidian** | 1.11.4 oder neuer (`minAppVersion`) — API-Schlüssel der LLM-Reparatur liegen im Obsidian-Schlüsselbund (`app.secretStorage`, ab 1.11.4). |
 | **Plattform** | Desktop und Mobile. Nicht desktop-only; der Baum hat ein eigenes Touch-Bedienmodell (Langdruck-Menü statt Hover-Schaltflächen, `Alt`+Pfeiltasten zum Umsortieren). |
 | **Abhängigkeiten** | Keine zu installieren. Die beiden Laufzeit-Bibliotheken (`@cfworker/json-schema`, `jsonc-parser`) sind in `main.js` eingebunden. |
-| **Netzwerk** | Keines. Keine Telemetrie, keine entfernten Ressourcen, kein Nachladen von Schemata über das Netz — alles wird innerhalb des Vaults aufgelöst. |
+| **Netzwerk** | Von selbst keines: keine Telemetrie, keine entfernten Ressourcen, kein Nachladen von Schemata über das Netz — alles wird innerhalb des Vaults aufgelöst. Die einzige Ausnahme ist die optionale [LLM-Reparatur](#reparatur-per-llm): Drückst du *Reparieren*, geht der kaputte Block an den Endpunkt, den du eingerichtet hast — der eigene Rechner bei einem lokalen Server, Anthropic bei Claude, sonst der eingetragene Anbieter. |
 | **Bauen aus dem Quelltext** | Node.js 20+ und npm (siehe [Entwicklung](#entwicklung)). |
 
 ---
@@ -181,7 +181,7 @@ Ein ungültiger `` ```json ``- oder `` ```jsonc ``-Codeblock erscheint als Fehle
 
 Hat sich die Notiz zwischen Anfrage und *Anwenden* geändert, wird nichts geschrieben und das Modal sagt es.
 
-**Endpunkt.** Unter *Einstellungen → JSON Editor → Reparatur per LLM*. Ist das Plugin *LLM Endpoint Manager* installiert, kommen Endpunkt, API-Schlüssel und Modell von dort; ohne es trägst du eigene OpenAI-kompatible Endpunkte ein (LM Studio, Ollama, ein gehosteter Anbieter). Der Abschnitt *Anfrage* zeigt die erkannte Modellfamilie und das Backend, die Werte der letzten Anfrage und Abweichungen der Antwort; jeder Wert lässt sich je Modellfamilie überschreiben. Die Reparatur nutzt das Profil *Strukturiert* (niedrige Temperatur, Denken aus). Die Anfrage wartet bis zu 15 Minuten auf die Antwort; eine Zeitlimit-Einstellung gibt es nicht. Geheimnisse im Block (API-Schlüssel, `Bearer`-Token, Private-Key-Blöcke) werden vor dem Senden durch Platzhalter ersetzt und im Vorschlag, den du siehst, wieder eingesetzt.
+**Endpunkt.** Unter *Einstellungen → JSON Editor → Reparatur per LLM*. Ist das Plugin *LLM Endpoint Manager* installiert, kommen Endpunkt, API-Schlüssel und Modell von dort; ohne es trägst du eigene OpenAI-kompatible Endpunkte ein (LM Studio, Ollama, ein gehosteter Anbieter). Mit dem Manager geht auch Claude (native Messages-API) als Endpunkt; das Plugin schickt den Block dann an Anthropic, er verlässt also deinen Rechner. Der Abschnitt *Anfrage* zeigt die erkannte Modellfamilie und das Backend, die Werte der letzten Anfrage und Abweichungen der Antwort; jeder Wert lässt sich je Modellfamilie überschreiben. Die Reparatur nutzt das Profil *Strukturiert* (niedrige Temperatur, Denken aus); Claude bekommt keine Temperatur, und „aus“ heißt dort die niedrigste Denkstufe. Die Anfrage wartet bis zu 15 Minuten auf die Antwort; eine Zeitlimit-Einstellung gibt es nicht. Geheimnisse im Block (API-Schlüssel, `Bearer`-Token, Private-Key-Blöcke) werden vor dem Senden durch Platzhalter ersetzt und im Vorschlag, den du siehst, wieder eingesetzt.
 
 Das Plugin sendet nichts, bevor du *Reparieren* drückst — die Notiz wird nie im Hintergrund hochgeladen.
 

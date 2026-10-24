@@ -128,4 +128,95 @@ describe("RepairService", () => {
     expect(JSON.stringify(sent.body)).not.toContain(token);
     expect(out).toEqual({ ok: true, text: `{"auth": "Bearer ${token}", "a": 1}` });
   });
+
+  describe("Claude as an endpoint of the LLM Endpoint Manager", () => {
+    interface Asked {
+      via: "list" | "resolve";
+      transports: unknown;
+    }
+
+    /** Ein Manager-Double, das aufzeichnet, mit welchen Transporten ihn die Verbindung fragt, und
+     *  einen Claude-Endpunkt liefert, wenn (und nur wenn) `"anthropic"` unter den Transporten steht. */
+    const managerApp = () => {
+      const asked: Asked[] = [];
+      const claude = {
+        id: "claude",
+        label: "Claude API",
+        provider: "anthropic",
+        transport: "anthropic",
+        backend: "anthropic",
+        capabilities: ["chat"],
+        defaultModel: "claude-haiku-5-5",
+        enabled: true,
+        hasSecret: true,
+        url: "https://api.anthropic.test",
+        models: [{ id: "claude-haiku-5-5" }],
+      };
+      const wants = (t: unknown) => Array.isArray(t) && t.includes("anthropic");
+      const api = {
+        version: 1,
+        list: (filter?: { transports?: unknown }) => {
+          asked.push({ via: "list", transports: filter?.transports });
+          return wants(filter?.transports) ? [claude] : [];
+        },
+        get: () => null,
+        resolve: async (_capability: string, opts?: { transports?: unknown }) => {
+          asked.push({ via: "resolve", transports: opts?.transports });
+          return wants(opts?.transports)
+            ? {
+                id: claude.id,
+                label: claude.label,
+                backend: claude.backend,
+                transport: claude.transport,
+                defaultModel: claude.defaultModel,
+                models: claude.models,
+                config: { url: claude.url, apiKey: "sk-ant-test", model: claude.defaultModel },
+              }
+            : { error: "no-endpoint" };
+        },
+        materialize: async () => ({ error: "no-endpoint" }),
+        models: async () => [],
+        importEndpoints: async () => ({ error: "no-endpoint" }),
+        on: () => () => {},
+      };
+      const app = { plugins: { plugins: { "llm-endpoint-manager": { api } } } } as unknown as App;
+      return { app, asked };
+    };
+
+    const serviceFor = (app: App, transport?: SseTransport) =>
+      new RepairService(
+        app,
+        "json-editor",
+        () => ({ ...DEFAULT_SETTINGS, request: structuredClone(DEFAULT_SETTINGS.request) }),
+        vi.fn(async () => {}),
+        {
+          ...(transport ? { transport } : {}),
+          probe: async () => true,
+          backendOf: async () => "anthropic",
+        },
+      );
+
+    it("asks the manager for endpoints with the transport 'anthropic' as well", async () => {
+      const { app, asked } = managerApp();
+      const r = await serviceFor(app).llm.resolve();
+      const resolved = asked.filter((a) => a.via === "resolve");
+      // Messprobe: der Fake wurde gefragt und hat einen Endpunkt geliefert, sonst ist „immer anthropic“ nichts wert.
+      expect(resolved.length).toBeGreaterThan(0);
+      expect(r.config).not.toBeNull();
+      for (const a of resolved) expect(a.transports).toEqual(["http", "anthropic"]);
+    });
+
+    it("sends the repair to the Messages API: x-api-key, no temperature, max_tokens", async () => {
+      const { app } = managerApp();
+      const { sent, transport } = transportWith(() => '{"a": 1}');
+      const out = await serviceFor(app, transport).run('{"a": 1,}', "E", "json");
+      expect(sent.url).toBe("https://api.anthropic.test/v1/messages");
+      expect(sent.headers["x-api-key"]).toBe("sk-ant-test");
+      expect(sent.headers["anthropic-version"]).toBeTruthy();
+      expect(sent.body).not.toHaveProperty("temperature");
+      expect(sent.body).not.toHaveProperty("top_p");
+      expect(sent.body.max_tokens).toBeGreaterThan(0);
+      expect(out).toBeDefined();
+    });
+  });
 });

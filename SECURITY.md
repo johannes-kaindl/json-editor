@@ -24,7 +24,7 @@ I aim to acknowledge reports within **7 days** and to ship a fix or coordinated 
 
 ## Threat model
 
-This plugin runs entirely inside Obsidian, with no network access, no telemetry, no remote resources, and no privileged file-system access beyond what Obsidian itself grants. The realistic threat surface, and how it is handled:
+This plugin runs inside Obsidian, with no telemetry, no remote resources, no network request of its own, and no privileged file-system access beyond what Obsidian itself grants. The one exception is the optional LLM repair: when the user presses *Repair*, the broken code block (or file) is sent to the endpoint the user configured, with secrets replaced by placeholders. That endpoint is a local server, a hosted provider the user entered, or, through the LLM Endpoint Manager, Claude at Anthropic; in the last two cases the content leaves the device. Nothing is sent in the background. The realistic threat surface, and how it is handled:
 
 - **Malicious JSON content** crashing or poisoning the plugin. Parsing uses the platform `JSON.parse`; structural tree edits rebuild objects with `Object.fromEntries` (`[[DefineOwnProperty]]` semantics), so a `__proto__` (or other prototype-name) key in untrusted data is preserved as an own data property and can **not** poison the object prototype (prototype-pollution-style payloads — fixed in 1.6.0).
 - **Companion JSON Schema as a ReDoS vector.** A `*.schema.json` dropped next to a data file is compiled with @cfworker/json-schema; a schema author controls regex `pattern` / `patternProperties` values, and a catastrophic-backtracking regex against attacker-influenced data can hang the UI thread. Mitigations (1.5.0):

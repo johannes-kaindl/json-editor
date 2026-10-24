@@ -42,7 +42,12 @@ export class RepairService {
       mode: MODE,
       // Ohne Stream, wie bisher: eine volle Completion ueber `requestUrl` statt des XHR-Streams.
       stream: false,
-      transports: { http: seams.transport ?? requestUrlTransport, fallback: "none" },
+      // `anthropic: true`: Claude als Endpunkt des Managers; die Reparatur fragt ihn mit, die Verbindung baut den Messages-Transport.
+      transports: {
+        http: seams.transport ?? requestUrlTransport,
+        fallback: "none",
+        anthropic: true,
+      },
       ...(seams.probe ? { probe: seams.probe } : {}),
       ...(seams.backendOf ? { backendOf: seams.backendOf } : {}),
       // Die Antwort wird als JSON aus `content` geparst: ein geschwaerzter, mehrzeiliger

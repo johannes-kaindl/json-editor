@@ -6,7 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- **Claude can be used as an endpoint of the LLM Endpoint Manager; the repair asks it for the proposal.** With the manager installed and a Claude API endpoint set up there, the repair works with it like with any other endpoint (native Messages API). Claude takes no temperature, so the structured profile sends none, and "thinking off" means the lowest effort. The content of the block then goes to Anthropic instead of a local server.
+
 ### Changed
+- **README, SECURITY.md and the German README now say what the network line left out:** the plugin makes no request of its own, but the optional LLM repair sends the block to the endpoint you configured (a hosted provider or Claude included).
 - **The Request section of the LLM repair shows the thinking field of a Claude endpoint as "Thinking effort (effort)"** instead of "(reasoning_effort)", and the hint "model family detected" has a button "Set family in the manager" that opens the settings of the LLM Endpoint Manager (obsidian-kit 0.63.0).
 - **LM Studio models: thinking and image support now come from the model's metadata** instead of the name alone, so the thinking button can show up for more models. The Request section also warns when the model sent is not loaded but others are: the request loads it on demand and can unload one that is still running (obsidian-kit 0.63.0, code-kit 0.31.0).
 - Claude models count as image-capable and as thinking models without an off switch (code-kit 0.33.0); where "off" is not possible the thinking button reads "Thinking: lowest level" (obsidian-kit 0.63.0).

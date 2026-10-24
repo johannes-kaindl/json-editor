@@ -94,7 +94,7 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 | **Obsidian** | 1.11.4 or newer (`minAppVersion`) — API keys for the LLM repair are stored in Obsidian's keychain (`app.secretStorage`), added in 1.11.4. |
 | **Platform** | Desktop and mobile. Not desktop-only; the tree has a dedicated touch interaction model (long-press menu instead of hover buttons, `Alt`+arrow reorder). |
 | **Dependencies** | None to install. The two runtime libraries (`@cfworker/json-schema`, `jsonc-parser`) are bundled into `main.js`. |
-| **Network** | None. No telemetry, no remote resources, no schema fetching over the network — everything resolves inside the vault. |
+| **Network** | None on its own: no telemetry, no remote resources, no schema fetching over the network — everything resolves inside the vault. The one exception is the optional [LLM repair](#repair-with-an-llm): when you press *Repair*, the broken block goes to the endpoint you configured — your own machine for a local server, Anthropic if you choose Claude, otherwise the provider you entered. |
 | **Building from source** | Node.js 20+ and npm (see [Development](#development)). |
 
 ---
@@ -203,7 +203,7 @@ An invalid `` ```json `` or `` ```jsonc `` code block renders as an error card. 
 
 If the note changed between the request and *Apply*, nothing is written and the modal says so.
 
-**Endpoint.** Under *Settings → JSON Editor → Repair with an LLM*. With the *LLM Endpoint Manager* plugin installed, the endpoint, its API key and the model come from there; without it you list your own OpenAI-compatible endpoints (LM Studio, Ollama, a hosted provider). The *Request* section shows the model family and backend the plugin recognised, the exact values sent in the last request and any deviation in the answer; every value can be overridden per model family. The repair uses the *structured* profile (low temperature, thinking off). The request waits up to 15 minutes for the answer; there is no timeout setting. Secrets in the block (API keys, `Bearer` tokens, private-key blocks) are replaced by placeholders before the request leaves your machine and put back into the proposal you see.
+**Endpoint.** Under *Settings → JSON Editor → Repair with an LLM*. With the *LLM Endpoint Manager* plugin installed, the endpoint, its API key and the model come from there; without it you list your own OpenAI-compatible endpoints (LM Studio, Ollama, a hosted provider). With the manager, Claude (native Messages API) works as an endpoint too; the plugin then sends the block to Anthropic, so it leaves your machine. The *Request* section shows the model family and backend the plugin recognised, the exact values sent in the last request and any deviation in the answer; every value can be overridden per model family. The repair uses the *structured* profile (low temperature, thinking off); Claude takes no temperature, and "off" there means the lowest thinking effort. The request waits up to 15 minutes for the answer; there is no timeout setting. Secrets in the block (API keys, `Bearer` tokens, private-key blocks) are replaced by placeholders before the request leaves your machine and put back into the proposal you see.
 
 The plugin sends nothing until you press *Repair* — the note is never uploaded in the background.
 
