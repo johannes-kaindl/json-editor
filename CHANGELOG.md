@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.19.0] — 2026-10-24
+
 ### Added
 - **Claude can be used as an endpoint of the LLM Endpoint Manager; the repair asks it for the proposal.** With the manager installed and a Claude API endpoint set up there, the repair works with it like with any other endpoint (native Messages API). Claude takes no temperature, so the structured profile sends none, and "thinking off" means the lowest effort. The content of the block then goes to Anthropic instead of a local server.
 
