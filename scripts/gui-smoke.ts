@@ -60,6 +60,8 @@ import {
   beimAbbruch,
   bereiteInstanzVor,
   closeExtraLeaves,
+  entferneFakeManager,
+  installFakeManager,
   istAbgebrochen,
   klicke,
   pollUntil,
@@ -205,6 +207,9 @@ const PUNKTE_JE_SECTION: Record<string, readonly string[]> = {
     "G2 PEM als JSON-String (\\n escaped) geht geschwärzt raus und kommt als gültiges JSON zurück",
     "G3 PEM mit echten Zeilenumbrüchen (kaputtes JSON) kommt als gültiges JSON zurück",
     "G4 Kein apiKey in data.json — der Schlüssel liegt im Schlüsselbund",
+    "CL1 Claude im Manager: der Endpunkt kommt nur mit Opt-in, das Plugin wählt ihn",
+    "CL2 Reparatur gegen den Claude-Stub: Messages-API mit Schlüssel, ohne temperature, Vorschlag im Modal",
+    "CL3 Fehler der API (529): das Modal zeigt ihn, Anwenden bleibt gesperrt, die Notiz unberührt",
   ],
   "repair-datei": [
     "H1 Das Fehler-Banner der Datei-Ansicht trägt den Reparatur-Knopf",
@@ -349,6 +354,153 @@ interface Section {
   key: string;
   title: string;
   run: (cdp: Cdp) => Promise<void>;
+}
+
+/** CL1–CL3 — Claude (Anthropic API) ueber den LLM Endpoint Manager (Kit 0.62.0, Opt-in `transports.anthropic` in
+ *  `repair-service.ts`). Gegenstelle ist der zentrale LLM-Stub im Anthropic-Modus (Messages-API, streng bei Pfad,
+ *  `x-api-key`, `anthropic-version`, Pflichtfeldern); kein Aufruf an api.anthropic.com. Der Fake-Manager der Bruecke
+ *  liefert den Endpunkt nur, wenn der Aufrufer `anthropic` unter den Transporten verlangt — das ist die Kontrolle in CL1. */
+async function pruefeClaude(cdp: Cdp, notiz: (block: string) => string): Promise<void> {
+  const [CL1, CL2, CL3] = PUNKTE_JE_SECTION.repair!.filter((n) => n.startsWith("CL"));
+  const MODELL = "claude-haiku-5-5";
+  const SCHLUESSEL = "sk-ant-smoke-json-editor";
+  const MANAGER = "llm-endpoint-manager";
+  const knopfSel = `.markdown-reading-view .json-codeblock.is-error .json-codeblock-repair`;
+  const kaputt = '{"a": 1, "b": [1, 2,,]';
+  let fehlerModus = false;
+  let manager = false;
+  const stub = await startLlmStub({
+    cors: false,
+    anbieter: "anthropic",
+    schluessel: SCHLUESSEL,
+    models: [{ id: MODELL, capabilities: { effort: { supported: true }, thinking: { types: { adaptive: { supported: true } } } } }],
+    antwort: () => (fehlerModus ? { status: 529, fehler: "Overloaded", model: MODELL } : { text: '{"a": 1, "b": [1, 2]}', model: MODELL }),
+  });
+  try {
+    await installFakeManager(cdp, {
+      pluginId: MANAGER,
+      endpunkte: [{
+        id: "fake-claude", label: "Claude API", url: stub.url, models: [MODELL], defaultModel: MODELL, configModel: "default",
+        provider: "anthropic", backend: "anthropic", apiKey: SCHLUESSEL, hasSecret: true, transport: "anthropic",
+      }],
+      invalidiere: [PLUGIN_ID],
+    });
+    manager = true;
+    const sicht = await cdp.evaluate<{ ohne: number; mit: number; quelle: string; modell: string; familie: string | null; backend: string }>(`
+      const api = app.plugins.plugins[${JSON.stringify(MANAGER)}].api;
+      const p = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+      p.settings.choice = {};
+      p.llm.invalidate();
+      await p.llm.resolve({ force: true });
+      const src = p.llm.source();
+      return {
+        ohne: api.list({ capability: "chat" }).length,
+        mit: api.list({ capability: "chat", transports: ["http", "anthropic"] }).length,
+        quelle: src.backendSource, modell: src.model, familie: src.family, backend: src.backend,
+      };
+    `);
+    check(
+      CL1!,
+      sicht.ohne === 0 && sicht.mit === 1 && sicht.quelle === "manager" && sicht.modell === MODELL && sicht.backend === "anthropic" && sicht.familie === "claude",
+      `Kontrolle am Fake: list() ohne transports ${sicht.ohne}, mit ["http","anthropic"] ${sicht.mit}; Plugin: Backend ${sicht.backend} (Quelle ${sicht.quelle}), Familie ${String(sicht.familie)}, Modell ${sicht.modell}`,
+    );
+
+    const knopfDa = (): Promise<boolean | null> =>
+      pollUntil<boolean>(cdp, inView(`return root.querySelector(${JSON.stringify(knopfSel)}) ? true : null;`), 15_000, 400);
+    const schreibe = (block: string): Promise<unknown> =>
+      cdp.evaluate(`
+        const path = ${JSON.stringify(SMOKE_REPAIR_NOTE)};
+        const body = ${JSON.stringify(notiz(block))};
+        const existing = app.vault.getAbstractFileByPath(path);
+        if (existing) await app.vault.modify(existing, body);
+        else await app.vault.create(path, body);
+        const file = app.vault.getAbstractFileByPath(path);
+        let leaf = app.workspace.getMostRecentLeaf(app.workspace.rootSplit);
+        if (!leaf || !leaf.parent) leaf = app.workspace.getLeaf(true);
+        await leaf.openFile(file, { state: { mode: "preview" } });
+        app.workspace.setActiveLeaf(leaf, { focus: true });
+        return true;
+      `);
+    const schliesse = (): Promise<unknown> =>
+      cdp.evaluate(`
+        const b = document.querySelector(".json-repair-modal .modal-button-container button");
+        if (b) b.click();
+        return true;
+      `);
+
+    // CL2 — ein Lauf bis ins Diff-Modal
+    createdFiles.add(SMOKE_REPAIR_NOTE);
+    stub.loescheMitschnitt();
+    await schreibe(kaputt);
+    const da = await knopfDa();
+    const geklickt = da ? await klick(cdp, elImView(`return root.querySelector(${JSON.stringify(knopfSel)});`)) : false;
+    const diff = geklickt
+      ? await pollUntil<{ links: string; rechts: string; anwenden: boolean }>(
+          cdp,
+          `
+            const cols = document.querySelectorAll(".json-repair-modal .json-repair-col");
+            if (cols.length !== 2) return null;
+            const apply = document.querySelector(".json-repair-modal .modal-button-container button.mod-cta");
+            return { links: cols[0].textContent, rechts: cols[1].textContent, anwenden: Boolean(apply) && !apply.disabled };
+          `,
+          15_000,
+          300,
+        )
+      : null;
+    const anfragen = stub.anfragen().filter((a) => a.route === "messages");
+    const letzte = anfragen.at(-1);
+    const body = (letzte?.json ?? {}) as Record<string, unknown>;
+    const kopf = letzte?.header ?? {};
+    const verbotene = ["temperature", "top_p", "top_k", "min_p", "presence_penalty"].filter((k) => k in body);
+    // Untergrenze des Antwortbudgets (`repairMaxTokens`, `src/core/repair/client.ts`): der Block ist kurz. Nicht importiert, weil der
+    // Kern `jsonc-parser` mitzieht, den der Node-Bundle des Treibers nicht aufloest.
+    const budget = 2048;
+    const drahtOk = anfragen.length > 0 && body.model === MODELL && kopf["x-api-key"] === SCHLUESSEL
+      && typeof kopf["anthropic-version"] === "string" && body.max_tokens === budget && body.stream !== true && verbotene.length === 0
+      && stub.anfragen().every((a) => a.route !== "chat");
+    check(
+      CL2!,
+      drahtOk && Boolean(diff) && diff!.links.includes(",,") && !diff!.rechts.includes(",,") && diff!.anwenden,
+      `Anfragen ${anfragen.length}, x-api-key ${kopf["x-api-key"] === SCHLUESSEL ? "ok" : "FALSCH"}, anthropic-version ${String(kopf["anthropic-version"])}, max_tokens ${String(body.max_tokens)} (Budget ${budget}), stream ${String(body.stream)} (Messages-API: fehlt = aus), verbotene Felder: ${verbotene.length === 0 ? "keine" : verbotene.join(",")}; Modal ${diff ? "mit Diff, Anwenden aktiv" : geklickt ? "ohne Diff" : "nicht geoeffnet"}`,
+    );
+    await schliesse();
+    await pollUntil<boolean>(cdp, `return document.querySelector(".json-repair-modal") ? null : true;`, 5000, 250);
+
+    // CL3 — die API antwortet 529
+    fehlerModus = true;
+    await schreibe('{"a": 1, "b": [1, 2,,], "c": 3');
+    const wieder = await knopfDa();
+    const zweiter = wieder ? await klick(cdp, elImView(`return root.querySelector(${JSON.stringify(knopfSel)});`)) : false;
+    const fehler = zweiter
+      ? await pollUntil<{ text: string; gesperrt: boolean }>(
+          cdp,
+          `
+            const st = document.querySelector(".json-repair-modal .json-repair-status.is-error");
+            if (!st) return null;
+            const apply = document.querySelector(".json-repair-modal .modal-button-container button.mod-cta");
+            return { text: st.textContent, gesperrt: !apply || apply.disabled };
+          `,
+          15_000,
+          300,
+        )
+      : null;
+    const unveraendert = await cdp.evaluate<boolean>(`
+      const file = app.vault.getAbstractFileByPath(${JSON.stringify(SMOKE_REPAIR_NOTE)});
+      return (await app.vault.read(file)) === ${JSON.stringify(notiz('{"a": 1, "b": [1, 2,,], "c": 3'))};
+    `);
+    check(
+      CL3!,
+      Boolean(fehler) && /529|overload/i.test(fehler!.text) && fehler!.gesperrt && unveraendert,
+      fehler ? `Meldung ${JSON.stringify(fehler.text.slice(0, 90))}, Anwenden ${fehler.gesperrt ? "gesperrt" : "FREI"}, Datei ${unveraendert ? "unberuehrt" : "GEAENDERT"}` : zweiter ? "kein Fehlerstatus im Modal" : "Knopf nicht klickbar",
+    );
+    await schliesse();
+  } catch (e) {
+    const schon = new Set(bilanz.eintraege().map((x) => x.name));
+    for (const n of [CL1, CL2, CL3]) if (n !== undefined && !schon.has(n)) unmeasured(n, `Messung abgebrochen: ${(e as Error).message}`);
+  } finally {
+    if (manager) await entferneFakeManager(cdp, { pluginId: MANAGER, invalidiere: [PLUGIN_ID] }).catch(() => undefined);
+    await stub.stop();
+  }
 }
 
 const SECTIONS: Section[] = [
@@ -1314,6 +1466,8 @@ const SECTIONS: Section[] = [
           !schluessel.apiKeyInData && schluessel.secretId && schluessel.hydrated,
           `apiKey in data.json: ${schluessel.apiKeyInData ? "JA" : "nein"}, secretId: ${schluessel.secretId ? "ja" : "NEIN"}, Aufloesung traegt den Schlüssel: ${schluessel.hydrated ? "ja" : "NEIN"}`,
         );
+
+        await pruefeClaude(cdp, notiz);
       } finally {
         await stub.stop();
         await cdp

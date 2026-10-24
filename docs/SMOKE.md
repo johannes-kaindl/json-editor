@@ -2,7 +2,7 @@
 
 Was hier steht, prüft die **Naht zum Host**: echtes CSS und echte Geometrie, echtes
 Live-Preview-DOM, echte Klicks (`isTrusted`), echter Speicherpfad, echter Lebenszyklus.
-Die vitest-Suite (76 Dateien / 722 Tests) misst das strukturell nicht — sie läuft gegen
+Die vitest-Suite misst das strukturell nicht — sie läuft gegen
 happy-dom und einen Obsidian-Mock.
 
 **Bilanz-Format und Exit-Codes (seit Welle 18, 2026-10-12):** Der Treiber nutzt `tools/obsidian-cdp/bilanz.ts`. Die Schlusszeile heißt `N gruen · N rot · N uebersprungen · N nichts gemessen · von N Pruefpunkten`, die Marker je Punkt sind `[ok]`, `[ROT]`, `[--]`, `[??]`. Exit 0 bei grün und übersprungen, **Exit 1 bei rot ODER nichts gemessen**, **Exit 2 bei einem Abbruch des Treibers** (vorher 1). Vor und nach dem Umbau, jeweils im frischen Prozess (Port 9388): 31 grün · 0 rot · 0 übersprungen · 0 nichts gemessen.
@@ -113,6 +113,10 @@ einem Abbruch.
 | E1 | ```` ```json ````-Block rendert im Lesemodus als Tree | Markdown-Post-Processor, echtes Preview-DOM |
 | E2 | Kaputter Block fällt auf die Fehler-Karte zurück | dito |
 | E3 | Der Copy-Knopf schreibt wirklich in die Zwischenablage | der Knopf hatte bis 1.11.2 **gar keinen** Guard |
+| **CL — Claude als Endpunkt der Reparatur** (Stub im Anthropic-Modus, kein Netz) | | |
+| CL1 | Der Manager liefert den Claude-Endpunkt nur auf Opt-in (`transports.anthropic`); das Plugin wählt ihn (Backend `anthropic`, Familie `claude`) | ohne den Opt-in sieht das Plugin den Endpunkt nie; die Kontrolle am Fake (`list()` ohne Transporte: 0) macht „gewählt“ erst aussagekräftig |
+| CL2 | Reparatur-Lauf bis ins Diff-Modal: `POST /v1/messages` mit `x-api-key` und `anthropic-version`, `max_tokens` gleich dem Budget, ohne `temperature`/`top_p`; der Vorschlag steht im Modal | der Stub prüft Pfad, Kopfzeilen und Pflichtfelder wie die API (400/401 sonst) |
+| CL3 | Antwortet die API 529, zeigt das Modal den Fehler, Anwenden bleibt gesperrt, die Notiz bleibt unberührt | Fehlerweg über den echten Transport |
 
 ## Bleibt Handarbeit
 
@@ -136,6 +140,7 @@ Mechanisch nicht entscheidbar — dafür bleibt die Runde von Hand:
 | 2026-09-25 | 1.14.2 | 1.12.0 + LLM-Reparatur | **27/27** (Zweitinstanz Port 9303, Staging-Vault `json-editor`) — neu: Abschnitt F (F1–F6: Knopf, Modal mit Diff, Request-Inhalt, Anwenden byte-genau, Schließen, ungültige Antwort). Baseline vorher 21/21 (der Aufwärmlauf zählt nicht: 20/21, C2 Kaltstart) | **bestanden**: `--klick-gegenprobe` → 15/27, zwölf Punkte fallen (C2, D1–D5, E3, F2–F6). F5 war zuerst ohne Klick grün (Vorbedingung fehlte) und wurde korrigiert |
 | 2026-10-09 | 1.14.4 | 1.14.2 + Verbindungs-Tausch (Kit 0.51.2) | **31/31** (Zweitinstanz Port 9373, Staging-Vault `json-editor`, frischer Prozess). Baseline vorher 27/27 (Gate 856 Tests). Neu: Abschnitt G (G1 Bearer-Token geschwärzt und zurück, G2 PEM als escaped JSON-String, G3 PEM mit echten Zeilenumbrüchen, G4 kein `apiKey` in `data.json`); `plugin.repairService.invalidate()` → `plugin.llm.invalidate()` | **bestanden**: `redact: false` in `repair-service.ts` → G1–G3 rot (G1/G2: Draht trägt den Token, G3: kein Vorschlag), kein anderer Punkt fällt mit |
 | 2026-10-09 (2) | 1.14.4 | 1.14.2 + Tausch, Kit 0.51.3 / code-kit 0.15.4 | **31/31** (Zweitinstanz Port 9373, frischer Prozess), Gate 866 Tests; F3 weiter `stream false` | Mutationsprobe vom ersten Lauf gilt unverändert (Schwärzung aus → G1–G3 rot) |
+| 2026-10-25 | 1.14.5 | 1.18.0 + Pin-Hebung (obsidian-kit 0.69.1 / code-kit 0.36.0) + Claude-Opt-in | **44/44** grün · 0 rot · 0 übersprungen · 0 nichts gemessen (Zweitinstanz Port 9551, Staging-Vault `json-editor`, frischer Prozess, Gate 895 Tests). Baseline vorher 41/41 (Gate 889). Neu: CL1–CL3 (Claude über den Manager, Stub im Anthropic-Modus). Der Nenner ist die Bilanzzeile des Treibers, keine Zahl in dieser Datei. | **bestanden**: Opt-in aus `repair-service.ts` entfernt → genau CL1–CL3 rot (11/14 im Abschnitt `repair`); `--klick-gegenprobe` → CL2 und CL3 rot, CL1 bleibt grün (ohne Klick) |
 | 2026-09-02 (2) | 1.13.7 | 1.11.3 | **18/18** (Staging-Vault `json_viewer`) — Bestätigung nach dem `styles.css`-Guard | `buildHerkunft` für `styles.css` in allen drei Ausgängen einzeln hergestellt: `deployt` · `fremd` (30.239 statt 30.213 Bytes) · `fehlt` |
 
 Der Lauf vom **2026-08-22 ist rückwirkend als unbelegt zu lesen**: er lief gegen `10_Pallas`,
