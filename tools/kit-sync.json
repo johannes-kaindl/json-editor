@@ -1,10 +1,10 @@
 {
   "sources": {
     "obsidian-kit": {
-      "ref": "0.61.0"
+      "ref": "0.69.1"
     },
     "code-kit": {
-      "ref": "0.28.0"
+      "ref": "0.36.0"
     }
   },
   "targets": [
@@ -12,7 +12,7 @@
       "dir": "src/vendor/kit",
       "source": "obsidian-kit",
       "from": "src/pure",
-      "modules": ["endpoint-secret-hook", "endpoint-source"],
+      "modules": ["anthropic-wire", "endpoint-secret-hook", "endpoint-source", "override-guard"],
       "rewrite": [["../vendor/code-kit/pure/", "./"], ["../vendor/code-kit/web/", "./"]]
     },
     {
@@ -60,6 +60,7 @@
       "source": "obsidian-kit",
       "from": "src/obsidian",
       "modules": [
+        "anthropic-transport",
         "backend-probe",
         "chat-client",
         "chat-transport",
@@ -74,6 +75,7 @@
         "llm-connection",
         "llm-connection-strings",
         "model-picker",
+        "plugin-api",
         "request-section",
         "request-session",
         "secrets",

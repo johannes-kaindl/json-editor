@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+- **The Request section of the LLM repair shows the thinking field of a Claude endpoint as "Thinking effort (effort)"** instead of "(reasoning_effort)", and the hint "model family detected" has a button "Set family in the manager" that opens the settings of the LLM Endpoint Manager (obsidian-kit 0.63.0).
+- **LM Studio models: thinking and image support now come from the model's metadata** instead of the name alone, so the thinking button can show up for more models. The Request section also warns when the model sent is not loaded but others are: the request loads it on demand and can unload one that is still running (obsidian-kit 0.63.0, code-kit 0.31.0).
+- Claude models count as image-capable and as thinking models without an off switch (code-kit 0.33.0); where "off" is not possible the thinking button reads "Thinking: lowest level" (obsidian-kit 0.63.0).
+- Kit pin `obsidian-kit` 0.61.0 → 0.69.1 and `code-kit` 0.28.0 → 0.36.0. Four modules are newly vendored for the Claude transport (`anthropic-transport`, `anthropic-wire`, `override-guard`, `plugin-api`); `styles.css` carries the new `.okit-request-deviation-action` rule. A fixed value of a single call that a model family does not accept is now dropped and reported under "Last request" (`override-dropped`); the repair sets no such value.
+
 ## [1.18.0] — 2026-10-16
 
 ### Added
