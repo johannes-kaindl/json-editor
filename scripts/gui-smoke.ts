@@ -203,6 +203,7 @@ const PUNKTE_JE_SECTION: Record<string, readonly string[]> = {
     "F4 Anwenden ersetzt nur den Blockinhalt, der Rest bleibt byte-gleich",
     "F5 Modal schließt nach Anwenden",
     "F6 Ungültige Antwort sperrt Anwenden und lässt die Notiz unberührt",
+    "F7 Große Datei: die Anfrage trägt nur das Fenster, der Vorschlag die ganze Datei, Anwenden schreibt byte-genau",
     "G1 Bearer-Token geht geschwärzt raus, der Vorschlag trägt das Original zurück",
     "G2 PEM als JSON-String (\\n escaped) geht geschwärzt raus und kommt als gültiges JSON zurück",
     "G3 PEM mit echten Zeilenumbrüchen (kaputtes JSON) kommt als gültiges JSON zurück",
@@ -1215,15 +1216,28 @@ const SECTIONS: Section[] = [
       // die Reparatur misst und nicht die Laune eines Modells. Der Mitschnitt haelt den Request fest, den das
       // Plugin wirklich gesendet hat. Bewusst OHNE CORS (`cors: false`): die Reparatur fragt mit `stream: false`
       // ueber den Obsidian-Transport (`src/obsidian/repair-service.ts`), nicht ueber den Browser.
-      let modus: "ok" | "kaputt" | "echo" = "ok";
+      let modus: "ok" | "kaputt" | "echo" | "fenster" = "ok";
       const stub = await startLlmStub({
         cors: false,
         models: ["qwen/qwen3.8-27b"],
         antwort: (a) => {
           // „echo": das Modell gibt das gesendete Dokument zurueck, ein Trennkomma vor `}` weniger —
           // so misst der Lauf, was von der Schwaerzung auf dem Draht ankommt und was zurueckkehrt.
-          const doc = (echoText(a.json) ?? "").split("Document:\n")[1] ?? "";
-          const text = modus === "echo" ? doc.replace(/,(\s*)}/, "$1}") : modus === "ok" ? '{"a": 1, "b": [1, 2]}' : '{"a": 1,}';
+          const frage = echoText(a.json) ?? "";
+          const doc = frage.split("Document:\n")[1] ?? "";
+          // „fenster": auf einen Ausschnitt (Kopfwort `Excerpt:`) antwortet das Modell mit dessen Zeilen, ein fehlendes Komma ergaenzt;
+          // eine Anfrage mit dem GANZEN Dokument beantwortet es unveraendert — und damit falsch, F7 wuerde rot.
+          const ausschnitt = frage.split("Excerpt:\n")[1];
+          const text =
+            modus === "fenster"
+              ? ausschnitt !== undefined
+                ? ausschnitt.replace(/("x{40}\d+")\n/, "$1,\n")
+                : doc
+              : modus === "echo"
+                ? doc.replace(/,(\s*)}/, "$1}")
+                : modus === "ok"
+                  ? '{"a": 1, "b": [1, 2]}'
+                  : '{"a": 1,}';
           return { text, model: "qwen/qwen3.8-27b" };
         },
       });
@@ -1366,6 +1380,82 @@ const SECTIONS: Section[] = [
           if (b) b.click();
           return true;
         `);
+
+        // F7 — grosse Datei (Welle 27): ueber der Schwelle geht nur das Fenster um die Fehlerstelle an das Modell, der Vorschlag im
+        // Modal traegt trotzdem die GANZE Datei, und Anwenden schreibt sie byte-genau. 400 Eintraege mit je 40 Fuellzeichen sind ein
+        // Block von rund 24.000 Zeichen und 402 Zeilen, die Schwelle liegt bei 200 Zeilen; das Komma fehlt mitten im Block.
+        // Gemessen wird die Laenge des Anfragekoerpers am Draht (der Stub haelt ihn fest) gegen die Laenge des Blocks, dazu, dass
+        // weder der erste noch der letzte Eintrag darin steht. Gegenprobe: die Schwelle auf „nie Fenster" stellen — die Anfrage traegt
+        // dann das ganze Dokument, der Stub antwortet unveraendert, F7 wird rot.
+        modus = "fenster";
+        stub.loescheMitschnitt();
+        const eintrag = (i: number): string => `  "k${i}": "${"x".repeat(40)}${i}"`;
+        const FEHLER_BEI = 200;
+        const gut7 = `{\n${Array.from({ length: 400 }, (_, i) => `${eintrag(i)}${i < 399 ? "," : ""}`).join("\n")}\n}`;
+        const kaputt7 = gut7.replace(`${eintrag(FEHLER_BEI)},`, eintrag(FEHLER_BEI));
+        // Die Notiz wird in der Leaf neu geöffnet und aktiviert wie am Anfang des Abschnitts.
+        await cdp.evaluate(`
+          const file = app.vault.getAbstractFileByPath(${JSON.stringify(SMOKE_REPAIR_NOTE)});
+          await app.vault.modify(file, ${JSON.stringify(notiz(kaputt7))});
+          let leaf = app.workspace.getMostRecentLeaf(app.workspace.rootSplit);
+          if (!leaf || !leaf.parent) leaf = app.workspace.getLeaf(true);
+          await leaf.openFile(file, { state: { mode: "preview" } });
+          app.workspace.setActiveLeaf(leaf, { focus: true });
+          return true;
+        `);
+        // Warten auf die Karte des NEUEN Blocks in der LESEANSICHT: der alte Knopf steht, bis sie neu rendert, und neben ihr steht in
+        // derselben Leaf der unsichtbare Live-Preview-Editor mit der alten Karte (`root.querySelector` ohne `.markdown-reading-view`
+        // trifft zuerst ihn: erste Läufe, F7 rot). Der neue Fehler steht an einer Position ab 1000, der alte weit darunter.
+        const da7 = await pollUntil<boolean>(
+          cdp,
+          inView(
+            `const k = root.querySelector(".markdown-reading-view .json-codeblock.is-error .json-codeblock-error"); return k && /position \\d{4,}/.test(k.textContent) ? true : null;`,
+          ),
+          20_000,
+          400,
+        );
+        const geklickt7 = Boolean(da7) && (await klick(cdp, elImView(`return root.querySelector(${JSON.stringify(knopfSel)});`)));
+        const diff7 = geklickt7
+          ? await pollUntil<{ rechts: string; anwenden: boolean }>(
+              cdp,
+              `
+                const cols = document.querySelectorAll(".json-repair-modal .json-repair-col");
+                if (cols.length !== 2) return null;
+                const apply = document.querySelector(".json-repair-modal .modal-button-container button.mod-cta");
+                return { rechts: cols[1].textContent, anwenden: Boolean(apply) && !apply.disabled };
+              `,
+              20_000,
+              300,
+            )
+          : null;
+        const draht7 = letzterRoh();
+        const angewendet7 = Boolean(diff7?.anwenden) && (await klick(cdp, `document.querySelector(".json-repair-modal .modal-button-container button.mod-cta")`));
+        const soll7 = notiz(gut7);
+        const platte7 = angewendet7
+          ? await pollUntil<string>(
+              cdp,
+              `
+                const file = app.vault.getAbstractFileByPath(${JSON.stringify(SMOKE_REPAIR_NOTE)});
+                const text = await app.vault.read(file);
+                return text === ${JSON.stringify(soll7)} ? text : null;
+              `,
+              8000,
+              300,
+            )
+          : null;
+        const nurFenster =
+          draht7.includes("Excerpt:") && !draht7.includes("Document:") && !draht7.includes(eintrag(0)) && !draht7.includes(eintrag(399)) && draht7.length < kaputt7.length / 4;
+        const ganzerVorschlag = Boolean(diff7) && diff7!.rechts.includes(eintrag(0)) && diff7!.rechts.includes(eintrag(399)) && diff7!.rechts.includes(`${eintrag(FEHLER_BEI)},`);
+        check(
+          "F7 Große Datei: die Anfrage trägt nur das Fenster, der Vorschlag die ganze Datei, Anwenden schreibt byte-genau",
+          nurFenster && ganzerVorschlag && platte7 === soll7,
+          draht7 === ""
+            ? da7
+              ? `keine Anfrage angekommen (Knopf ${geklickt7 ? "geklickt" : "NICHT geklickt"}, Modal ${diff7 ? "mit Diff" : "ohne Diff"})`
+              : `Karte des neuen Blocks nicht erschienen (Leseansicht zeigt weiter den alten Fehler)`
+            : `Anfrage ${draht7.length} Zeichen bei ${kaputt7.length} im Block (${draht7.includes("Excerpt:") ? "Ausschnitt" : "GANZES Dokument"}), Vorschlag ${ganzerVorschlag ? "mit der ganzen Datei" : "OHNE die ganze Datei"}, Datei ${platte7 === soll7 ? "= Soll" : angewendet7 ? "weicht ab" : "nicht angewendet"}`,
+        );
+        await cdp.evaluate(`document.querySelector(".json-repair-modal .modal-button-container button:not(.mod-cta)")?.click(); return true;`).catch(() => undefined);
 
         // --- Verbindung (Kit): Schwaerzung, Schluesselbund -------------------------------
         // Ein Block mit Geheimnis durch das Modal schicken und die Spalten lesen.
