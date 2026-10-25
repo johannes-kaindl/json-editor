@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.20.0] — 2026-10-25
+
 ### Fixed
 - **Repairing a big file no longer fails because the answer does not fit.** Above about 32,000 characters the whole document no longer fitted into the answer budget, the answer broke off and the repair failed. A long file now goes in part (see below), so the budget is no longer the limit as long as the parser names the spot of its error.
 
