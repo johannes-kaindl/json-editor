@@ -1,4 +1,4 @@
-// vendored from code-kit@0.37.0, src/ts/pure/llm-answer.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from code-kit@0.37.5, src/ts/pure/llm-answer.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 import { stripThinkBlocks } from "./think-splitter";
 
 /** The shape of the whole answer: a Markdown fence from the first line to the last, language tag optional, a closing fence that may

@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+- **A secret that is already escaped in the file comes back unchanged after the LLM repair.** A PEM key written in a JSON string (line breaks as backslash and `n`) used to return from the repair with a doubled backslash: still valid JSON, but a different key. The restore of masked values (kit `restoreContent: "json"`) now puts such a value back byte for byte.
+
+### Changed
+- Kit pin `obsidian-kit` 0.69.1 → 0.70.0 and `code-kit` 0.37.0 → 0.37.5. Besides the fix above nothing looks different: the new link guard, the chat window options and the Claude context limit are not used by this plugin.
+
 ## [1.20.0] — 2026-10-25
 
 ### Fixed

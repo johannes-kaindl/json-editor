@@ -1,6 +1,6 @@
 {
   "source": "obsidian-kit",
-  "version": "0.69.1",
-  "sha": "4f99d6c",
+  "version": "0.70.0",
+  "sha": "86a2d2d",
   "vendored": "kit-css.ts, linear-probe.ts"
 }

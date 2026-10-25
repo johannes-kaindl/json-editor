@@ -1,4 +1,4 @@
-// vendored from code-kit@0.37.0, src/ts/pure/json-error-position.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from code-kit@0.37.5, src/ts/pure/json-error-position.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 /** Where a JSON parser says the text is broken — and the arithmetic between an offset and a line/column pair.
  *
  *  Origin: json-editor `src/core/repair/window.ts` (`offsetFromMessage`, `offsetOfLineCol`) and `src/core/parse.ts` (`offsetToLineCol`,
