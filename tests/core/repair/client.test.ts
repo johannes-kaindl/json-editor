@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   type ConnectionOutcome,
+  outcomeToAnswer,
   repairMaxTokens,
   toRepairResult,
 } from "../../../src/core/repair/client";
@@ -67,5 +68,31 @@ describe("toRepairResult — Fehlerarten der Verbindung", () => {
   });
   it("eine unbekannte Art faellt auf network zurueck", () => {
     expect(toRepairResult(fail("???"), "json")).toEqual({ ok: false, error: { kind: "network" } });
+  });
+});
+
+describe("outcomeToAnswer — die Abbildung ohne Prüfung des Dokuments (Fensterweg)", () => {
+  it("reicht den Text der Antwort unverändert durch, auch wenn er kein JSON ist", () => {
+    expect(outcomeToAnswer(ok('  "a": 1,\n  "b": 2'))).toEqual({
+      ok: true,
+      content: '  "a": 1,\n  "b": 2',
+    });
+  });
+  it("leere Antwort ist ein eigener Fehler", () => {
+    expect(outcomeToAnswer(ok(" \n "))).toEqual({ ok: false, error: { kind: "empty" } });
+  });
+  it("bildet die Fehlerarten der Verbindung wie toRepairResult ab", () => {
+    for (const kind of [
+      "no-endpoint",
+      "aborted",
+      "timeout",
+      "http",
+      "overflow",
+      "truncated",
+      "x",
+    ]) {
+      const o = fail(kind, { status: 500 });
+      expect(outcomeToAnswer(o)).toEqual(toRepairResult(o, "json"));
+    }
   });
 });

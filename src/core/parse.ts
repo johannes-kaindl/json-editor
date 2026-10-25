@@ -1,4 +1,7 @@
+import { offsetFromMessage, offsetToLineCol } from "../vendor/kit/json-error-position";
 import type { JsonValue, ParseResult } from "./types";
+
+export { offsetToLineCol };
 
 export function parse(text: string): ParseResult {
   if (text.trim() === "") {
@@ -15,45 +18,21 @@ export function parse(text: string): ParseResult {
 }
 
 function extractPosition(text: string, message: string): { line: number; col: number } {
-  // Node's JSON.parse error messages include "position N" (V8) or
-  // "line N column M" depending on engine/version. Try both.
-  const posMatch = /position\s+(\d+)/i.exec(message);
-  if (posMatch) {
-    const offset = Number.parseInt(posMatch[1], 10);
-    return offsetToLineCol(text, offset);
-  }
-  const lineColMatch = /line\s+(\d+)\s+column\s+(\d+)/i.exec(message);
-  if (lineColMatch) {
-    return {
-      line: Number.parseInt(lineColMatch[1], 10),
-      col: Number.parseInt(lineColMatch[2], 10),
-    };
-  }
+  // Die Stelle, die die Meldung selbst nennt (`position N` bei V8, sonst `line N column M`): das Kit liest sie, ohne zu raten.
+  const offset = offsetFromMessage(text, message);
+  if (offset !== null) return offsetToLineCol(text, offset);
   // Fallback for Node >=24 V8 messages that omit position info ("Unexpected
   // token 'X', ... is not valid JSON"). lastIndexOf is heuristic: it can
   // misidentify the position when the token character also appears earlier
   // in legal content (e.g. inside a string literal). Good enough for the
   // error-banner UX — known limitation, parser-rewrite not in scope.
+  // Die Reparatur nutzt diesen Rat NICHT (sie schnitte damit das falsche Fenster): `offsetFromMessage` gibt dort `null`.
   const tokenMatch = /Unexpected token '([^']+)'/i.exec(message);
   if (tokenMatch) {
-    const offset = text.lastIndexOf(tokenMatch[1]);
-    if (offset >= 0) {
-      return offsetToLineCol(text, offset);
+    const guess = text.lastIndexOf(tokenMatch[1]);
+    if (guess >= 0) {
+      return offsetToLineCol(text, guess);
     }
   }
   return { line: 1, col: 1 };
-}
-
-export function offsetToLineCol(text: string, offset: number): { line: number; col: number } {
-  let line = 1;
-  let col = 1;
-  for (let i = 0; i < offset && i < text.length; i++) {
-    if (text[i] === "\n") {
-      line += 1;
-      col = 1;
-    } else {
-      col += 1;
-    }
-  }
-  return { line, col };
 }

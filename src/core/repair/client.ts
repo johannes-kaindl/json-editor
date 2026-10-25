@@ -28,10 +28,14 @@ export type ConnectionOutcome =
   | { ok: true; content: string }
   | { ok: false; kind: string; detail: string; status?: number };
 
-/** `LlmResult` der Verbindung → Ergebnis der Reparatur. Eine abgeschnittene Antwort mit Text
+/** Antwort der Verbindung als Text oder Fehler, ohne den Text zu prüfen. */
+export type Answer = { ok: true; content: string } | { ok: false; error: RepairError };
+
+/** `LlmResult` der Verbindung → Text oder Fehler der Reparatur. Eine abgeschnittene Antwort mit Text
  *  kommt als Erfolg an (`finishReason: "length"`) und scheitert, wenn ueberhaupt, an der Pruefung
- *  mit dem Parser des Blocks. */
-export function toRepairResult(r: ConnectionOutcome, lang: FenceLang): RepairResult {
+ *  mit dem Parser. Die Pruefung ist Sache des Aufrufers: ein ganzes Dokument prueft `toRepairResult`,
+ *  einen Ausschnitt erst das Dokument, in das er eingesetzt ist. */
+export function outcomeToAnswer(r: ConnectionOutcome): Answer {
   if (!r.ok) {
     switch (r.kind) {
       case "no-endpoint":
@@ -50,7 +54,14 @@ export function toRepairResult(r: ConnectionOutcome, lang: FenceLang): RepairRes
     }
   }
   if (r.content.trim() === "") return { ok: false, error: { kind: "empty" } };
-  const v = validateRepair(r.content, lang);
-  if (!v.ok) return { ok: false, error: { kind: "invalid", detail: v.error, answer: r.content } };
+  return { ok: true, content: r.content };
+}
+
+/** `LlmResult` der Verbindung → Ergebnis der Reparatur fuer ein ganzes Dokument, geprueft mit dem Parser des Blocks. */
+export function toRepairResult(r: ConnectionOutcome, lang: FenceLang): RepairResult {
+  const a = outcomeToAnswer(r);
+  if (!a.ok) return a;
+  const v = validateRepair(a.content, lang);
+  if (!v.ok) return { ok: false, error: { kind: "invalid", detail: v.error, answer: a.content } };
   return { ok: true, text: v.text };
 }

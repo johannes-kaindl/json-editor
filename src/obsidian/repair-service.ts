@@ -1,7 +1,7 @@
 import type { App } from "obsidian";
-import { MODE, type RepairResult, repairMaxTokens, toRepairResult } from "../core/repair/client";
+import { MODE, type RepairResult, repairMaxTokens } from "../core/repair/client";
 import type { FenceLang } from "../core/repair/fence";
-import { buildRepairMessages } from "../core/repair/prompt";
+import { repairWindowed } from "../core/repair/windowed";
 import type { SseTransport } from "../vendor/kit-obsidian/chat-client";
 import { requestUrlTransport } from "../vendor/kit-obsidian/chat-transport";
 import { type LlmConnection, createLlmConnection } from "../vendor/kit-obsidian/llm-connection";
@@ -67,18 +67,19 @@ export class RepairService {
     });
   }
 
-  /** Ein Reparaturlauf. Abweichungen meldet die Verbindung selbst ans Sitzungsprotokoll. */
+  /** Ein Reparaturlauf. Eine kleine Datei geht ganz an das Modell; bei einer großen schickt der Lauf nur die Zeilen um
+   *  den Fehler (`repairWindowed`), das Ergebnis ist trotzdem der GANZE reparierte Text. Abweichungen meldet die
+   *  Verbindung selbst ans Sitzungsprotokoll. */
   async run(
     source: string,
     errorMessage: string,
     lang: FenceLang,
     signal?: AbortSignal,
   ): Promise<RepairResult> {
-    this.repairBudget = repairMaxTokens(source);
-    const r = await this.llm.complete(
-      { messages: buildRepairMessages(source, errorMessage, lang) },
-      signal ? { signal } : {},
-    );
-    return toRepairResult(r, lang);
+    return repairWindowed(source, errorMessage, lang, ({ messages, payload }) => {
+      // Das Budget folgt dem Text, der wirklich geht: ein Fenster braucht wenig, das ganze Dokument so viel wie bisher.
+      this.repairBudget = repairMaxTokens(payload);
+      return this.llm.complete({ messages }, signal ? { signal } : {});
+    });
   }
 }

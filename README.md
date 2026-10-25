@@ -50,7 +50,7 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 - **Long values are shortened** at 120 characters with a *Show more* chip. Editing and copying always use the full value.
 - **Breadcrumb** showing the current path; clicking a segment scrolls back up the tree.
 - **Copy buttons** on hover — click copies the value, Alt-click copies the JSON path.
-- **Repair broken JSON with an LLM** — an invalid `` ```json `` / `` ```jsonc `` block shows a *Repair* button in its error card (and the command *Repair JSON in the current code block* works at the cursor). The block and the parser error go to a language model; you see a side-by-side line diff and nothing is written until you press *Apply*. See [Repair with an LLM](#repair-with-an-llm).
+- **Repair broken JSON with an LLM** — an invalid `` ```json `` / `` ```jsonc `` block shows a *Repair* button in its error card (and the command *Repair JSON in the current code block* works at the cursor). The block (of a long one, only the lines around the error) and the parser error go to a language model; you see a side-by-side line diff and nothing is written until you press *Apply*. See [Repair with an LLM](#repair-with-an-llm).
 - **Theme-aware styling** via Obsidian CSS variables — no hardcoded colors, no theme breakage.
 - **Embedded code blocks** — `` ```json `` and `` ```jsonc `` fences in any Markdown note render as a titled card with a collapsible tree (the `` ```jsonc `` variant tolerates comments). Blocks over 20 lines auto-collapse. Invalid JSON renders as a styled error card with line/column info, not a crash.
 - **Embedded JSON files** — `![[settings.json]]` (or `.jsonc`) in a note shows the file's content in reading view as a collapsed, read-only tree titled with the file name, instead of a bare file chip. Files over 512 KB, `![[file.json#part]]` and files that fail to parse (error card) are the exceptions; nothing is edited there, open the file for that.
@@ -94,7 +94,7 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 | **Obsidian** | 1.11.4 or newer (`minAppVersion`) — API keys for the LLM repair are stored in Obsidian's keychain (`app.secretStorage`), added in 1.11.4. |
 | **Platform** | Desktop and mobile. Not desktop-only; the tree has a dedicated touch interaction model (long-press menu instead of hover buttons, `Alt`+arrow reorder). |
 | **Dependencies** | None to install. The two runtime libraries (`@cfworker/json-schema`, `jsonc-parser`) are bundled into `main.js`. |
-| **Network** | None on its own: no telemetry, no remote resources, no schema fetching over the network — everything resolves inside the vault. The one exception is the optional [LLM repair](#repair-with-an-llm): when you press *Repair*, the broken block goes to the endpoint you configured — your own machine for a local server, Anthropic if you choose Claude, otherwise the provider you entered. |
+| **Network** | None on its own: no telemetry, no remote resources, no schema fetching over the network — everything resolves inside the vault. The one exception is the optional [LLM repair](#repair-with-an-llm): when you press *Repair*, the broken block (of a long one, the lines around the error) goes to the endpoint you configured — your own machine for a local server, Anthropic if you choose Claude, otherwise the provider you entered. |
 | **Building from source** | Node.js 20+ and npm (see [Development](#development)). |
 
 ---
@@ -193,7 +193,7 @@ Settings live under **Settings → Community plugins → JSON Editor**.
 
 An invalid `` ```json `` or `` ```jsonc `` code block renders as an error card. That card has a **Repair** button in its title row; the command **Repair JSON in the current code block** does the same for the block under the cursor in the editor. In the file view, a `.json` or `.jsonc` file that does not parse shows the same **Repair** button in its error banner; applying writes into the file as one edit that undo takes back.
 
-1. The block's text and the parser's error message are sent to a language model, with the instruction to change as little as possible and answer with the document only.
+1. The block's text and the parser's error message are sent to a language model, with the instruction to change as little as possible and answer with the document only. A text of more than 200 lines goes only in part: the 20 lines before and after the first error. The model answers with just those lines, the plugin puts them back and checks the whole document; if that does not fix it, the window grows (at most three windows), and in the end the whole text is sent as before. When the parser names no spot for its error (a trailing comma before `]`, for example), the whole text is sent right away.
 2. The answer is checked with the same parser that rejected the block. Only a valid answer can be applied; an invalid one shows its reason instead.
 3. A modal shows the original on the left and the proposal on the right, with the changed lines marked. **Apply** replaces only the content of that one code block (the rest of the note stays byte-identical), **Try again** asks the model again, **Discard** writes nothing.
 

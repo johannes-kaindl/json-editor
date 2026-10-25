@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildExcerptMessages,
   buildRepairMessages,
   extractDocument,
   validateRepair,
 } from "../../../src/core/repair/prompt";
+import { unwrapAnswer } from "../../../src/vendor/kit/llm-answer";
+import type { TextWindow } from "../../../src/vendor/kit/text-window";
 import { pruefeLinear } from "../../vendor/kit/linear-probe";
 
 describe("buildRepairMessages", () => {
@@ -53,5 +56,70 @@ describe("validateRepair", () => {
   });
   it("leere Antwort ist ein Fehler", () => {
     expect(validateRepair("  ", "json")).toEqual({ ok: false, error: "Empty answer" });
+  });
+});
+
+describe("buildExcerptMessages", () => {
+  const win: TextWindow = {
+    from: 29,
+    to: 31,
+    total: 120,
+    start: 400,
+    end: 440,
+    text: '  "a": 1,\n  "b" 2,\n  "c": 3',
+    line: 30,
+    col: 7,
+  };
+  const msg = "Expected ':' after property name in JSON at position 417 (line 31 column 7)";
+
+  it("nennt den Ausschnitt als Ausschnitt, mit Zeilen und der Stelle darin", () => {
+    const [sys, user] = buildExcerptMessages(win, msg, "json");
+    expect(sys?.content).toMatch(/excerpt/i);
+    expect(sys?.content).toMatch(/do not add or remove/i);
+    expect(user?.content).toContain("lines 30 to 32 of 120");
+    expect(user?.content).toContain("line 2, column 7 of the excerpt");
+    expect(user?.content).toContain(`Excerpt:\n${win.text}`);
+  });
+
+  it("trägt den Fehler ohne die Zahlen des ganzen Dokuments", () => {
+    const user = buildExcerptMessages(win, msg, "json")[1]?.content ?? "";
+    expect(user).toContain("Parser error: Expected ':' after property name in JSON");
+    expect(user).not.toContain("position 417");
+    expect(user).not.toContain("line 31 column 7");
+  });
+
+  it("verwendet nicht das Format `Document:` der ganzen Datei", () => {
+    expect(buildExcerptMessages(win, msg, "json")[1]?.content).not.toContain("Document:");
+  });
+
+  it("jsonc: Kommentare bleiben stehen", () => {
+    expect(buildExcerptMessages(win, "CommaExpected", "jsonc")[0]?.content).toMatch(/keep them/);
+  });
+});
+
+const extractExcerpt = (answer: string): string => unwrapAnswer(answer, { keepIndent: true });
+
+describe("Ausschnitt entzäunen (unwrapAnswer mit keepIndent)", () => {
+  it("lässt die Einrückung der ersten Zeile stehen (extractDocument schneidet sie ab)", () => {
+    expect(extractExcerpt('  "a": 1,\n  "b": 2')).toBe('  "a": 1,\n  "b": 2');
+    expect(extractDocument('  "a": 1,\n  "b": 2')).toBe('"a": 1,\n  "b": 2');
+  });
+  it("entfernt Leerzeilen davor und Leerraum dahinter", () => {
+    expect(extractExcerpt('\n\n  "a": 1,\n  "b": 2\n\n')).toBe('  "a": 1,\n  "b": 2');
+  });
+  it("entfernt Denkblöcke und einen umschließenden Zaun", () => {
+    expect(extractExcerpt('<think>hm</think>\n```json\n  "a": 1,\n  "b": 2\n```')).toBe(
+      '  "a": 1,\n  "b": 2',
+    );
+  });
+  it("bleibt linear bei vielen nie geschlossenen <think>", () => {
+    const r = pruefeLinear(extractExcerpt, (n) => `${"<think>".repeat(n)}{"a":1}`);
+    expect(r.linear, r.message).toBe(true);
+  });
+  it("bleibt linear bei Leerzeilen vor dem Inhalt und bei einem Zaun, der nie schließt", () => {
+    const leer = pruefeLinear(extractExcerpt, (n) => `${" \n".repeat(n)}x`);
+    expect(leer.linear, leer.message).toBe(true);
+    const zaun = pruefeLinear(extractExcerpt, (n) => `\`\`\`${" \n".repeat(n)}x`);
+    expect(zaun.linear, zaun.message).toBe(true);
   });
 });

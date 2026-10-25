@@ -6,7 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+- **Repairing a big file no longer fails because the answer does not fit.** Above about 32,000 characters the whole document no longer fitted into the answer budget, the answer broke off and the repair failed. A long file now goes in part (see below), so the budget is no longer the limit as long as the parser names the spot of its error.
+
 ### Changed
+- **The LLM repair of a long file sends only the lines around the error.** A text of more than 200 lines no longer goes to the model as a whole: it gets the 20 lines before and after the first parser error and answers with just those lines; the plugin puts them back and checks the whole document before it shows the proposal. Everything outside the window stays byte-identical (also in files with Windows line endings), and the dialog still shows the whole file with the repair in place. If the window does not fix it, the next one is twice as big (at most three windows), and in the end the whole text is sent as before, so a repair costs at most four requests. When the parser names no spot for its error (a trailing comma before `]` or a missing value, for example), the whole text is sent right away, as before. Fewer tokens, less rewriting of lines nobody asked to touch. The README and SECURITY.md now say that a long file goes in part.
 - Kit pin `code-kit` 0.36.0 → 0.37.0. Nothing looks different: the new Anthropic branch of the model-context module is an option this plugin does not set, and the link-guard and index-guard additions are not vendored here. Three small modules are new (`json-error-position`, `text-window`, `llm-answer`); the repair uses them (see below).
 
 ## [1.19.0] — 2026-10-24

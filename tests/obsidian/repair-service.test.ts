@@ -1,5 +1,6 @@
 import type { App } from "obsidian";
 import { describe, expect, it, vi } from "vitest";
+import { WINDOW_MIN_LINES } from "../../src/core/repair/windowed";
 import { DEFAULT_SETTINGS, type JsonEditorSettings } from "../../src/obsidian/SettingsTab";
 import { RepairService } from "../../src/obsidian/repair-service";
 import type { SseTransport } from "../../src/vendor/kit-obsidian/chat-client";
@@ -127,6 +128,92 @@ describe("RepairService", () => {
     const out = await svc.run(source, "E", "json");
     expect(JSON.stringify(sent.body)).not.toContain(token);
     expect(out).toEqual({ ok: true, text: `{"auth": "Bearer ${token}", "a": 1}` });
+  });
+
+  describe("large files: only the window around the error goes out", () => {
+    const N = WINDOW_MIN_LINES * 3;
+    const MID = Math.floor(N / 2);
+    /** Objekt mit N Einträgen, einer pro Zeile; `special` ersetzt die Zeile des Eintrags MID (ohne Komma am Ende). */
+    const docWith = (special?: string): { good: string; bad: string } => {
+      const line = (i: number, comma: boolean) =>
+        i === MID && special !== undefined
+          ? `  ${special}${comma ? "," : ""}`
+          : `  "k${i}": ${i}${comma ? "," : ""}`;
+      const lines = (broken: boolean) =>
+        Array.from({ length: N }, (_, i) => line(i, i < N - 1 && !(broken && i === MID)));
+      return { good: `{\n${lines(false).join("\n")}\n}`, bad: `{\n${lines(true).join("\n")}\n}` };
+    };
+    const config = { endpoints: [{ url: "http://h:1234", model: "m" }] };
+    const excerptOf = (s: Sent) => (messagesOf(s)[1]?.content ?? "").split("Excerpt:\n")[1] ?? "";
+    const addComma = (text: string) => text.replace(/("[^"\n]*": [^,\n]+)(\n)/, "$1,$2");
+
+    it("sends the lines around the error, not the file, with a window-sized budget", async () => {
+      const { good, bad } = docWith();
+      const { svc, sent } = make(config, (s) => addComma(excerptOf(s)));
+      const out = await svc.run(
+        bad,
+        "Expected ',' or '}' after property value in JSON at position 1",
+        "json",
+      );
+      // Das Modell hat die Zeile mit dem fehlenden Komma im Fenster ergänzt, der Rest der Datei ist unberührt.
+      expect(out).toEqual({ ok: true, text: good });
+      const content = messagesOf(sent)[1]?.content ?? "";
+      expect(content).toContain("Excerpt:\n");
+      expect(content).not.toContain("Document:\n");
+      expect(content.length).toBeLessThan(bad.length / 4);
+      expect(sent.body.max_tokens).toBe(2048);
+    });
+
+    it("the Bearer token in the window goes out redacted and comes back in the proposal", async () => {
+      const token = "abcdef0123456789abcdef0123";
+      const { good, bad } = docWith(`"auth": "Bearer ${token}"`);
+      const { svc, sent } = make(config, (s) => addComma(excerptOf(s)));
+      const out = await svc.run(bad, "E", "json");
+      expect(JSON.stringify(sent.body)).not.toContain(token);
+      expect(out).toEqual({ ok: true, text: good });
+    });
+
+    // Wert-Treue der Rückführung ist hier bewusst nicht geprüft: ein schon maskiertes `\\n` kommt mit `\\\\n` zurück, im
+    // ganzen Dokument genauso (Befund Welle 27, Task im json-editor-Cockpit). Gemessen wird, was der Fensterweg verantwortet.
+    it("a PEM key (JSON-escaped newlines) in the window is redacted on the wire and the proposal is valid JSON again", async () => {
+      const body = "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7";
+      const pem = `-----BEGIN PRIVATE KEY-----\\n${body}\\n-----END PRIVATE KEY-----`;
+      const { good, bad } = docWith(`"key": "${pem}"`);
+      const { svc, sent } = make(config, (s) => addComma(excerptOf(s)));
+      const out = await svc.run(bad, "E", "json");
+      expect(JSON.stringify(sent.body)).not.toContain(body);
+      expect(out).toMatchObject({ ok: true });
+      expect(out.ok && JSON.parse(out.text)[`k${MID - 1}`]).toBe(MID - 1);
+      expect(out.ok && JSON.parse(out.text).key).toContain(body);
+      expect(good).toContain(body);
+    });
+
+    it("the budget follows the text that is sent: windows small, the whole document as before", async () => {
+      // Die Zeilen sind lang genug, dass das ganze Dokument über dem Boden von 2048 liegt.
+      const pad = "x".repeat(60);
+      const lines = Array.from(
+        { length: N },
+        (_, i) => `  "k${i}": "${pad}${i}"${i < N - 1 ? "," : ""}`,
+      );
+      const good = `{\n${lines.join("\n")}\n}`;
+      const bad = good.replace(`"k${MID}": "${pad}${MID}",`, `"k${MID}": "${pad}${MID}"`);
+      const budgets: unknown[] = [];
+      const { svc } = make(config, (s) => {
+        budgets.push(s.body.max_tokens);
+        // Das Modell ändert nichts: drei Fenster, dann das ganze Dokument.
+        const content = messagesOf(s)[1]?.content ?? "";
+        return content.includes("Excerpt:\n")
+          ? excerptOf(s)
+          : (content.split("Document:\n")[1] ?? "");
+      });
+      const out = await svc.run(bad, "E", "json");
+      expect(out).toMatchObject({ ok: false, error: { kind: "invalid" } });
+      expect(budgets).toHaveLength(4);
+      // Fenster von 41, 81 und 161 Zeilen wachsen mit ihrem Text; das ganze Dokument liegt am Deckel wie bisher.
+      expect(budgets[0]).toBeLessThan(2200);
+      expect(budgets).toEqual([...budgets].sort((a, b) => Number(a) - Number(b)));
+      expect(budgets[3]).toBe(16384);
+    });
   });
 
   describe("Claude as an endpoint of the LLM Endpoint Manager", () => {
