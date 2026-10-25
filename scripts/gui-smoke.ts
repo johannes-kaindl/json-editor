@@ -67,6 +67,7 @@ import {
   pollUntil,
   releaseAlwaysOnTop,
   requireVisible,
+  schliesseEinstellungen,
 } from "../../tools/obsidian-cdp/cdp.js";
 import { echoText, startLlmStub } from "../../tools/obsidian-cdp/llm-stub.js";
 import { type Bilanz, createBilanz, parseArgs, runDriver } from "../../tools/obsidian-cdp/bilanz.js";
@@ -1737,28 +1738,39 @@ const SECTIONS: Section[] = [
       // Der Haken des Kits (`installTabRefreshOnOpen`) wirkt nur, solange er installiert bleibt: baute `hide()` ihn ab, zeichnete der Tab nur
       // beim ersten Öffnen und danach nie wieder (gemessen vor dem Fix: Aufbauten 1, 1, 1, 1; danach 1, 3, 5, 7). Gemessen wird der Aufbau
       // selbst: `renderImperative` zählt mit, der Tab wird dreimal geöffnet und geschlossen.
-      const zaehler = await cdp.evaluate<number[]>(`
+      const schlaf = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+      const gefunden = await cdp.evaluate<boolean>(`
         const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
         const tab = (app.setting.pluginTabs ?? []).find((t) => t.plugin === plugin);
-        if (!tab) return [];
+        if (!tab) return false;
         const original = tab.renderImperative;
-        let n = 0;
-        tab.renderImperative = function (...a) { n++; return original.apply(this, a); };
-        const stand = [];
+        window.__aufbauten = { n: 0, tab, original };
+        tab.renderImperative = function (...a) { window.__aufbauten.n++; return original.apply(this, a); };
+        return true;
+      `);
+      const zaehler: number[] = [];
+      if (gefunden) {
         try {
           for (let i = 0; i < 3; i++) {
-            app.setting.open();
-            app.setting.openTabById(${JSON.stringify(PLUGIN_ID)});
-            await new Promise((r) => setTimeout(r, 1200));
-            stand.push(n);
-            app.setting.close();
-            await new Promise((r) => setTimeout(r, 500));
+            await cdp.evaluate(`
+              app.setting.open();
+              app.setting.openTabById(${JSON.stringify(PLUGIN_ID)});
+              return true;
+            `);
+            await schlaf(1200);
+            zaehler.push(await cdp.evaluate<number>(`return window.__aufbauten.n;`));
+            // Die Brücke schließt und macht das Hauptfenster wieder zum aktiven Dokument (TREIBER-EINSTELLUNGEN).
+            await schliesseEinstellungen(cdp);
+            await schlaf(500);
           }
         } finally {
-          tab.renderImperative = original;
+          await cdp.evaluate(`
+            const m = window.__aufbauten;
+            if (m) { m.tab.renderImperative = m.original; delete window.__aufbauten; }
+            return true;
+          `);
         }
-        return stand;
-      `);
+      }
       const waechst = zaehler.length === 3 && zaehler[0] >= 1 && zaehler[1] > zaehler[0] && zaehler[2] > zaehler[1];
       check(
         "I1 Der Einstellungs-Tab baut bei jedem Öffnen neu auf, nicht nur beim ersten",
