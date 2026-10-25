@@ -4,7 +4,7 @@
       "ref": "0.69.1"
     },
     "code-kit": {
-      "ref": "0.36.0"
+      "ref": "0.37.0"
     }
   },
   "targets": [
@@ -29,6 +29,8 @@
         "endpoint_diagnostics",
         "error_body",
         "i18n",
+        "json-error-position",
+        "llm-answer",
         "model-choice",
         "model-context",
         "model-list-cache",
@@ -39,6 +41,7 @@
         "secrets",
         "settings",
         "sse",
+        "text-window",
         "think-splitter",
         "timeout"
       ]

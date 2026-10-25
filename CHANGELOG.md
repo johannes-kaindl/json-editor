@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+- Kit pin `code-kit` 0.36.0 → 0.37.0. Nothing looks different: the new Anthropic branch of the model-context module is an option this plugin does not set, and the link-guard and index-guard additions are not vendored here. Three small modules are new (`json-error-position`, `text-window`, `llm-answer`); the repair uses them (see below).
+
 ## [1.19.0] — 2026-10-24
 
 ### Added
