@@ -95,11 +95,13 @@ einem Abbruch.
 | A2 | Tree rendert mit den erwarteten Schlüsseln | Live-DOM statt happy-dom |
 | A3 | `.jsonc` mit Kommentaren ist editierbar (kein Lossy-Banner) | historischer Defekt 1.10.1 |
 | A4 | Kaputtes JSON erzwingt Source-Modus + Fehler-Banner | Modus-Erzwingen ist Host-Lebenszyklus |
+| A5 | Die Tree-/Source-Pillen tragen `aria-pressed` und wechseln mit dem Modus | Zustands-Knöpfe (UI-STANDARD §8): der Klick und das Attribut am Live-DOM des Hosts |
 | **B — Layout & Theme** | | |
 | B1 | Trennkomma dockt am Wert an statt frei zu schweben | echte Flex-Geometrie; historischer Defekt 1.10.2 |
 | B2 | Eingeklappter Subtree beansprucht keine Breite (`display:none`) | „Höhe 0 heißt nicht Platz 0" — nur im echten Layout messbar |
 | B3 | Theme-Variablen greifen: Key- und String-Farbe verschieden und gesetzt | `getComputedStyle` gegen echtes Theme-CSS |
 | B4 | Über `hidden` versteckte Elemente sind wirklich unsichtbar | die `[hidden]`-Spezifitätsfalle (1.8.0) — CSS-Kaskade |
+| B5 | Die A11y-Ansage-Region ist unsichtbar, aber nicht stumm (1×1 px, kein `display:none`) | der Unit-Test prüft die CSS-Quelle, nicht ob sie wirkt; „sichtbar“ und „stumm“ (`display:none` nimmt sie aus dem Accessibility-Tree) sind beide nur im echten Browser messbar |
 | **C — Navigation** | | |
 | C1 | collapse-all / expand-all wirken auf alle Container | Befehls-Registrierung im Host |
 | C2 | Sprung auf einen Pfad **in einem eingeklappten Ast** macht die Zeile sichtbar | der einen Monat tote Brotkrumen-Klick (1.11.0) |
@@ -109,14 +111,37 @@ einem Abbruch.
 | D2 | Geänderter Wert landet auf der Platte | echter `requestSave`-Weg statt Mock |
 | D3 | Undo stellt den Dateiinhalt wieder her | Befehl + History über den echten Host |
 | D4 | `.jsonc`-Edit erhält die Kommentare in der Datei | dualer Mutationspfad, echter Schreibweg |
+| D5 | Reorder per Alt+Pfeil nimmt den anhängenden Kommentar mit, den durch eine Leerzeile abgetrennten nicht | die Kernfunktion hat eigene Unit-Tests; gemessen wird die ganze Kette Zeile → TreeView → `jsonc.ts` → Platte per Tastatur |
+| D6 | Löschen eines Objekts mit Kindern: keine Rückfrage, die Meldung nennt die Zeile und trägt „Undo“, der Knopf stellt sie wieder her | Entscheidung Johannes 2026-10-15 (Welle 23); beide Hälften an der Datei auf der Platte, die Meldung ist Obsidians geteilter Toast |
 | **E — Codeblock in Notizen** | | |
 | E1 | ```` ```json ````-Block rendert im Lesemodus als Tree | Markdown-Post-Processor, echtes Preview-DOM |
 | E2 | Kaputter Block fällt auf die Fehler-Karte zurück | dito |
 | E3 | Der Copy-Knopf schreibt wirklich in die Zwischenablage | der Knopf hatte bis 1.11.2 **gar keinen** Guard |
+| E4 | `![[Datei.json]]` zeigt im Lesemodus den eingeklappten Baum statt des Datei-Chips | der Chip ist Obsidians Standard für ein Embed ohne eigene Darstellung; gemessen am sichtbaren Lesemodus-Container, Gegenprobe ist die Abwesenheit des Posters (Registrierung entfernen: kein `.json-file-embed`) |
+| E5 | Der Embed-Baum klappt auf Klick auf, und die Kopfzeile trägt den Dateinamen | echter Klick im Lesemodus-Container, wie E4 |
+| E6 | Im Embed steht die Wurzel-Klammer links, nicht zentriert | Obsidians `.internal-embed.file-embed` setzt `text-align: center`, die Wurzelzeile erbte es; nur im echten Theme-CSS messbar (Abnahme am Screenshot, Welle 23) |
+| **F — Reparatur per LLM** (Fake-Endpunkt im Treiber-Prozess, kein Netz, kein Modell) | | |
+| F1 | Die Fehlerkarte eines kaputten Codeblocks zeigt den Reparatur-Knopf | Markdown-Post-Processor im echten Lesemodus-DOM |
+| F2 | Der Klick öffnet das Modal mit Diff (Original links, Vorschlag rechts), Anwenden ist frei | echter Mausklick auf den Host-Knopf, Modal und Diff im Live-DOM |
+| F3 | Die Anfrage trägt Modell, Profilwerte (`temperature`, `stream: false`) und den Parser-Fehler | der Fake-Endpunkt hält den Request fest, den das Plugin über den Obsidian-Transport wirklich gesendet hat; ein Unit-Test sähe nur den gebauten Prompt |
+| F4 | Anwenden ersetzt nur den Blockinhalt, der Rest der Notiz bleibt byte-gleich | echter Schreibweg auf die Platte |
+| F5 | Das Modal schließt nach Anwenden | Modal-Lebenszyklus im Host; ohne Klick gab es nie ein Modal, das sich schließen könnte, deshalb prüft der Punkt den Klick mit |
+| F6 | Eine ungültige Antwort sperrt Anwenden und lässt die Notiz unberührt | Fehlerweg bis ins Modal und auf die Platte |
+| **G — Schwärzung und Schlüsselbund** (Verbindung des Kits, derselbe Fake-Endpunkt) | | |
+| G1 | Ein Bearer-Token geht geschwärzt raus, der Vorschlag trägt das Original zurück | die Schwärzung wird am Draht gemessen (Mitschnitt des Fake-Endpunkts), die Rückführung im Modal |
+| G2 | Ein PEM-Schlüssel als JSON-String (`\n` maskiert) geht geschwärzt raus und kommt als gültiges JSON zurück | wie G1, mit einem mehrzeiligen Schlüssel in einem JSON-String |
+| G3 | Ein PEM-Schlüssel mit echten Zeilenumbrüchen (das JSON ist dadurch kaputt) kommt als gültiges JSON zurück | wie G2, aber die Zeilenumbrüche machen die Datei zu kaputtem JSON (der Parser lehnt sie ab) |
+| G4 | Kein `apiKey` in `data.json`, der Schlüssel liegt im Schlüsselbund | gelesen wird die echte `data.json` auf der Platte und die Auflösung durch den Host-Schlüsselbund |
 | **CL — Claude als Endpunkt der Reparatur** (Stub im Anthropic-Modus, kein Netz) | | |
 | CL1 | Der Manager liefert den Claude-Endpunkt nur auf Opt-in (`transports.anthropic`); das Plugin wählt ihn (Backend `anthropic`, Familie `claude`) | ohne den Opt-in sieht das Plugin den Endpunkt nie; die Kontrolle am Fake (`list()` ohne Transporte: 0) macht „gewählt“ erst aussagekräftig |
 | CL2 | Reparatur-Lauf bis ins Diff-Modal: `POST /v1/messages` mit `x-api-key` und `anthropic-version`, `max_tokens` gleich dem Budget, ohne `temperature`/`top_p`; der Vorschlag steht im Modal | der Stub prüft Pfad, Kopfzeilen und Pflichtfelder wie die API (400/401 sonst) |
 | CL3 | Antwortet die API 529, zeigt das Modal den Fehler, Anwenden bleibt gesperrt, die Notiz bleibt unberührt | Fehlerweg über den echten Transport |
+| **H — Reparatur in der Datei-Ansicht** (Banner-Knopf, Fake-Endpunkt) | | |
+| H1 | Das Fehler-Banner der Datei-Ansicht trägt den Reparatur-Knopf | zweiter Einstieg neben der Fehlerkarte (F1): Banner der Host-Ansicht im Live-DOM |
+| H2 | Der Klick öffnet das Modal mit Diff, Anwenden ist frei | wie F2, aus der Datei-Ansicht |
+| H3 | Anwenden schreibt den Vorschlag in die Datei, das Banner verschwindet | echter Schreibweg, das Banner folgt dem neuen Zustand der Ansicht |
+| H4 | Rückgängig holt den kaputten Text zurück | Verlauf der Datei-Ansicht (wie D3) |
+| H5 | Gemma 4 ohne Öffner: der Vorschlag ist das JSON, der Denktext steht nicht darin | Gemma 4 auf LM Studio schreibt das Denken ohne Öffner in `content` und beendet es mit `<channel\|>`; ohne die Kit-Behandlung (obsidian-kit ab 0.60.3) stünde der Denktext im Vorschlag |
 
 ## Bleibt Handarbeit
 
