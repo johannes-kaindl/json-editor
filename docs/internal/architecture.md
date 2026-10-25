@@ -10,7 +10,7 @@ src/
 │   ├── schema.ts               compileSchema(text) → @cfworker/json-schema-wrapped CompiledSchema; validate(value) → PathError[] (JsonPath, not Pointer)
 │   ├── draft07-meta-schema.ts  canonical draft-07 meta-schema, embedded to detect malformed companion schemas
 │   ├── types.ts                JsonValue, JsonPath, ParseResult, RenderOptions, SerializeOptions, SearchOptions, SearchResult
-│   ├── parse.ts                parse(text) → ParseResult (line/col errors); exports offsetToLineCol (shared with jsonc.ts)
+│   ├── parse.ts                parse(text) → ParseResult (line/col errors); re-exports the kit's offsetToLineCol (shared with jsonc.ts; the position of a message comes from the kit's offsetFromMessage)
 │   ├── jsonc.ts                comment-preserving JSONC edit engine (wraps jsonc-parser): jsoncParse + text-in/text-out ops mirroring edit.ts; used only on the .jsonc path
 │   ├── roundtrip.ts            does a number literal lose VALUE when parsed and serialized back? (lossy-number guard)
 │   ├── serialize.ts            serialize(value, opts) → string
@@ -23,7 +23,7 @@ src/
 │   ├── collapse-state.ts       pure per-file collapse state (resolveCollapsed, recordFileState, capStates; LRU, limit 50)
 │   ├── paths.ts                collectPaths(value, limit) → every addressable path as a string + a truncation flag (cap 5000)
 │   ├── path.ts                 pathToString + parsePathStr (inverses)
-│   └── repair/                 LLM repair of broken code blocks: fence, prompt, client, diff-view, settings (see .claude/rules/reparatur-llm.md)
+│   └── repair/                 LLM repair of broken code blocks: fence, prompt, client, diff-view, settings, window (first parser error and its spot), windowed (the ladder: windows above 200 lines, then the whole document) (see .claude/rules/reparatur-llm.md)
 ├── obsidian/                   adapter layer, imports core/ + the Obsidian API
 │   ├── JsonFileView.ts         extends TextFileView; owns mode toggle, toolbar, unified History<string>, applyMutation, undo/redo, banners, setSchema, companion schema
 │   ├── TreeView.ts             wraps core/render + inline edit/rename + copy buttons + scrollToPath + applyFilter + roving-tabindex keyboard nav + RowActions + AddAffordance + drag-handle + drop handling + TypeMenu wiring + setValidationErrors
