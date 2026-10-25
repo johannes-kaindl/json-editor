@@ -60,7 +60,7 @@ interface PluginWithSettings extends Plugin {
  */
 export class JsonEditorSettingsTab extends PluginSettingTab implements SettingControlHost {
   private cleanupPrevious: () => void = () => {};
-  private uninstallRefresh: () => void = () => {};
+  private removeRefreshHook: () => void = () => {};
 
   constructor(
     app: App,
@@ -68,7 +68,7 @@ export class JsonEditorSettingsTab extends PluginSettingTab implements SettingCo
   ) {
     super(app, settingsPlugin);
     // „Letzte Anfrage" und Abweichungen sollen beim Oeffnen des Tabs aktuell sein.
-    this.uninstallRefresh = installTabRefreshOnOpen(this, () => {
+    this.removeRefreshHook = installTabRefreshOnOpen(this, () => {
       this.renderImperative();
     });
   }
@@ -150,7 +150,14 @@ export class JsonEditorSettingsTab extends PluginSettingTab implements SettingCo
 
   hide(): void {
     this.settingsPlugin.repairService.llm.hideSettings();
-    this.uninstallRefresh();
+    // The open-refresh hook stays installed: it only works while it is (kit 0.70.0, measured in Obsidian 1.14.5); removed here, the tab
+    // would rebuild on its first opening and never again. The plugin removes it on unload.
+  }
+
+  /** Removes the open-refresh hook. Called from the plugin's `onunload`, once; a second call does nothing. */
+  uninstallRefresh(): void {
+    this.removeRefreshHook();
+    this.removeRefreshHook = () => {};
   }
 
   private refreshUi(): void {

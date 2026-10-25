@@ -29,6 +29,7 @@ function safeGetLanguage(): string | null {
 export default class JsonEditorPlugin extends Plugin {
   settings: JsonEditorSettings = { ...DEFAULT_SETTINGS };
   private collapseStates: CollapseStates = {};
+  private settingTab: JsonEditorSettingsTab | null = null;
   readonly repairService = new RepairService(
     this.app,
     this.manifest.id,
@@ -39,6 +40,11 @@ export default class JsonEditorPlugin extends Plugin {
   /** Die LLM-Anbindung der Reparatur (Kit-Verbindung). */
   get llm(): LlmConnection {
     return this.repairService.llm;
+  }
+
+  onunload(): void {
+    // The tab's open-refresh hook works only while installed, so it lives until here and not until `hide()`.
+    this.settingTab?.uninstallRefresh();
   }
 
   async onload() {
@@ -96,7 +102,8 @@ export default class JsonEditorPlugin extends Plugin {
       processJsonFileEmbeds(this.app, el, ctx, this.settings),
     );
 
-    this.addSettingTab(new JsonEditorSettingsTab(this.app, this));
+    this.settingTab = new JsonEditorSettingsTab(this.app, this);
+    this.addSettingTab(this.settingTab);
 
     this.addCommand({
       id: "repair-codeblock",

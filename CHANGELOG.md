@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Fixed
+- **The settings tab is rebuilt every time it is opened, not only the first time.** Closing the tab removed the kit's open-refresh hook, so from the second opening on "Last request" and the deviations showed the state of the first one (measured: one rebuild for four openings; now one per opening). The hook is removed when the plugin unloads.
 - **A secret that is already escaped in the file comes back unchanged after the LLM repair.** A PEM key written in a JSON string (line breaks as backslash and `n`) used to return from the repair with a doubled backslash: still valid JSON, but a different key. The restore of masked values (kit `restoreContent: "json"`) now puts such a value back byte for byte.
 
 ### Changed

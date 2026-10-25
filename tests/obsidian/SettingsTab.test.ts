@@ -9,6 +9,13 @@ import type { RepairService } from "../../src/obsidian/repair-service";
 
 const renderSettings = vi.fn();
 const hideSettings = vi.fn();
+const { removeRefreshHook } = vi.hoisted(() => ({ removeRefreshHook: vi.fn() }));
+
+// The kit's open-refresh hook only works while it stays installed (measured in Obsidian 1.14.5): the test pins WHEN it is removed.
+vi.mock("../../src/vendor/kit-obsidian/settings_walker", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../src/vendor/kit-obsidian/settings_walker")>()),
+  installTabRefreshOnOpen: vi.fn(() => removeRefreshHook),
+}));
 
 class FakePlugin extends Plugin {
   settings = { ...DEFAULT_SETTINGS };
@@ -26,6 +33,7 @@ describe("JsonEditorSettingsTab", () => {
   beforeEach(() => {
     renderSettings.mockClear();
     hideSettings.mockClear();
+    removeRefreshHook.mockClear();
     app = {} as App;
     plugin = new FakePlugin(app, {
       id: "x",
@@ -96,5 +104,17 @@ describe("JsonEditorSettingsTab", () => {
   it("hide() lets the connection drop the model lists of the tab", () => {
     tab.hide();
     expect(hideSettings).toHaveBeenCalledTimes(1);
+  });
+
+  it("hide() keeps the open-refresh hook: removed there, the tab would rebuild on its first opening only", () => {
+    tab.hide();
+    tab.hide();
+    expect(removeRefreshHook).not.toHaveBeenCalled();
+  });
+
+  it("uninstallRefresh() removes the hook, once, for the plugin's unload", () => {
+    tab.uninstallRefresh();
+    tab.uninstallRefresh();
+    expect(removeRefreshHook).toHaveBeenCalledTimes(1);
   });
 });

@@ -4,7 +4,7 @@
 // non-critical registrations must run regardless.
 
 import { type App, Notice, type PluginManifest } from "obsidian";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import JsonEditorPlugin from "../../src/main";
 import { JSON_VIEW_TYPE } from "../../src/obsidian/JsonFileView";
 import type { Notice as MockNotice, Plugin as MockPlugin } from "../__mocks__/obsidian";
@@ -134,5 +134,18 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
     expect(toggle).toBeTruthy();
     expect(toggle?.hotkeys).toBeUndefined();
     expect(toggle?.name).toBe("Toggle tree/source view");
+  });
+});
+
+describe("JsonEditorPlugin.onunload", () => {
+  it("removes the open-refresh hook of the settings tab", async () => {
+    const plugin = new JsonEditorPlugin(appStub(), MANIFEST);
+    await plugin.onload();
+    const tab = mock(plugin).settingTabs[0] as unknown as { uninstallRefresh: () => void };
+    const spy = vi.spyOn(tab, "uninstallRefresh");
+
+    plugin.onunload();
+
+    expect(spy).toHaveBeenCalledTimes(1);
   });
 });
