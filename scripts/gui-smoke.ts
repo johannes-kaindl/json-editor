@@ -205,7 +205,7 @@ const PUNKTE_JE_SECTION: Record<string, readonly string[]> = {
     "F6 Ungültige Antwort sperrt Anwenden und lässt die Notiz unberührt",
     "F7 Große Datei: die Anfrage trägt nur das Fenster, der Vorschlag die ganze Datei, Anwenden schreibt byte-genau",
     "G1 Bearer-Token geht geschwärzt raus, der Vorschlag trägt das Original zurück",
-    "G2 PEM als JSON-String (\\n escaped) geht geschwärzt raus und kommt als gültiges JSON zurück",
+    "G2 PEM als JSON-String (\\n escaped) geht geschwärzt raus und kommt wertgleich zurück",
     "G3 PEM mit echten Zeilenumbrüchen (kaputtes JSON) kommt als gültiges JSON zurück",
     "G4 Kein apiKey in data.json — der Schlüssel liegt im Schlüsselbund",
     "CL1 Claude im Manager: der Endpunkt kommt nur mit Opt-in, das Plugin wählt ihn",
@@ -218,6 +218,9 @@ const PUNKTE_JE_SECTION: Record<string, readonly string[]> = {
     "H3 Anwenden schreibt den Vorschlag in die Datei, das Banner verschwindet",
     "H4 Rückgängig holt den kaputten Text zurück",
     "H5 Gemma 4 ohne Öffner: der Vorschlag ist das JSON, der Denktext steht nicht darin",
+  ],
+  einstellungen: [
+    "I1 Der Einstellungs-Tab baut bei jedem Öffnen neu auf, nicht nur beim ersten",
   ],
 };
 /** Wird in `main` mit der Soll-Liste der gewaehlten Abschnitte neu gebildet; bis dahin ohne Nenner. */
@@ -1515,13 +1518,23 @@ const SECTIONS: Section[] = [
 
         const pemKoerper = "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7";
         const pemEsc = `-----BEGIN PRIVATE KEY-----\\n${pemKoerper}\\n-----END PRIVATE KEY-----`;
+        // „Gültig“ und „enthält den Körper“ sah eine verdoppelte Maskierung nicht (Kit vor 0.70.0: doppelter Backslash vor dem n, gültiges JSON mit
+        // anderem Schlüsselwert): geprüft wird der WERT, so wie ihn der Parser aus der Originaldatei liest.
+        const pemWert = (JSON.parse(`{"key": "${pemEsc}"}`) as { key: string }).key;
+        const wertGleich = (text: string, soll: string): boolean => {
+          try {
+            return (JSON.parse(text) as { key?: unknown }).key === soll;
+          } catch {
+            return false;
+          }
+        };
         const v2 = await durchsModal(`{"key": "${pemEsc}", "a": 1,}`);
         check(
-          "G2 PEM als JSON-String (\\n escaped) geht geschwärzt raus und kommt als gültiges JSON zurück",
+          "G2 PEM als JSON-String (\\n escaped) geht geschwärzt raus und kommt wertgleich zurück",
           Boolean(v2) && letzterRoh() !== "" && !letzterRoh().includes(pemKoerper)
-            && v2!.rechts.includes(pemKoerper) && gueltig(v2!.rechts),
+            && gueltig(v2!.rechts) && wertGleich(v2!.rechts, pemWert),
           v2
-            ? `Draht ${letzterRoh().includes(pemKoerper) ? "TRÄGT den Schlüssel" : "ohne Schlüssel"}, JSON ${gueltig(v2.rechts) ? "gültig" : "UNGÜLTIG"}`
+            ? `Draht ${letzterRoh().includes(pemKoerper) ? "TRÄGT den Schlüssel" : "ohne Schlüssel"}, JSON ${gueltig(v2.rechts) ? "gültig" : "UNGÜLTIG"}, Wert ${wertGleich(v2.rechts, pemWert) ? "gleich dem Original" : "WEICHT AB (Backslash verdoppelt?)"}`
             : "kein Vorschlag",
         );
 
@@ -1715,6 +1728,45 @@ const SECTIONS: Section[] = [
           `)
           .catch(() => undefined);
       }
+    },
+  },
+  {
+    key: "einstellungen",
+    title: "I — Einstellungs-Tab (Aufbau beim Öffnen)",
+    run: async (cdp) => {
+      // Der Haken des Kits (`installTabRefreshOnOpen`) wirkt nur, solange er installiert bleibt: baute `hide()` ihn ab, zeichnete der Tab nur
+      // beim ersten Öffnen und danach nie wieder (gemessen vor dem Fix: Aufbauten 1, 1, 1, 1; danach 1, 3, 5, 7). Gemessen wird der Aufbau
+      // selbst: `renderImperative` zählt mit, der Tab wird dreimal geöffnet und geschlossen.
+      const zaehler = await cdp.evaluate<number[]>(`
+        const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+        const tab = (app.setting.pluginTabs ?? []).find((t) => t.plugin === plugin);
+        if (!tab) return [];
+        const original = tab.renderImperative;
+        let n = 0;
+        tab.renderImperative = function (...a) { n++; return original.apply(this, a); };
+        const stand = [];
+        try {
+          for (let i = 0; i < 3; i++) {
+            app.setting.open();
+            app.setting.openTabById(${JSON.stringify(PLUGIN_ID)});
+            await new Promise((r) => setTimeout(r, 1200));
+            stand.push(n);
+            app.setting.close();
+            await new Promise((r) => setTimeout(r, 500));
+          }
+        } finally {
+          tab.renderImperative = original;
+        }
+        return stand;
+      `);
+      const waechst = zaehler.length === 3 && zaehler[0] >= 1 && zaehler[1] > zaehler[0] && zaehler[2] > zaehler[1];
+      check(
+        "I1 Der Einstellungs-Tab baut bei jedem Öffnen neu auf, nicht nur beim ersten",
+        waechst,
+        zaehler.length === 0
+          ? "Tab des Plugins nicht gefunden"
+          : `Aufbauten nach dem 1., 2., 3. Öffnen (kumuliert): ${zaehler.join(", ")}${waechst ? "" : " — ein späteres Öffnen baut nicht neu auf"}`,
+      );
     },
   },
 ];
