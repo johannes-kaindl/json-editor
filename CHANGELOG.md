@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.21.0] — 2026-11-01
+
 ### Changed
 - **The command palette now shows German names in a German Obsidian.** All nine commands take their names from the plugin's language files (UI-STANDARD §11): *Focus search* is *Suche fokussieren*, *Undo edit* *Bearbeitung rückgängig machen*, *Redo edit* *Bearbeitung wiederholen*, *Toggle tree/source view* *Baum- und Quellansicht umschalten*, *Collapse all* *Alles einklappen*, *Expand all* *Alles ausklappen*, *Collapse to default depth* *Auf Standardtiefe einklappen* and *Go to path* *Zu Pfad springen*. The English names are unchanged. Hotkeys you bound stay, because they hang on the command id, which did not change.
 
