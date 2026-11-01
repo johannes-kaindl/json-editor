@@ -1,7 +1,8 @@
 // Texte der Reparatur-Funktion. Die Texte der Verbindung (Endpunkt-Quelle, Endpunkt-Liste,
 // Abschnitt "Anfrage", Abweichungen) kommen seit dem Verbindungs-Tausch aus dem Kit
 // (`llm-connection-strings`) und stehen hier nicht mehr. Die uebrige Oberflaeche des Plugins
-// ist englisch und steht weiter inline; nur die neue Funktion ist zweisprachig.
+// ist englisch und steht weiter inline; zweisprachig sind die Reparatur und die Befehlsnamen
+// (`cmd.<id>`, UI-STANDARD §11).
 import { defineStrings } from "../vendor/kit/i18n";
 
 export const STRINGS = {
@@ -10,7 +11,15 @@ export const STRINGS = {
     "set.groupRepair": "Repair with an LLM",
     "repair.button": "Repair",
     "repair.buttonTip": "Repair this JSON with an LLM — you confirm a diff first",
-    "repair.cmd": "Repair JSON in the current code block",
+    "cmd.repairCodeblock": "Repair JSON in the current code block",
+    "cmd.focusSearch": "Focus search",
+    "cmd.undoEdit": "Undo edit",
+    "cmd.redoEdit": "Redo edit",
+    "cmd.toggleTreeSource": "Toggle tree/source view",
+    "cmd.collapseAll": "Collapse all",
+    "cmd.expandAll": "Expand all",
+    "cmd.collapseToDefaultDepth": "Collapse to default depth",
+    "cmd.goToPath": "Go to path",
     "delete.done": 'Deleted "{0}" with {1} entries.',
     "delete.undo": "Undo",
     "repair.title": "Repair JSON",
@@ -46,7 +55,15 @@ export const STRINGS = {
     "set.groupRepair": "Reparatur per LLM",
     "repair.button": "Reparieren",
     "repair.buttonTip": "Dieses JSON per LLM reparieren — vorher bestätigst du einen Diff",
-    "repair.cmd": "JSON im aktuellen Codeblock reparieren",
+    "cmd.repairCodeblock": "JSON im aktuellen Codeblock reparieren",
+    "cmd.focusSearch": "Suche fokussieren",
+    "cmd.undoEdit": "Bearbeitung rückgängig machen",
+    "cmd.redoEdit": "Bearbeitung wiederholen",
+    "cmd.toggleTreeSource": "Baum- und Quellansicht umschalten",
+    "cmd.collapseAll": "Alles einklappen",
+    "cmd.expandAll": "Alles ausklappen",
+    "cmd.collapseToDefaultDepth": "Auf Standardtiefe einklappen",
+    "cmd.goToPath": "Zu Pfad springen",
     "delete.done": "„{0}“ mit {1} Einträgen gelöscht.",
     "delete.undo": "Rückgängig",
     "repair.title": "JSON reparieren",

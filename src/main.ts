@@ -107,7 +107,7 @@ export default class JsonEditorPlugin extends Plugin {
 
     this.addCommand({
       id: "repair-codeblock",
-      name: t("repair.cmd"),
+      name: t("cmd.repairCodeblock"),
       editorCallback: (editor) => {
         repairAtCursor(deps, editor);
       },
@@ -115,7 +115,7 @@ export default class JsonEditorPlugin extends Plugin {
 
     this.addCommand({
       id: "focus-search",
-      name: "Focus search",
+      name: t("cmd.focusSearch"),
       checkCallback: (checking: boolean) => {
         const view = this.app.workspace.getActiveViewOfType(JsonFileView);
         if (!view) return false;
@@ -126,7 +126,7 @@ export default class JsonEditorPlugin extends Plugin {
 
     this.addCommand({
       id: "undo-edit",
-      name: "Undo edit",
+      name: t("cmd.undoEdit"),
       checkCallback: (checking: boolean) => {
         const view = this.app.workspace.getActiveViewOfType(JsonFileView);
         if (!view || !view.canUndo()) return false;
@@ -137,7 +137,7 @@ export default class JsonEditorPlugin extends Plugin {
 
     this.addCommand({
       id: "redo-edit",
-      name: "Redo edit",
+      name: t("cmd.redoEdit"),
       checkCallback: (checking: boolean) => {
         const view = this.app.workspace.getActiveViewOfType(JsonFileView);
         if (!view || !view.canRedo()) return false;
@@ -148,7 +148,7 @@ export default class JsonEditorPlugin extends Plugin {
 
     this.addCommand({
       id: "toggle-tree-source",
-      name: "Toggle tree/source view",
+      name: t("cmd.toggleTreeSource"),
       // No default *command* hotkey (those are global and would shadow the core
       // "Toggle reading view"). Mod+E is instead handled by the view-local Scope
       // in JsonFileView (active only in JSON views, so it never overrides the
@@ -165,7 +165,7 @@ export default class JsonEditorPlugin extends Plugin {
     // binds them, so they never shadow a core Obsidian binding.
     this.addCommand({
       id: "collapse-all",
-      name: "Collapse all",
+      name: t("cmd.collapseAll"),
       checkCallback: (checking: boolean) => {
         const view = this.app.workspace.getActiveViewOfType(JsonFileView);
         if (!view) return false;
@@ -176,7 +176,7 @@ export default class JsonEditorPlugin extends Plugin {
 
     this.addCommand({
       id: "expand-all",
-      name: "Expand all",
+      name: t("cmd.expandAll"),
       checkCallback: (checking: boolean) => {
         const view = this.app.workspace.getActiveViewOfType(JsonFileView);
         if (!view) return false;
@@ -187,7 +187,7 @@ export default class JsonEditorPlugin extends Plugin {
 
     this.addCommand({
       id: "collapse-to-default-depth",
-      name: "Collapse to default depth",
+      name: t("cmd.collapseToDefaultDepth"),
       checkCallback: (checking: boolean) => {
         const view = this.app.workspace.getActiveViewOfType(JsonFileView);
         if (!view) return false;
@@ -198,7 +198,7 @@ export default class JsonEditorPlugin extends Plugin {
 
     this.addCommand({
       id: "go-to-path",
-      name: "Go to path",
+      name: t("cmd.goToPath"),
       checkCallback: (checking: boolean) => {
         const view = this.app.workspace.getActiveViewOfType(JsonFileView);
         if (!view) return false;

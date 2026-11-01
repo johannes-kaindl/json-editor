@@ -45,7 +45,7 @@ Alles bleibt in deinem Vault. Das Plugin nutzt Obsidians eigene CSS-Variablen un
 - **Großdatei-Schutz** — Dateien jenseits eines Render-Budgets (~1 MB bzw. ~15.000 Knoten) öffnen im Quelltext-Modus mit einem Banner *Load tree anyway*, damit eine mehrere Megabyte große Datei die Oberfläche nie beim Öffnen einfriert.
 - **Schutz vor verlustbehafteten Zahlen** — Dateien mit Ganzzahlen, die JSON nicht exakt darstellen kann (> 2^53), öffnen den Baum schreibgeschützt mit einem Banner; der Quelltext-Modus bleibt bearbeitbar, sodass eine Änderung keine 64-Bit-IDs stillschweigend beschädigen kann.
 - **Tastaturnavigation** — `Tab` fokussiert den Baum; `↓`/`↑` laufen durch die sichtbaren Zeilen; `→`/`←` klappen auf/zu bzw. springen zu Kind/Elternknoten; `Pos1`/`Ende` springen zur ersten/letzten sichtbaren Zeile; `Enter`/`F2` öffnen die Direktbearbeitung. WAI-ARIA-Baumrollen (`role="tree"`, `role="treeitem"`, `aria-expanded`) für Screenreader.
-- **Alles zuklappen / aufklappen** — eine Schaltfläche in der Werkzeugleiste schaltet zwischen beidem um; die Befehle *Collapse all*, *Expand all* und *Collapse to default depth* stehen zusätzlich in der Befehlspalette. **Der Klappzustand wird je Datei gemerkt** (die 50 zuletzt geöffneten) und übersteht das Schließen.
+- **Alles zuklappen / aufklappen** — eine Schaltfläche in der Werkzeugleiste schaltet zwischen beidem um; die Befehle *Alles einklappen*, *Alles ausklappen* und *Auf Standardtiefe einklappen* stehen zusätzlich in der Befehlspalette. **Der Klappzustand wird je Datei gemerkt** (die 50 zuletzt geöffneten) und übersteht das Schließen.
 - **Zu einem Pfad springen** — eine Auswahlliste im Stil des Schnellumschalters über alle Pfade der Datei; die Auswahl scrollt zur passenden Zeile.
 - **Lange Werte werden gekürzt** dargestellt (ab 120 Zeichen, mit *Show more*). Bearbeiten und Kopieren nutzen immer den vollständigen Wert.
 - **Brotkrumen-Leiste** mit dem aktuellen Pfad; ein Klick auf ein Segment scrollt im Baum dorthin zurück.
@@ -137,8 +137,8 @@ npm run build
   ```
   ````
 - **Umsortieren** mit <kbd>Alt</kbd>+<kbd>↑</kbd> / <kbd>Alt</kbd>+<kbd>↓</kbd> (Tastatur) oder durch Ziehen am `⋮⋮`-Griff (Maus).
-- **Den ganzen Baum zu- oder aufklappen** über die Schaltfläche in der Werkzeugleiste oder die Befehle *Collapse all* / *Expand all*. *Collapse to default depth* stellt den Zustand einer frisch geöffneten Datei wieder her. Wo du den Baum verlassen hast, wird je Datei gemerkt.
-- **Zu einem Pfad springen** über den Befehl *Go to path* und dann einen beliebigen Teil davon tippen.
+- **Den ganzen Baum zu- oder aufklappen** über die Schaltfläche in der Werkzeugleiste oder die Befehle *Alles einklappen* / *Alles ausklappen*. *Auf Standardtiefe einklappen* stellt den Zustand einer frisch geöffneten Datei wieder her. Wo du den Baum verlassen hast, wird je Datei gemerkt.
+- **Zu einem Pfad springen** über den Befehl *Zu Pfad springen* und dann einen beliebigen Teil davon tippen.
 
 ### Auf Mobilgeräten
 

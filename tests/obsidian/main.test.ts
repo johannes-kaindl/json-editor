@@ -3,7 +3,7 @@
 // processor, settings, commands). The claim must be guarded and the
 // non-critical registrations must run regardless.
 
-import { type App, Notice, type PluginManifest } from "obsidian";
+import { type App, Notice, type PluginManifest, moment } from "obsidian";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import JsonEditorPlugin from "../../src/main";
 import { JSON_VIEW_TYPE } from "../../src/obsidian/JsonFileView";
@@ -121,6 +121,47 @@ describe("JsonEditorPlugin.onload (blocker 1.6)", () => {
     expect(names).toContain("Undo edit");
     expect(names).toContain("Redo edit");
   });
+
+  // UI-STANDARD §11: Namen kommen aus i18n-Schlüsseln (EN und DE), die Ids bleiben.
+  const COMMAND_NAMES: Array<[string, string, string]> = [
+    [
+      "repair-codeblock",
+      "Repair JSON in the current code block",
+      "JSON im aktuellen Codeblock reparieren",
+    ],
+    ["focus-search", "Focus search", "Suche fokussieren"],
+    ["undo-edit", "Undo edit", "Bearbeitung rückgängig machen"],
+    ["redo-edit", "Redo edit", "Bearbeitung wiederholen"],
+    ["toggle-tree-source", "Toggle tree/source view", "Baum- und Quellansicht umschalten"],
+    ["collapse-all", "Collapse all", "Alles einklappen"],
+    ["expand-all", "Expand all", "Alles ausklappen"],
+    ["collapse-to-default-depth", "Collapse to default depth", "Auf Standardtiefe einklappen"],
+    ["go-to-path", "Go to path", "Zu Pfad springen"],
+  ];
+
+  it.each([
+    ["en", 1],
+    ["de", 2],
+  ] as const)(
+    "names all nine commands from i18n keys in %s (UI-STANDARD §11)",
+    async (lang, col) => {
+      const spy = vi.spyOn(moment, "locale").mockReturnValue(lang);
+      try {
+        class OkPlugin extends JsonEditorPlugin {
+          override registerExtensions(): void {}
+        }
+        const plugin = new OkPlugin(appStub(), MANIFEST);
+        await plugin.onload();
+        const cmds = mock(plugin).commands as Array<{ id: string; name: string }>;
+        expect(cmds.map((c) => c.id).sort()).toEqual(COMMAND_NAMES.map((n) => n[0]).sort());
+        for (const row of COMMAND_NAMES) {
+          expect(cmds.find((c) => c.id === row[0])?.name).toBe(row[col]);
+        }
+      } finally {
+        spy.mockRestore();
+      }
+    },
+  );
 
   it("registers a toggle-tree-source command with no default hotkey (audit 3.1)", async () => {
     class OkPlugin extends JsonEditorPlugin {
