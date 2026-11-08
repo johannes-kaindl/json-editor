@@ -24,15 +24,29 @@ describe("JsonFileView collapse toolbar", () => {
     expect(btn?.getAttribute("aria-label")).toBe("Collapse all");
   });
 
-  it("collapses everything on first click and flips the label", () => {
+  it("collapses to the first level on first click and flips the label", () => {
     const v = makeView();
-    v.setViewData(JSON.stringify({ a: { b: 1 } }), false);
+    v.setViewData(JSON.stringify({ a: { b: { c: 1 } }, d: [1] }), false);
     const btn = v.contentEl.querySelector<HTMLButtonElement>(".json-collapse-toggle-btn");
     btn?.click();
-    const containers = [...v.contentEl.querySelectorAll(".json-container")];
-    expect(containers.length).toBeGreaterThan(0);
-    expect(containers.every((c) => c.classList.contains("is-collapsed"))).toBe(true);
+    const containers = [...v.contentEl.querySelectorAll<HTMLElement>(".json-container")];
+    const root = containers.filter((c) => Number(c.dataset.depth) === 0);
+    const below = containers.filter((c) => Number(c.dataset.depth) >= 1);
+    expect(root.length).toBe(1);
+    expect(below.length).toBeGreaterThan(0);
+    // The first level stays visible: the root is open, everything below is closed.
+    expect(root.every((c) => !c.classList.contains("is-collapsed"))).toBe(true);
+    expect(below.every((c) => c.classList.contains("is-collapsed"))).toBe(true);
     expect(btn?.getAttribute("aria-label")).toBe("Expand all");
+  });
+
+  it("a root with only scalar children has nothing to collapse and offers Expand all", () => {
+    const v = makeView();
+    v.setViewData(JSON.stringify({ a: 1, b: "x" }), false);
+    const btn = v.contentEl.querySelector<HTMLButtonElement>(".json-collapse-toggle-btn");
+    btn?.click();
+    const root = v.contentEl.querySelector(".json-container");
+    expect(root?.classList.contains("is-collapsed")).toBe(false);
   });
 
   it("expands everything on the second click", () => {

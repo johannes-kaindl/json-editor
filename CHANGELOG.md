@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+- **The collapse button in the toolbar now keeps the first level visible.** It used to close every block including the root, so you had to expand again just to see which keys a file has. Now the root stays open and everything below it closes; the second click opens everything. The *Collapse all* command still closes the root too.
+
+### Fixed
+- **A long string in a deeply nested file no longer wraps into a column of single characters.** A nested block sits beside its key, so every level costs the key's width plus its indent; four levels down, a 90-character API key kept 38 px. Strings now keep at least 32 characters of width and the view scrolls sideways when a deep tree needs more room, instead of clipping.
+
 ## [1.21.0] — 2026-11-01
 
 ### Changed

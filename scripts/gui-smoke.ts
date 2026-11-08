@@ -175,11 +175,13 @@ const PUNKTE_JE_SECTION: Record<string, readonly string[]> = {
     "B3 Theme-Farben greifen (Key ≠ String, beide gesetzt)",
     "B4 [hidden]-Elemente sind wirklich unsichtbar",
     "B5 A11y-Ansage-Region ist unsichtbar, aber nicht stumm",
+    "B6 Ein langer String bleibt in tiefer Verschachtelung lesbar (Mindestbreite)",
   ],
   navigation: [
     "C1 collapse-all / expand-all wirken auf alle Container",
     "C2 Sprung in einen eingeklappten Ast macht die Zeile sichtbar",
     "C3 Suche markiert Treffer und zählt sie",
+    "C4 Der Einklapp-Knopf lässt die erste Ebene sichtbar und klappt beim zweiten Klick alles auf",
   ],
   editieren: [
     "D1 Echter Klick auf einen Wert öffnet das Inline-Feld",
@@ -743,6 +745,45 @@ const SECTIONS: Section[] = [
           ? "keine .json-a11y-announce in der Ansicht"
           : `${region.w}x${region.h}px, display: ${region.display}, visibility: ${region.visibility}`,
       );
+
+      // B6 — ein langer Wert (API-Schluessel) stand in tiefen Dateien Zeichen fuer Zeichen untereinander: jede
+      // Ebene nahm ~21px Einzug, der Wert zahlt die Rechnung. Gemessen wird die echte Breite des Strings in
+      // einer 16 Ebenen tiefen Datei. Gegenprobe im selben Lauf: ohne Mindestbreite und mit dem alten
+      // overflow:hidden muss er spuerbar schmaler sein, sonst misst der Punkt den Fix gar nicht.
+      const SCHLUESSEL = "sk-test-" + "Ab3dEf9hJk".repeat(8);
+      let tief: Record<string, unknown> = { apiKey: SCHLUESSEL };
+      for (let i = 0; i < 16; i++) tief = { ebene: tief };
+      const offenB6 = await openJsonFile(cdp, SMOKE_JSON, JSON.stringify(tief, null, 2));
+      await runCommand(cdp, "expand-all");
+      const messeString = `
+        const s = [...root.querySelectorAll(".json-string")].find((el) => el.textContent.includes("sk-test-"));
+        if (!s) return null;
+        const r = s.getBoundingClientRect();
+        return { w: Math.round(r.width), h: Math.round(r.height), pane: Math.round(root.getBoundingClientRect().width) };
+      `;
+      const mitDeckel = offenB6 ? await cdp.evaluate<{ w: number; h: number; pane: number } | null>(inView(messeString)) : null;
+      const ohneDeckel = offenB6
+        ? await cdp.evaluate<{ w: number; h: number; pane: number } | null>(
+            inView(`
+              const st = document.createElement("style");
+              st.id = "smoke-ohne-boden";
+              st.textContent = ".json-string { min-width: 0 !important; } .json-content { overflow: hidden !important; }";
+              document.head.appendChild(st);
+              try { ${messeString} } finally { st.remove(); }
+            `),
+          )
+        : null;
+      check(
+        "B6 Ein langer String bleibt in tiefer Verschachtelung lesbar (Mindestbreite)",
+        Boolean(mitDeckel) &&
+          Boolean(ohneDeckel) &&
+          mitDeckel!.w >= 200 &&
+          mitDeckel!.h <= 200 &&
+          mitDeckel!.w > ohneDeckel!.w + 100,
+        mitDeckel && ohneDeckel
+          ? `String ${mitDeckel.w}px breit, ${mitDeckel.h}px hoch (Pane ${mitDeckel.pane}px); ohne Boden ${ohneDeckel.w}px x ${ohneDeckel.h}px`
+          : "String nicht gefunden",
+      );
     },
   },
 
@@ -841,6 +882,58 @@ const SECTIONS: Section[] = [
         "C3 Suche markiert Treffer und zählt sie",
         Boolean(suche) && suche!.treffer > 0 && /\d/.test(suche!.zaehler),
         suche ? `${suche.treffer} markiert, Zähler „${suche.zaehler}"` : "keine Suchleiste",
+      );
+
+      // C4 — der Knopf der Werkzeugleiste (nicht der Befehl): „Alles einklappen“ laesst die erste Ebene sichtbar,
+      // sonst muss man nach jedem Einklappen erst wieder aufklappen, um sich umzusehen.
+      // C3 hat eine Suche offen gelassen; ein aktiver Filter blendet Zeilen aus und verfaelscht die Sichtbarkeitsmessung.
+      await cdp.evaluate(
+        inView(`
+          const input = root.querySelector(".json-search-input");
+          if (input) {
+            input.value = "";
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+          return true;
+        `),
+      );
+      await openJsonFile(cdp, SMOKE_JSON, JSON.stringify(SMOKE_DATA, null, 2));
+      await runCommand(cdp, "expand-all");
+      const knopf = `return root.querySelector(".json-collapse-toggle-btn");`;
+      const erster = await klick(cdp, elImView(knopf));
+      const nachErstem = erster
+        ? await cdp.evaluate<{ wurzelZu: boolean; tieferOffen: number; tieferGesamt: number; marker: boolean; label: string } | null>(
+            inView(`
+              const cs = [...root.querySelectorAll(".json-container")];
+              const wurzel = cs.find((c) => Number(c.dataset.depth) === 0);
+              const tiefer = cs.filter((c) => Number(c.dataset.depth) >= 1);
+              const row = root.querySelector('.json-row[data-path="marker"]');
+              return {
+                wurzelZu: Boolean(wurzel) && wurzel.classList.contains("is-collapsed"),
+                tieferOffen: tiefer.filter((c) => !c.classList.contains("is-collapsed")).length,
+                tieferGesamt: tiefer.length,
+                marker: Boolean(row) && row.getClientRects().length > 0,
+                label: root.querySelector(".json-collapse-toggle-btn")?.getAttribute("aria-label") ?? "",
+              };
+            `),
+          )
+        : null;
+      const zweiter = erster && (await klick(cdp, elImView(knopf)));
+      const nachZweitem = zweiter
+        ? await cdp.evaluate<number>(inView(`return root.querySelectorAll(".json-content.collapsed").length;`))
+        : -1;
+      check(
+        "C4 Der Einklapp-Knopf lässt die erste Ebene sichtbar und klappt beim zweiten Klick alles auf",
+        Boolean(nachErstem) &&
+          !nachErstem!.wurzelZu &&
+          nachErstem!.tieferGesamt > 0 &&
+          nachErstem!.tieferOffen === 0 &&
+          nachErstem!.marker &&
+          nachErstem!.label === "Expand all" &&
+          nachZweitem === 0,
+        nachErstem
+          ? `Wurzel ${nachErstem.wurzelZu ? "ZU" : "offen"}, darunter ${nachErstem.tieferOffen}/${nachErstem.tieferGesamt} offen, erste Ebene ${nachErstem.marker ? "sichtbar" : "UNSICHTBAR"}, Knopf „${nachErstem.label}“; nach Klick 2: ${nachZweitem} zu`
+          : "Knopf nicht klickbar",
       );
 
       // Aufräumen der Szene: Suche leeren, damit der nächste Abschnitt nicht gefiltert misst.

@@ -212,6 +212,23 @@ export class TreeView {
     this.eachContainer((c) => this.toggleContainer(c, false));
   }
 
+  /**
+   * Collapse everything below the root but keep the root open, so the first
+   * level of keys stays visible. A collapsed root is re-opened.
+   */
+  collapseToFirstLevel(): void {
+    this.eachContainer((c) => this.toggleContainer(c, Number(c.dataset.depth ?? 0) === 0));
+  }
+
+  /** True while a container below the root is expanded — drives the toolbar toggle. */
+  hasExpandedBelowFirstLevel(): boolean {
+    let found = false;
+    this.eachContainer((c) => {
+      if (Number(c.dataset.depth ?? 0) >= 1 && !c.classList.contains("is-collapsed")) found = true;
+    });
+    return found;
+  }
+
   /** Expand every container in the tree. */
   expandAll(): void {
     this.eachContainer((c) => this.toggleContainer(c, true));

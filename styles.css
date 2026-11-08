@@ -235,7 +235,10 @@
   border-left: 2px solid var(--jv-border);
   margin-left: var(--jv-space-3);
   opacity: 1;
-  overflow: hidden;
+  /* visible, not hidden: the collapsed state is display: none, so nothing needs
+     clipping, and a clipped block hid whatever the value floor pushed past the
+     pane edge instead of letting the view scroll to it. */
+  overflow: visible;
   /* No max-height cap on the expanded state: a finite cap (was 5000px) hard-
      clipped large trees with no scrollbar. The collapsed state still uses
      max-height: 0 to hide children; the open direction snaps rather than
@@ -343,6 +346,11 @@
 .json-string {
   color: var(--jv-syntax-string);
   word-break: break-word;
+  /* Floor for the value column. A nested container sits beside its key in the flex
+     row, so every level costs the key's width plus the indent; at depth 4 a long
+     string kept 38px and wrapped one character per line. With this floor the pane
+     scrolls sideways instead (see .json-content). */
+  min-width: 32ch;
 }
 .json-number {
   color: var(--jv-syntax-number);

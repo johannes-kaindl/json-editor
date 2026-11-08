@@ -571,6 +571,12 @@ export class JsonFileView extends TextFileView {
     this.scheduleCollapseSave();
   }
 
+  collapseToFirstLevel(): void {
+    this.treeView?.collapseToFirstLevel();
+    this.refreshCollapseButton();
+    this.scheduleCollapseSave();
+  }
+
   collapseToDefaultDepth(): void {
     this.treeView?.collapseToDefaultDepth();
     this.refreshCollapseButton();
@@ -579,7 +585,7 @@ export class JsonFileView extends TextFileView {
 
   /** One button, both directions — the idiom of Obsidian's own file explorer. */
   toggleCollapseAll(): void {
-    if (this.treeView?.hasExpandedContainers()) this.collapseAll();
+    if (this.treeView?.hasExpandedBelowFirstLevel()) this.collapseToFirstLevel();
     else this.expandAll();
   }
 
@@ -615,7 +621,7 @@ export class JsonFileView extends TextFileView {
 
   private refreshCollapseButton(): void {
     if (!this.collapseBtn) return;
-    const expanded = this.treeView?.hasExpandedContainers() ?? false;
+    const expanded = this.treeView?.hasExpandedBelowFirstLevel() ?? false;
     const label = expanded ? "Collapse all" : "Expand all";
     this.collapseBtn.setAttribute("aria-label", label);
     this.collapseBtn.title = label;
