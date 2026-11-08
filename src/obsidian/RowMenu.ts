@@ -19,6 +19,8 @@ export interface RowMenuOptions {
   onMoveUp: () => void;
   onMoveDown: () => void;
   onDelete: () => void;
+  /** Show this branch as the tree root. Offered for containers only. */
+  onFocus?: () => void;
 }
 
 /** Build and show the consolidated row action menu. Returns the Menu (for tests). */
@@ -42,6 +44,15 @@ export function openRowMenu(evt: MouseEvent, opts: RowMenuOptions): Menu {
       .setIcon("route")
       .onClick(() => opts.onCopyPath()),
   );
+
+  if (opts.onFocus && opts.value !== null && typeof opts.value === "object") {
+    menu.addItem((i) =>
+      i
+        .setTitle("Show as root")
+        .setIcon("scan")
+        .onClick(() => opts.onFocus?.()),
+    );
+  }
 
   if (!opts.readonly) {
     if (opts.canRename) {

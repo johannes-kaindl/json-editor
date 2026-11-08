@@ -35,6 +35,8 @@ export interface TreeViewOptions {
   onMoveKey?: (parentPath: JsonPath, key: string, toPos: number) => void;
   onChangeType?: (path: JsonPath, newType: JsonType) => void;
   onError?: (err: Error) => void;
+  /** Fired by a container row's "Show as root" button. */
+  onFocusRequest?: (path: JsonPath) => void;
   /**
    * When true (Obsidian mobile), suppress hover/DnD affordances; actions come
    * from a long-press menu instead. Injected from JsonFileView's Platform.isMobile.
@@ -51,6 +53,8 @@ const FLASH_MS = 600;
 
 export class TreeView {
   private current: JsonValue = null;
+  /** Document path of the branch shown as the tree root; [] = the whole file. */
+  private focusPath: JsonPath = [];
   private editing = false;
   private activeRow: HTMLElement | null = null;
   private dragSourcePath: JsonPath | null = null;
@@ -99,7 +103,29 @@ export class TreeView {
 
   setValue(value: JsonValue): void {
     this.current = value;
+    // A focused branch that an edit removed (or turned into a scalar) cannot be
+    // shown any more: fall back to the whole file instead of an empty tree.
+    if (this.focusPath.length > 0 && !isContainer(valueAtStrict(value, this.focusPath))) {
+      this.focusPath = [];
+    }
     this.render();
+  }
+
+  /**
+   * Show only the branch at `path` as the tree root ("show as root"). Row paths
+   * stay document-relative, so editing, search and the collapse memory keep
+   * working unchanged. An empty path returns to the whole file. Returns false,
+   * and changes nothing, when `path` is not an object or array.
+   */
+  setFocus(path: JsonPath): boolean {
+    if (path.length > 0 && !isContainer(valueAtStrict(this.current, path))) return false;
+    this.focusPath = [...path];
+    this.render();
+    return true;
+  }
+
+  getFocus(): JsonPath {
+    return [...this.focusPath];
   }
 
   getValue(): JsonValue {
@@ -329,7 +355,8 @@ export class TreeView {
     // `replaceChildren()` gerade geleert hat, und wird deshalb wieder eingehaengt.
     this.container.appendChild(this.announceEl);
     this.activeRow = null;
-    const el = renderTree(this.current, {
+    const el = renderTree(valueAtStrict(this.current, this.focusPath) ?? this.current, {
+      rootPath: this.focusPath,
       doc: this.container.ownerDocument,
       // Obsidian requires its own element helpers (obsidianmd/prefer-create-el);
       // core/render stays Obsidian-free and takes the factory from here.
@@ -454,6 +481,10 @@ export class TreeView {
         onChangeType: this.opts.onChangeType
           ? () => this.openTypeMenuFor(row, path, value)
           : undefined,
+        onFocus:
+          this.opts.onFocusRequest && isContainer(value)
+            ? () => this.opts.onFocusRequest?.(path)
+            : undefined,
       });
       row.appendChild(actions);
     });
@@ -609,7 +640,7 @@ export class TreeView {
 
   private detectContainerPath(container: HTMLElement, treeRoot: HTMLElement): JsonPath {
     const parent = container.parentElement;
-    if (!parent || parent === treeRoot) return [];
+    if (!parent || parent === treeRoot) return this.focusPath;
     if (parent.classList.contains("json-row")) {
       const ps = parent.getAttribute("data-path");
       return ps ? this.parsePathStrSafe(ps) : [];
@@ -1010,6 +1041,28 @@ function locateChildForSegment(parent: HTMLElement, segment: string | number): H
     return null;
   }
   return rows[segment] ?? null;
+}
+
+/** The value at `path`, or undefined when any step is missing. */
+function valueAtStrict(root: JsonValue, path: JsonPath): JsonValue | undefined {
+  let cur: JsonValue | undefined = root;
+  for (const seg of path) {
+    if (Array.isArray(cur) && typeof seg === "number") cur = cur[seg];
+    else if (
+      cur !== null &&
+      typeof cur === "object" &&
+      !Array.isArray(cur) &&
+      typeof seg === "string"
+    ) {
+      cur = Object.hasOwn(cur, seg) ? cur[seg] : undefined;
+    } else return undefined;
+    if (cur === undefined) return undefined;
+  }
+  return cur;
+}
+
+function isContainer(v: JsonValue | undefined): boolean {
+  return v !== undefined && v !== null && typeof v === "object";
 }
 
 function locateValueByPathStr(root: JsonValue, pathStr: string): JsonValue {

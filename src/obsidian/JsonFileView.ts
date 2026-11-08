@@ -275,7 +275,7 @@ export class JsonFileView extends TextFileView {
     this.invalid = false;
     this.clearBanner();
     this.bodyEl.replaceChildren();
-    this.breadcrumb.setPath([]);
+    this.showLocation([]);
   }
 
   /**
@@ -296,7 +296,8 @@ export class JsonFileView extends TextFileView {
     // photographing the README, 2026-08-22): after a switch in the same tab it kept
     // showing the previous file's path — one that usually does not exist in the new
     // file, so clicking it silently did nothing.
-    this.breadcrumb.setPath([]);
+    this.breadcrumb.setFocusRoot([]);
+    this.showLocation([]);
     this.mode = this.settings.defaultMode;
     this.lossyRoundtrip = false;
     this.lossBanner.hide();
@@ -323,7 +324,8 @@ export class JsonFileView extends TextFileView {
     this.bodyEl.className = "json-editor-body";
 
     this.breadcrumb = new Breadcrumb({
-      onSegmentClick: (subPath) => this.treeView?.scrollToPath(subPath),
+      onSegmentClick: (subPath) => this.onBreadcrumbSegment(subPath),
+      onFocusRequest: (path) => this.focusOn(path),
     });
 
     this.searchBar = new SearchBar({
@@ -514,7 +516,8 @@ export class JsonFileView extends TextFileView {
         autoCollapseDepth: this.settings.autoCollapseDepth,
         onValueEdit: (path, newVal) => this.handleValueEdit(path, newVal),
         onContextMenu: (evt, path) => this.openRowMenuFor(evt, path),
-        onPathClick: (path) => this.breadcrumb.setPath(path),
+        onPathClick: (path) => this.showLocation(path),
+        onFocusRequest: (path) => this.focusOn(path),
         onBeforeRender: () => this.tooltip.hide(),
         onValueHover: (target, path, value) => {
           this.tooltip.show(target, tooltipContentForValue(value, path));
@@ -530,6 +533,7 @@ export class JsonFileView extends TextFileView {
         onError: (err) => new Notice(err.message),
       });
       this.treeView.setValue(this.currentValue);
+      this.breadcrumb.setFocusRoot([]);
       this.restoreCollapseState();
       this.refreshCollapseButton();
     } else {
@@ -583,6 +587,62 @@ export class JsonFileView extends TextFileView {
     this.scheduleCollapseSave();
   }
 
+  // --- Focus on a branch ("Show as root") ------------------------------------
+
+  private isFocused(): boolean {
+    return (this.treeView?.getFocus().length ?? 0) > 0;
+  }
+
+  private isInsideFocus(path: JsonPath): boolean {
+    const focus = this.treeView?.getFocus() ?? [];
+    return focus.every((seg, i) => path[i] === seg);
+  }
+
+  /** Show the branch at `path` as the tree root. Containers only. */
+  focusOn(path: JsonPath): void {
+    if (!this.treeView || path.length === 0) return;
+    // Persist the whole-file state first: it is not written while focused, and
+    // clearFocus() restores it.
+    if (!this.isFocused()) this.flushCollapseSave();
+    if (!this.treeView.setFocus(path)) return;
+    this.syncFocusRoot();
+    this.showLocation(path);
+    this.refreshCollapseButton();
+  }
+
+  /** Back to the whole file, with the collapse state remembered for it. */
+  clearFocus(): void {
+    if (!this.treeView || !this.isFocused()) return;
+    this.treeView.setFocus([]);
+    this.restoreCollapseState();
+    this.syncFocusRoot();
+    this.refreshCollapseButton();
+  }
+
+  private syncFocusRoot(): void {
+    this.breadcrumb.setFocusRoot(this.treeView?.getFocus() ?? []);
+  }
+
+  /** Breadcrumb segment: above the focused root it widens the focus, below it jumps. */
+  private onBreadcrumbSegment(subPath: JsonPath): void {
+    const focus = this.treeView?.getFocus() ?? [];
+    if (subPath.length < focus.length) {
+      if (subPath.length === 0) this.clearFocus();
+      else this.focusOn(subPath);
+      return;
+    }
+    this.treeView?.scrollToPath(subPath);
+  }
+
+  /** Breadcrumb location, and whether that location can become the root. */
+  private showLocation(path: JsonPath): void {
+    this.breadcrumb.setPath(path);
+    const v = path.length > 0 ? this.valueAt(path) : null;
+    const isContainer = v !== null && typeof v === "object";
+    const alreadyRoot = path.length === (this.treeView?.getFocus().length ?? 0);
+    this.breadcrumb.setCanFocus(isContainer && !alreadyRoot);
+  }
+
   /** One button, both directions — the idiom of Obsidian's own file explorer. */
   toggleCollapseAll(): void {
     if (this.treeView?.hasExpandedBelowFirstLevel()) this.collapseToFirstLevel();
@@ -599,7 +659,7 @@ export class JsonFileView extends TextFileView {
   }
 
   private scheduleCollapseSave(): void {
-    if (!this.collapseStore || !this.file) return;
+    if (!this.collapseStore || !this.file || this.isFocused()) return;
     if (this.collapseSaveTimer !== null) window.clearTimeout(this.collapseSaveTimer);
     this.collapseSaveTimer = window.setTimeout(() => {
       this.collapseSaveTimer = null;
@@ -616,6 +676,9 @@ export class JsonFileView extends TextFileView {
     }
     const path = this.file?.path;
     if (!path || !this.collapseStore || !this.treeView) return;
+    // A focused view only holds the containers of one branch; writing that would
+    // erase the remembered state of the rest of the file.
+    if (this.isFocused()) return;
     this.collapseStore.set(path, this.treeView.collapsedPaths());
   }
 
@@ -635,8 +698,10 @@ export class JsonFileView extends TextFileView {
     if (paths.length === 0) return;
     new GoToPathModal(app, paths, truncated, (pathStr) => {
       const path = parsePathStr(pathStr);
+      // A target outside the focused branch cannot be shown: widen back to the whole file first.
+      if (this.treeView && !this.isInsideFocus(path)) this.clearFocus();
       this.treeView?.scrollToPath(path);
-      this.breadcrumb.setPath(path);
+      this.showLocation(path);
     }).open();
   }
 
@@ -882,6 +947,7 @@ export class JsonFileView extends TextFileView {
       onMoveUp: () => this.moveRow(path, -1),
       onMoveDown: () => this.moveRow(path, +1),
       onDelete: () => this.handleDelete(path),
+      onFocus: path.length > 0 ? () => this.focusOn(path) : undefined,
     });
   }
 
@@ -897,6 +963,7 @@ export class JsonFileView extends TextFileView {
     this.requestSave();
     if (this.treeView) {
       this.treeView.setValue(newValue);
+      this.syncFocusRoot();
       this.refreshCollapseButton();
       if (this.currentQuery !== "") {
         const result = this.treeView.applyFilter(this.currentQuery);

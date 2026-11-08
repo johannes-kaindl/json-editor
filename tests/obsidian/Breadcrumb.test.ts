@@ -71,3 +71,60 @@ describe("Breadcrumb", () => {
     expect(segs[1].textContent).toBe("x");
   });
 });
+
+describe("Breadcrumb focus on a branch", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  const labels = (b: Breadcrumb): string[] =>
+    [...b.getElement().querySelectorAll(".bc-seg")].map((s) => s.textContent ?? "");
+
+  it("offers 'Show as root' only when the current location can be focused", () => {
+    const b = new Breadcrumb({ onFocusRequest: () => {} });
+    b.setPath(["cfg"]);
+    expect(b.getElement().querySelector(".bc-focus-btn")).toBeNull();
+    b.setCanFocus(true);
+    const btn = b.getElement().querySelector<HTMLButtonElement>(".bc-focus-btn");
+    expect(btn).not.toBeNull();
+    expect(btn?.getAttribute("aria-label")).toBe("Show as root");
+    expect(btn?.type).toBe("button");
+  });
+
+  it("the focus button reports the current path", () => {
+    const got: unknown[] = [];
+    const b = new Breadcrumb({ onFocusRequest: (p) => got.push(p) });
+    b.setCanFocus(true);
+    b.setPath(["cfg", "net"]);
+    b.getElement().querySelector<HTMLButtonElement>(".bc-focus-btn")?.click();
+    expect(got).toEqual([["cfg", "net"]]);
+  });
+
+  it("marks the focused root and the segments above it", () => {
+    const b = new Breadcrumb({});
+    b.setFocusRoot(["cfg"]);
+    b.setPath(["cfg", "net", "host"]);
+    const segs = [...b.getElement().querySelectorAll<HTMLElement>(".bc-seg")];
+    expect(labels(b)).toEqual(["root", "cfg", "net", "host"]);
+    expect(segs[0].classList.contains("bc-seg-outside")).toBe(true);
+    expect(segs[1].classList.contains("bc-seg-focus-root")).toBe(true);
+    expect(segs[2].classList.contains("bc-seg-outside")).toBe(false);
+  });
+
+  it("the root segment says it shows the whole file while focused", () => {
+    const b = new Breadcrumb({});
+    b.setFocusRoot(["cfg"]);
+    b.setPath(["cfg"]);
+    const root = b.getElement().querySelector<HTMLElement>(".bc-seg-root");
+    expect(root?.getAttribute("aria-label")).toBe("Show whole file");
+    b.setFocusRoot([]);
+    b.setPath(["cfg"]);
+    expect(b.getElement().querySelector(".bc-seg-root")?.hasAttribute("aria-label")).toBe(false);
+  });
+
+  it("without a focus nothing is marked", () => {
+    const b = new Breadcrumb({});
+    b.setPath(["a", "b"]);
+    expect(b.getElement().querySelector(".bc-seg-outside, .bc-seg-focus-root")).toBeNull();
+  });
+});

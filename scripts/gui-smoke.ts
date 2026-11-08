@@ -182,6 +182,7 @@ const PUNKTE_JE_SECTION: Record<string, readonly string[]> = {
     "C2 Sprung in einen eingeklappten Ast macht die Zeile sichtbar",
     "C3 Suche markiert Treffer und zählt sie",
     "C4 Der Einklapp-Knopf lässt die erste Ebene sichtbar und klappt beim zweiten Klick alles auf",
+    "C5 Fokus auf einen Zweig: die Zeilenaktion zeigt nur ihn, der Brotkrumen führt zurück, in 16 Ebenen Tiefe steht der String lesbar im Bild",
   ],
   editieren: [
     "D1 Echter Klick auf einen Wert öffnet das Inline-Feld",
@@ -762,16 +763,62 @@ const SECTIONS: Section[] = [
         return { w: Math.round(r.width), h: Math.round(r.height), pane: Math.round(root.getBoundingClientRect().width) };
       `;
       const mitDeckel = offenB6 ? await cdp.evaluate<{ w: number; h: number; pane: number } | null>(inView(messeString)) : null;
-      const ohneDeckel = offenB6
-        ? await cdp.evaluate<{ w: number; h: number; pane: number } | null>(
+      // Fuer die Aufnahme zum String scrollen (er liegt in 16 Ebenen weit rechts unten) und die Scrollweite mitmessen.
+      const zumString = `
+        const s = [...root.querySelectorAll(".json-string")].find((el) => el.textContent.includes("sk-test-"));
+        if (!s) return null;
+        s.scrollIntoView({ block: "center", inline: "center" });
+        let sc = s.parentElement;
+        while (sc && !/(auto|scroll)/.test(getComputedStyle(sc).overflowX)) sc = sc.parentElement;
+        const tb = root.querySelector(".json-toolbar");
+        return {
+          scrollLeft: sc ? Math.round(sc.scrollLeft) : -1,
+          scrollW: sc ? sc.scrollWidth : -1,
+          clientW: sc ? sc.clientWidth : -1,
+          toolbarLinks: tb ? Math.round(tb.getBoundingClientRect().left) : null,
+          paneLinks: sc ? Math.round(sc.getBoundingClientRect().left) : null,
+        };
+      `;
+      const toolbarVorScroll = offenB6
+        ? await cdp.evaluate<number | null>(inView(`const tb = root.querySelector(".json-toolbar"); return tb ? Math.round(tb.getBoundingClientRect().left) : null;`))
+        : null;
+      const scrollNachher = offenB6 ? await cdp.evaluate<unknown>(inView(zumString)) : null;
+      console.log("SCROLL nachher", JSON.stringify(scrollNachher));
+      const sn = scrollNachher as { scrollLeft: number; toolbarLinks: number | null; paneLinks: number | null } | null;
+      // Gegenprobe der Werkzeugleiste: ohne `position: sticky` muss sie beim selben Scroll aus dem Bild wandern.
+      const toolbarOhneSticky = offenB6
+        ? await cdp.evaluate<number | null>(
             inView(`
               const st = document.createElement("style");
-              st.id = "smoke-ohne-boden";
-              st.textContent = ".json-string { min-width: 0 !important; } .json-content { overflow: hidden !important; }";
+              st.textContent = ".json-toolbar { position: static !important; }";
               document.head.appendChild(st);
-              try { ${messeString} } finally { st.remove(); }
+              const tb = root.querySelector(".json-toolbar");
+              const links = tb ? Math.round(tb.getBoundingClientRect().left) : null;
+              st.remove();
+              return links;
             `),
           )
+        : null;
+      const seitlichGescrollt = Boolean(sn) && sn!.scrollLeft > 100;
+      const toolbarBleibt = Boolean(sn) && sn!.toolbarLinks !== null && toolbarVorScroll !== null && Math.abs(sn!.toolbarLinks - toolbarVorScroll) <= 2;
+      if (shotPfad !== null && offenB6) writeFileSync(`${shotPfad}-b6-nachher.png`, await capture(cdp));
+      const ohneDeckel = offenB6
+        ? await (async () => {
+            await cdp.evaluate(
+              inView(`
+                const st = document.createElement("style");
+                st.id = "smoke-ohne-boden";
+                st.textContent = ".json-string { min-width: 0 !important; } .json-content { overflow: hidden !important; }";
+                document.head.appendChild(st);
+                return true;
+              `),
+            );
+            console.log("SCROLL vorher", JSON.stringify(await cdp.evaluate<unknown>(inView(zumString))));
+            if (shotPfad !== null) writeFileSync(`${shotPfad}-b6-vorher.png`, await capture(cdp));
+            const m = await cdp.evaluate<{ w: number; h: number; pane: number } | null>(inView(messeString));
+            await cdp.evaluate(inView(`document.getElementById("smoke-ohne-boden")?.remove(); return true;`));
+            return m;
+          })()
         : null;
       check(
         "B6 Ein langer String bleibt in tiefer Verschachtelung lesbar (Mindestbreite)",
@@ -779,9 +826,14 @@ const SECTIONS: Section[] = [
           Boolean(ohneDeckel) &&
           mitDeckel!.w >= 200 &&
           mitDeckel!.h <= 200 &&
-          mitDeckel!.w > ohneDeckel!.w + 100,
+          mitDeckel!.w > ohneDeckel!.w + 100 &&
+          seitlichGescrollt &&
+          toolbarBleibt &&
+          toolbarOhneSticky !== null &&
+          toolbarVorScroll !== null &&
+          toolbarVorScroll - toolbarOhneSticky > 100,
         mitDeckel && ohneDeckel
-          ? `String ${mitDeckel.w}px breit, ${mitDeckel.h}px hoch (Pane ${mitDeckel.pane}px); ohne Boden ${ohneDeckel.w}px x ${ohneDeckel.h}px`
+          ? `String ${mitDeckel.w}px breit, ${mitDeckel.h}px hoch (Pane ${mitDeckel.pane}px); ohne Boden ${ohneDeckel.w}px x ${ohneDeckel.h}px; Ansicht ${sn ? `${sn.scrollLeft}px seitlich gescrollt, Werkzeugleiste links bei ${sn.toolbarLinks} (vor dem Scrollen ${toolbarVorScroll}, ohne sticky ${toolbarOhneSticky})` : "nicht gescrollt"}`
           : "String nicht gefunden",
       );
     },
@@ -934,6 +986,79 @@ const SECTIONS: Section[] = [
         nachErstem
           ? `Wurzel ${nachErstem.wurzelZu ? "ZU" : "offen"}, darunter ${nachErstem.tieferOffen}/${nachErstem.tieferGesamt} offen, erste Ebene ${nachErstem.marker ? "sichtbar" : "UNSICHTBAR"}, Knopf „${nachErstem.label}“; nach Klick 2: ${nachZweitem} zu`
           : "Knopf nicht klickbar",
+      );
+
+      // C5 — „Als Wurzel zeigen“: echter Klick auf die Zeilenaktion eines Containers, dann der Rueckweg ueber das
+      // Wurzel-Segment des Brotkrumens. Danach die 16 Ebenen tiefe Datei: im Fokus steht der String im Bild, ohne
+      // dass man 3000 px seitlich scrollen muss.
+      await openJsonFile(cdp, SMOKE_JSON, JSON.stringify(SMOKE_DATA, null, 2));
+      await runCommand(cdp, "expand-all");
+      const fokusKnopf = `return root.querySelector('.json-row[data-path="nested"] > .json-row-actions .json-row-focus');`;
+      // Der Knopf einer breiten Zeile liegt rechts ausserhalb des Sichtfensters (die Ansicht scrollt seitlich): erst hinscrollen.
+      await cdp.evaluate(inView(`root.querySelector('.json-row[data-path="nested"] > .json-row-actions .json-row-focus')?.scrollIntoView({ inline: "center", block: "nearest" }); return true;`));
+      const fokusGeklickt = await klick(cdp, elImView(fokusKnopf));
+      if (fokusGeklickt) await new Promise((r) => setTimeout(r, 400));
+      const imFokus = fokusGeklickt
+        ? await cdp.evaluate<{ pfade: string[]; marker: boolean; wurzel: string } | null>(
+            inView(`
+              const pfade = [...root.querySelectorAll(".json-row")].map((r) => r.getAttribute("data-path"));
+              return {
+                pfade,
+                marker: pfade.includes("marker"),
+                wurzel: root.querySelector(".bc-seg-focus-root")?.textContent ?? "",
+              };
+            `),
+          )
+        : null;
+      const zurueckGeklickt = fokusGeklickt && (await klick(cdp, elImView(`return root.querySelector(".bc-seg-root");`)));
+      const wieder = zurueckGeklickt
+        ? await cdp.evaluate<{ marker: boolean; markiert: number }>(
+            inView(`
+              return {
+                marker: Boolean(root.querySelector('.json-row[data-path="marker"]')),
+                markiert: root.querySelectorAll(".bc-seg-focus-root, .bc-seg-outside").length,
+              };
+            `),
+          )
+        : null;
+      const SCHLUESSEL5 = "sk-test-" + "Ab3dEf9hJk".repeat(8);
+      let tief5: Record<string, unknown> = { apiKey: SCHLUESSEL5 };
+      for (let i = 0; i < 16; i++) tief5 = { ebene: tief5 };
+      const offen5 = await openJsonFile(cdp, SMOKE_JSON, JSON.stringify(tief5, null, 2));
+      await runCommand(cdp, "expand-all");
+      const zweig = Array(14).fill("ebene").join(".");
+      const tiefImFokus = offen5
+        ? await cdp.evaluate<{ w: number; h: number; links: number; rechts: number; paneRechts: number } | null>(
+            inView(`
+              const btn = root.querySelector('.json-row[data-path="${zweig}"] > .json-row-actions .json-row-focus');
+              if (!btn) return null;
+              btn.click();
+              await new Promise((r) => setTimeout(r, 300));
+              const s = [...root.querySelectorAll(".json-string")].find((el) => el.textContent.includes("sk-test-"));
+              if (!s) return null;
+              const r = s.getBoundingClientRect();
+              return { w: Math.round(r.width), h: Math.round(r.height), links: Math.round(r.left), rechts: Math.round(r.right), paneRechts: Math.round(root.getBoundingClientRect().right) };
+            `),
+          )
+        : null;
+      if (shotPfad !== null && tiefImFokus) writeFileSync(`${shotPfad}-c5-fokus-tief.png`, await capture(cdp));
+      check(
+        "C5 Fokus auf einen Zweig: die Zeilenaktion zeigt nur ihn, der Brotkrumen führt zurück, in 16 Ebenen Tiefe steht der String lesbar im Bild",
+        Boolean(imFokus) &&
+          imFokus!.pfade.length > 0 &&
+          imFokus!.pfade.every((p) => p.startsWith("nested.")) &&
+          !imFokus!.marker &&
+          imFokus!.wurzel === "nested" &&
+          Boolean(wieder) &&
+          wieder!.marker &&
+          wieder!.markiert === 0 &&
+          Boolean(tiefImFokus) &&
+          tiefImFokus!.w >= 200 &&
+          tiefImFokus!.h <= 200 &&
+          tiefImFokus!.rechts <= tiefImFokus!.paneRechts,
+        imFokus
+          ? `Fokus: ${imFokus.pfade.length} Zeile(n), Wurzel „${imFokus.wurzel}“, zurück: ${wieder ? (wieder.marker ? "ganze Datei" : "NICHT zurück") : "Klick fehlgeschlagen"}; tief: ${tiefImFokus ? `String ${tiefImFokus.w}×${tiefImFokus.h}px, rechts ${tiefImFokus.rechts} von ${tiefImFokus.paneRechts}` : "Fokus nicht erreicht"}`
+          : "Zeilenaktion nicht klickbar",
       );
 
       // Aufräumen der Szene: Suche leeren, damit der nächste Abschnitt nicht gefiltert misst.

@@ -23,4 +23,9 @@ describe("deep nesting keeps the value column readable", () => {
   it("does not clip .json-content, so the view can scroll to the pushed-out value", () => {
     expect(block(".json-content")).toMatch(/overflow:\s*visible/);
   });
+
+  it("keeps the toolbar in view when the pane scrolls sideways", () => {
+    expect(block(".json-toolbar")).toMatch(/position:\s*sticky/);
+    expect(block(".json-toolbar")).toMatch(/left:\s*0/);
+  });
 });

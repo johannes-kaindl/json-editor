@@ -9,8 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 - **The collapse button in the toolbar now keeps the first level visible.** It used to close every block including the root, so you had to expand again just to see which keys a file has. Now the root stays open and everything below it closes; the second click opens everything. The *Collapse all* command still closes the root too.
 
+### Added
+- **Show a branch as the root.** A deeply nested file goes wide: every level costs its key's width plus an indent. Hover a container row and press the new ⤢ button (on a phone: long-press the row, *Show as root*) to see only that branch, with its own indent starting from zero. In the breadcrumb, the focused branch is underlined, the segments above it lead back out one step at a time, and *root* returns to the whole file; a ⤢ button at the end of the breadcrumb focuses the location you are on. Editing, search and the collapse button work inside the branch. The collapse state remembered for the file is not touched while a branch is focused and comes back when you leave it.
+
 ### Fixed
-- **A long string in a deeply nested file no longer wraps into a column of single characters.** A nested block sits beside its key, so every level costs the key's width plus its indent; four levels down, a 90-character API key kept 38 px. Strings now keep at least 32 characters of width and the view scrolls sideways when a deep tree needs more room, instead of clipping.
+- **A long string in a deeply nested file no longer wraps into a column of single characters.** A nested block sits beside its key, so every level costs the key's width plus its indent; four levels down, a 90-character API key kept 38 px. Strings now keep at least 32 characters of width and the view scrolls sideways when a deep tree needs more room, instead of clipping; the toolbar stays in place while it does.
 
 ## [1.21.0] — 2026-11-01
 

@@ -4,11 +4,27 @@ export interface RowActionsOptions {
   onRename: () => void;
   onDelete: () => void;
   onChangeType?: () => void;
+  /** Container rows only: show this branch as the tree root. */
+  onFocus?: () => void;
 }
 
 export function createRowActions(opts: RowActionsOptions): HTMLElement {
   const wrap = makeEl("span");
   wrap.className = "json-row-actions";
+
+  if (opts.onFocus) {
+    const focusBtn = makeEl("button");
+    focusBtn.className = "json-row-action json-row-focus";
+    focusBtn.type = "button";
+    focusBtn.title = "Show as root";
+    focusBtn.setAttribute("aria-label", "Show as root");
+    focusBtn.textContent = "⤢";
+    focusBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      opts.onFocus?.();
+    });
+    wrap.appendChild(focusBtn);
+  }
 
   if (opts.onChangeType) {
     const typeBtn = makeEl("button");

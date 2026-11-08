@@ -20,7 +20,7 @@ export function renderTree(value: JsonValue, opts: RenderOptions): HTMLElement {
   root.className = "json-tree-root";
   root.setAttribute("role", "tree");
   root.setAttribute("aria-label", "JSON content");
-  renderValue(root, value, [], 0, opts);
+  renderValue(root, value, opts.rootPath ?? [], 0, opts);
   return root;
 }
 

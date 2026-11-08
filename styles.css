@@ -54,6 +54,10 @@
 /* ─── Toolbar ─────────────────────────────────────────────────────────
    Unified bar: breadcrumb, search, mode toggle. */
 .json-toolbar {
+  /* Stays in view when a deep tree makes the pane scroll sideways. */
+  position: sticky;
+  left: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: var(--jv-space-5);
@@ -104,6 +108,35 @@
   color: var(--jv-fg-faint);
   cursor: default;
   user-select: none;
+}
+/* Focus on a branch: the segments above the focused root lead back out (muted),
+   the root itself carries a bottom rule in the accent colour. */
+.bc-seg-outside {
+  color: var(--jv-fg-faint);
+}
+.bc-seg-focus-root {
+  color: var(--jv-fg);
+  border-bottom: 2px solid var(--jv-accent);
+  border-radius: 0;
+}
+.bc-focus-btn {
+  background: none;
+  border: 1px solid var(--jv-border);
+  border-radius: var(--jv-radius-sm);
+  font: inherit;
+  padding: var(--jv-space-1) var(--jv-space-3);
+  margin-left: var(--jv-space-2);
+  color: var(--jv-fg-muted);
+  cursor: pointer;
+}
+.bc-focus-btn:hover {
+  background: var(--jv-hover);
+  color: var(--jv-fg);
+}
+.bc-focus-btn:focus-visible {
+  outline: 2px solid var(--jv-accent);
+  outline-offset: -1px;
+  color: var(--jv-fg);
 }
 
 /* ─── Search bar ──────────────────────────────────────────────────── */
@@ -902,6 +935,11 @@ body.is-mobile .json-search-clear {
   justify-content: center;
 }
 body.is-mobile .json-mode-pill {
+  min-height: 44px;
+}
+/* The breadcrumb is a row of tap targets on a phone: segments and "Show as root". */
+body.is-mobile .bc-seg,
+body.is-mobile .bc-focus-btn {
   min-height: 44px;
 }
 

@@ -120,3 +120,39 @@ describe("openRowMenu", () => {
     expect(opts.onChangeType).toHaveBeenCalledWith("number");
   });
 });
+
+describe("openRowMenu — show as root", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+    MenuStatics.instances = [];
+  });
+
+  it("a container row offers 'Show as root' right after the copy items, and it fires onFocus", () => {
+    const onFocus = vi.fn();
+    const menu = openRowMenu(evt(), {
+      ...baseOpts(),
+      value: { k: 1 },
+      currentType: "object",
+      onFocus,
+    });
+    expect(titles(menu).slice(0, 3)).toEqual(["Copy value", "Copy path", "Show as root"]);
+    menu.items[2].clickHandler?.();
+    expect(onFocus).toHaveBeenCalledTimes(1);
+  });
+
+  it("a scalar row never offers it, even with onFocus given", () => {
+    const menu = openRowMenu(evt(), { ...baseOpts(), onFocus: vi.fn() });
+    expect(titles(menu)).not.toContain("Show as root");
+  });
+
+  it("stays available on a read-only file (it changes the view, not the document)", () => {
+    const menu = openRowMenu(evt(), {
+      ...baseOpts(),
+      value: [1],
+      currentType: "array",
+      readonly: true,
+      onFocus: vi.fn(),
+    });
+    expect(titles(menu)).toEqual(["Copy value", "Copy path", "Show as root"]);
+  });
+});

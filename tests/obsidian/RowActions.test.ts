@@ -88,3 +88,27 @@ describe("createRowActions", () => {
     expect(el.querySelector(".json-row-type")?.getAttribute("aria-label")).toBe("Change type");
   });
 });
+
+describe("createRowActions — show as root", () => {
+  it("adds a focus button when onFocus is given, before the other actions", () => {
+    let called = 0;
+    const el = createRowActions({
+      canRename: true,
+      onRename: () => {},
+      onDelete: () => {},
+      onFocus: () => called++,
+    });
+    document.body.appendChild(el);
+    const btn = el.querySelector<HTMLButtonElement>(".json-row-focus");
+    expect(btn).not.toBeNull();
+    expect(btn?.getAttribute("aria-label")).toBe("Show as root");
+    expect(el.firstElementChild).toBe(btn);
+    btn?.click();
+    expect(called).toBe(1);
+  });
+
+  it("omits it without onFocus (scalar rows)", () => {
+    const el = createRowActions({ canRename: true, onRename: () => {}, onDelete: () => {} });
+    expect(el.querySelector(".json-row-focus")).toBeNull();
+  });
+});

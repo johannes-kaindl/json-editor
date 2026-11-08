@@ -32,6 +32,12 @@ export interface RenderOptions {
   readonly?: boolean;
   markerStyle?: MarkerStyle;
   autoCollapseDepth?: number;
+  /**
+   * Path of `value` inside the whole document, when only a subtree is rendered
+   * (focus on a branch). Row paths and callbacks stay document-relative; depth
+   * still starts at 0 at the focused root. Defaults to the document root.
+   */
+  rootPath?: JsonPath;
   onValueClick?: (path: JsonPath, currentValue: JsonValue) => void;
   onCollapse?: (path: JsonPath, collapsed: boolean) => void;
   onPathClick?: (path: JsonPath) => void;
