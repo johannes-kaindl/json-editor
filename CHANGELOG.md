@@ -9,15 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Fixed
 - **On a phone the toolbar no longer squeezes the breadcrumb and the search field to 14 px.** The toolbar wraps: the buttons keep one row, the breadcrumb and the search field get a row each. A long path folds in the middle (root › … › last three segments); the … shows the full path. This also tidies the breadcrumb on desktop, where a 14-level path used to wrap onto three lines. "root" always stays reachable.
 - **On a phone nested levels cost about 16 px instead of about 100 px.** The children of a branch now sit on their own line instead of beside the key, so a branch seven levels deep fits without sideways scrolling. Desktop is unchanged.
+- **A long string in a deeply nested file no longer wraps into a column of single characters.** A nested block sits beside its key, so every level costs the key's width plus its indent; four levels down, a 90-character API key kept 38 px. Strings now keep at least 32 characters of width and the view scrolls sideways when a deep tree needs more room, instead of clipping; the toolbar stays in place while it does.
 
 ### Changed
 - **The collapse button in the toolbar now keeps the first level visible.** It used to close every block including the root, so you had to expand again just to see which keys a file has. Now the root stays open and everything below it closes; the second click opens everything. The *Collapse all* command still closes the root too.
 
 ### Added
 - **Show a branch as the root.** A deeply nested file goes wide: every level costs its key's width plus an indent. Hover a container row and press the new ⤢ button (on a phone: long-press the row, *Show as root*) to see only that branch, with its own indent starting from zero. In the breadcrumb, the focused branch is underlined, the segments above it lead back out one step at a time, and *root* returns to the whole file; a ⤢ button at the end of the breadcrumb focuses the location you are on. Editing, search and the collapse button work inside the branch. The collapse state remembered for the file is not touched while a branch is focused and comes back when you leave it.
-
-### Fixed
-- **A long string in a deeply nested file no longer wraps into a column of single characters.** A nested block sits beside its key, so every level costs the key's width plus its indent; four levels down, a 90-character API key kept 38 px. Strings now keep at least 32 characters of width and the view scrolls sideways when a deep tree needs more room, instead of clipping; the toolbar stays in place while it does.
 
 ## [1.21.0] — 2026-11-01
 
