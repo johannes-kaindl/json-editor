@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.22.0] — 2026-11-09
+
 ### Fixed
 - **On a phone the toolbar no longer squeezes the breadcrumb and the search field to 14 px.** The toolbar wraps: the buttons keep one row, the breadcrumb and the search field get a row each. A long path folds in the middle (root › … › last three segments); the … shows the full path. This also tidies the breadcrumb on desktop, where a 14-level path used to wrap onto three lines. "root" always stays reachable.
 - **On a phone nested levels cost about 16 px instead of about 100 px.** The children of a branch now sit on their own line instead of beside the key, so a branch seven levels deep fits without sideways scrolling. Desktop is unchanged.
