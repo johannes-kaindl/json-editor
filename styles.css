@@ -943,6 +943,55 @@ body.is-mobile .bc-focus-btn {
   min-height: 44px;
 }
 
+/* Phone layout, measured on an iPhone 17 Pro (402 px, 16 levels, 2026-11-09).
+   Toolbar: the nowrap bar left the breadcrumb and the search 14 px together (mode
+   switch 134 + three 44 px buttons + gaps), and "Show as root" made the breadcrumb a
+   524 px column. Breadcrumb and search get a row each; the buttons keep row one. */
+body.is-mobile .json-toolbar {
+  flex-wrap: wrap;
+}
+body.is-mobile .json-breadcrumb {
+  flex: 1 1 100%;
+  order: 2;
+}
+body.is-mobile .json-search-bar {
+  flex: 1 1 100%;
+  max-width: none;
+  order: 3;
+  min-height: 44px;
+}
+/* Indent: a nested value sat beside its key in the flex row, so each level cost the
+   key width + the 44 px toggle + the indent (~100 px, 1203 px wide after a focus on
+   level 7). On a phone a branch row is a block with an inline container: key, toggle
+   and bracket share the first line, the children (a block inside the inline box) take
+   their own line at ~18 px per level. */
+body.is-mobile .json-row-branch {
+  display: block;
+}
+body.is-mobile .json-row-branch > .json-container {
+  display: inline;
+  /* the tint sits on the children below, not behind the key line */
+  background: none;
+  padding: 0;
+  margin: 0;
+}
+body.is-mobile .json-row-branch > .json-container > .json-content {
+  margin-left: 0;
+  padding-left: var(--jv-space-4);
+  min-width: 0;
+}
+/* The depth tint moves from the dissolved container to its children. */
+body.is-mobile .json-row-branch > .json-container[data-depth="1"]:not(.is-collapsed) > .json-content,
+body.is-mobile .json-row-branch > .json-container[data-depth="2"]:not(.is-collapsed) > .json-content,
+body.is-mobile .json-row-branch > .json-container[data-depth="3"]:not(.is-collapsed) > .json-content {
+  background: var(--jv-nest-tint);
+  border-radius: var(--jv-radius-md);
+}
+/* The 32ch floor (desktop) is wider than a phone leaves at depth 7. */
+body.is-mobile .json-string {
+  min-width: 12ch;
+}
+
 /* Mobile value-editing controls: tapping a value opens an inline field (text /
    number / key-rename) or a boolean checkbox, and "+ Add" adds a value — give
    them comfortable tap/type targets too (audit §4.4). */

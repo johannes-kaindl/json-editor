@@ -1,4 +1,5 @@
 import type { JsonPath } from "../core/types";
+import { t } from "../vendor/kit/i18n";
 import { makeEl } from "./dom";
 
 export interface BreadcrumbOptions {
@@ -7,11 +8,18 @@ export interface BreadcrumbOptions {
   onFocusRequest?: (path: JsonPath) => void;
 }
 
+/** More segments than this (root included) fold in the middle. */
+const MAX_UNFOLDED = 5;
+/** Segments kept at the end of a folded path. */
+const KEEP_TAIL = 3;
+
 export class Breadcrumb {
   private el: HTMLElement;
   private path: JsonPath = [];
   private focusRoot: JsonPath = [];
   private canFocus = false;
+  /** The "…" was pressed: show every segment of a long path. */
+  private expanded = false;
 
   constructor(private opts: BreadcrumbOptions) {
     this.el = makeEl("div");
@@ -25,6 +33,7 @@ export class Breadcrumb {
 
   setPath(path: JsonPath): void {
     this.path = path;
+    this.expanded = false;
     this.render();
   }
 
@@ -40,6 +49,14 @@ export class Breadcrumb {
     this.render();
   }
 
+  private appendSep(): void {
+    const sep = makeEl("span");
+    sep.className = "bc-sep";
+    sep.setAttribute("aria-hidden", "true");
+    sep.textContent = "›";
+    this.el.appendChild(sep);
+  }
+
   private render(): void {
     const path = this.path;
     const focusLen = this.focusRoot.length;
@@ -51,14 +68,28 @@ export class Breadcrumb {
       segments.push({ label, subPath });
     });
 
+    // A long path folds in the middle (root › … › last three); the "…" unfolds it.
+    // `idx` stays the index in the full path, so the focus markers do not shift.
+    const fold = !this.expanded && segments.length > MAX_UNFOLDED;
     segments.forEach((s, idx) => {
-      if (idx > 0) {
-        const sep = makeEl("span");
-        sep.className = "bc-sep";
-        sep.setAttribute("aria-hidden", "true");
-        sep.textContent = "›";
-        this.el.appendChild(sep);
+      if (fold && idx > 0 && idx < segments.length - KEEP_TAIL) {
+        if (idx === 1) {
+          this.appendSep();
+          const more = makeEl("button");
+          more.type = "button";
+          more.className = "bc-seg bc-ellipsis";
+          more.setAttribute("aria-label", t("breadcrumb.expand"));
+          more.title = t("breadcrumb.expand");
+          more.textContent = "…";
+          more.addEventListener("click", () => {
+            this.expanded = true;
+            this.render();
+          });
+          this.el.appendChild(more);
+        }
+        return;
       }
+      if (idx > 0) this.appendSep();
       // A real <button> so the segment is Tab-focusable and Enter/Space-operable
       // (WCAG 2.1.1) — matches every other interactive control in the plugin.
       const segEl = makeEl("button");

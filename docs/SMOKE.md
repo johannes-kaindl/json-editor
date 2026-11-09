@@ -225,3 +225,7 @@ Schwelle war nicht messbar, weil nichts zu kippen war.
   `persist()` schreibt beides zusammen, also setzte jedes Speichern die Prüfdateien wieder
   in `data.json`. Der Treiber räumt jetzt beide Felder und **verifiziert an der Datei**,
   nicht am Objekt im Speicher.
+
+## Mobil-Messung (2026-11-09, einmalig, nicht im Treiber)
+
+`app.emulateMobile` lädt Obsidian neu und stellt das Profil dauerhaft um; der Treiber-Lauf bricht dabei ab, darum steht die Messung nicht im Smoke. Sie lief als eigene Messung (Zweitinstanz, frisches Profil, `mobilEin`/`mobilAus` aus `tools/obsidian-cdp/chat-layout.ts`, 390 px, Datei mit 16 Ebenen): linke Kante der Zeilen vorher 44, 151, 258, 365 px (rund 107 px je Ebene), nachher 44, 60, 76, 92 px (16 px je Ebene); Fokus auf Ebene 9 vorher 1202 px breit bei 390 px Anzeige, nachher 390 px (kein seitliches Scrollen); Brotkrumen vorher 0 bis 14 px breit und bei 14 Segmenten 1005 px hoch, nachher 342 px breit und 44 px hoch; Werkzeugleiste nachher 185 px hoch (drei Zeilen). Desktop: Kanten der Zeilen vorher und nachher gleich, nur der Brotkrumen kürzt. Das Gerät (iPhone, 402 px) misst der Master.

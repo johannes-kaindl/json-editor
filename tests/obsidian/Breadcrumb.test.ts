@@ -128,3 +128,56 @@ describe("Breadcrumb focus on a branch", () => {
     expect(b.getElement().querySelector(".bc-seg-outside, .bc-seg-focus-root")).toBeNull();
   });
 });
+
+describe("Breadcrumb: long paths are shortened in the middle", () => {
+  const deep = ["a", "b", "c", "d", "e", "f", "g", "h"]; // root + 8 = 9 segments
+
+  it("keeps root, an ellipsis button and the last three segments", () => {
+    const b = new Breadcrumb({});
+    b.setPath(deep);
+    const labels = [...b.getElement().querySelectorAll(".bc-seg")].map((s) => s.textContent);
+    expect(labels).toEqual(["root", "…", "f", "g", "h"]);
+  });
+
+  it("does not shorten a path of up to five segments", () => {
+    const b = new Breadcrumb({});
+    b.setPath(["a", "b", "c", "d"]);
+    const labels = [...b.getElement().querySelectorAll(".bc-seg")].map((s) => s.textContent);
+    expect(labels).toEqual(["root", "a", "b", "c", "d"]);
+  });
+
+  it("the ellipsis expands the full path and does not navigate", () => {
+    let clicked = 0;
+    const b = new Breadcrumb({ onSegmentClick: () => clicked++ });
+    b.setPath(deep);
+    (b.getElement().querySelector(".bc-ellipsis") as HTMLButtonElement).click();
+    const labels = [...b.getElement().querySelectorAll(".bc-seg")].map((s) => s.textContent);
+    expect(labels).toEqual(["root", "a", "b", "c", "d", "e", "f", "g", "h"]);
+    expect(clicked).toBe(0);
+  });
+
+  it("a new path folds the breadcrumb again", () => {
+    const b = new Breadcrumb({});
+    b.setPath(deep);
+    (b.getElement().querySelector(".bc-ellipsis") as HTMLButtonElement).click();
+    b.setPath([...deep, "i"]);
+    expect(b.getElement().querySelector(".bc-ellipsis")).not.toBeNull();
+  });
+
+  it("root stays a clickable segment and the last segment stays terminal", () => {
+    const seen: unknown[] = [];
+    const b = new Breadcrumb({ onSegmentClick: (p) => seen.push(p) });
+    b.setPath(deep);
+    const segs = b.getElement().querySelectorAll<HTMLButtonElement>(".bc-seg");
+    segs[0].click();
+    expect(seen).toEqual([[]]);
+    expect(segs[segs.length - 1].classList.contains("bc-seg-terminal")).toBe(true);
+  });
+
+  it("the focus root keeps its marker when it is among the visible segments", () => {
+    const b = new Breadcrumb({});
+    b.setFocusRoot(["a", "b", "c", "d", "e", "f"]);
+    b.setPath(deep);
+    expect(b.getElement().querySelector(".bc-seg-focus-root")?.textContent).toBe("f");
+  });
+});

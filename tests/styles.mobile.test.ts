@@ -27,3 +27,41 @@ describe("mobile styles", () => {
     expect(css).toMatch(/body\.is-mobile[\s\S]*\.json-inline-edit[\s\S]*min-height:\s*44px/);
   });
 });
+
+// iPhone 17 Pro, 402 px, 16 levels (measured 2026-11-09): every level cost ~100 px
+// because a nested container sits beside its key in the flex row, with a 44 px
+// toggle and the indent next to it; the toolbar is nowrap and left the breadcrumb
+// 14 px. happy-dom has no layout, so the CSS source is asserted; the geometry is
+// measured in the mobile run (docs/SMOKE.md).
+function mobileBlock(selector: string): string {
+  const esc = selector.replace(/[.[\]>*:()]/g, "\\$&");
+  const m = css.match(new RegExp(`body\\.is-mobile\\s+${esc}\\s*\\{([^}]*)\\}`));
+  return m?.[1] ?? "";
+}
+
+describe("mobile layout: toolbar and indent", () => {
+  it("lets the toolbar wrap and gives breadcrumb and search their own rows", () => {
+    expect(mobileBlock(".json-toolbar")).toMatch(/flex-wrap:\s*wrap/);
+    expect(mobileBlock(".json-breadcrumb")).toMatch(/flex:\s*1 1 100%/);
+    expect(mobileBlock(".json-search-bar")).toMatch(/flex:\s*1 1 100%/);
+    expect(mobileBlock(".json-search-bar")).toMatch(/max-width:\s*none/);
+  });
+
+  it("puts a nested value's children on their own line with a small indent", () => {
+    expect(mobileBlock(".json-row-branch")).toMatch(/display:\s*block/);
+    expect(mobileBlock(".json-row-branch > .json-container")).toMatch(/display:\s*inline/);
+    expect(mobileBlock(".json-row-branch > .json-container")).toMatch(/background:\s*none/);
+    expect(mobileBlock(".json-row-branch > .json-container > .json-content")).toMatch(
+      /margin-left:\s*0/,
+    );
+  });
+
+  it("uses neither :has nor display: contents (store CSS baseline)", () => {
+    expect(css).not.toMatch(/:has\(/);
+    expect(css).not.toMatch(/display:\s*contents/);
+  });
+
+  it("shrinks the value floor so a 7-level branch needs no sideways scroll", () => {
+    expect(mobileBlock(".json-string")).toMatch(/min-width:\s*12ch/);
+  });
+});

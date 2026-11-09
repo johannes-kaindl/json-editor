@@ -165,6 +165,10 @@ function renderContainer(
     row.appendChild(keyOrIndexElement(opts.makeEl, item.segment, kind));
     row.appendChild(opts.doc.createTextNode(": "));
     renderValue(row, item.value, itemPath, depth + 1, opts);
+    // A branch row lets the phone layout put its children on their own line.
+    if (Array.from(row.children).some((c) => c.classList.contains("json-container"))) {
+      row.classList.add("json-row-branch");
+    }
     if (i < items.length - 1) appendSeparatorComma(row, opts.makeEl);
     content.appendChild(row);
   });
