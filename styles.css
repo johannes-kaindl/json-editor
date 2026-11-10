@@ -945,6 +945,7 @@ body.is-mobile .bc-seg {
   min-height: 44px;
 }
 body.is-mobile .bc-focus-btn {
+  min-width: 44px;
   min-height: 44px;
 }
 

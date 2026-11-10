@@ -74,4 +74,10 @@ describe("mobile layout: breadcrumb tap targets", () => {
     expect(rule).toMatch(/min-width:\s*44px/);
     expect(rule).toMatch(/min-height:\s*44px/);
   });
+
+  it("gives the Show-as-root button the same 44 x 44 px target (measured 21 x 44)", () => {
+    const rule = css.match(/body\.is-mobile\s+\.bc-focus-btn\s*(?:,[^{]*)?\{([^}]*)\}/)?.[1] ?? "";
+    expect(rule).toMatch(/min-width:\s*44px/);
+    expect(rule).toMatch(/min-height:\s*44px/);
+  });
 });
