@@ -76,7 +76,9 @@ describe("mobile layout: breadcrumb tap targets", () => {
   });
 
   it("gives the Show-as-root button the same 44 x 44 px target (measured 21 x 44)", () => {
-    const rule = [...css.matchAll(/body\.is-mobile[^{}]*\.bc-focus-btn[^{}]*\{([^}]*)\}/g)].map((m) => m[1]).join("\n");
+    const rule = [...css.matchAll(/body\.is-mobile[^{}]*\.bc-focus-btn[^{}]*\{([^}]*)\}/g)]
+      .map((m) => m[1])
+      .join("\n");
     expect(rule).toMatch(/min-width:\s*44px/);
     expect(rule).toMatch(/min-height:\s*44px/);
   });
@@ -89,7 +91,9 @@ describe("mobile layout: breadcrumb tap targets", () => {
 // keep their size. happy-dom has no layout; the geometry is smoke point B7 with a wide font at 354 px.
 describe("mobile layout: the folded breadcrumb stays in one row", () => {
   it("does not wrap while the path is folded, and wraps once it is unfolded", () => {
-    const folded = css.match(/body\.is-mobile\s+\.json-breadcrumb:not\(\.is-expanded\)\s*\{([^}]*)\}/)?.[1] ?? "";
+    const folded =
+      css.match(/body\.is-mobile\s+\.json-breadcrumb:not\(\.is-expanded\)\s*\{([^}]*)\}/)?.[1] ??
+      "";
     expect(folded).toMatch(/flex-wrap:\s*nowrap/);
   });
 
