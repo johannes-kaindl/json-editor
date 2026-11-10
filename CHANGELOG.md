@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.22.1] — 2026-11-10
+
 ### Fixed
 - **On a phone the breadcrumb's … segment is now easy to hit.** The fold in a long path was only as wide as its three dots, about 20 px; every breadcrumb segment, *root* and short keys included, is now at least 44 px wide, as tall as it already was.
 - **On a phone the ⤢ (*Show as root*) button at the end of the breadcrumb is now easy to hit.** It was about 21 px wide; it is now 44 px wide and tall, like the segments.
