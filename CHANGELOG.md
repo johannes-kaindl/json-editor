@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.22.2] — 2026-11-10
+
 ### Fixed
 - **On a phone the ⤢ (*Show as root*) button no longer drops into a second row under the breadcrumb.** With 1.22.1's 44 px tap targets, root, … and three segments no longer fitted one row on an iPhone whose theme font is wider than the default (the breadcrumb grew from 44 to 92 px and the toolbar from 185 to 233 px). A folded path now always stays in one row: root, the … fold and the ⤢ button keep their size, the segments in between shrink with an ellipsis down to 44 px wide, so every tap target stays 44 px. Unfolding the path with … still wraps over several rows.
 
