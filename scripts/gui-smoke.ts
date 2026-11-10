@@ -176,6 +176,7 @@ const PUNKTE_JE_SECTION: Record<string, readonly string[]> = {
     "B4 [hidden]-Elemente sind wirklich unsichtbar",
     "B5 A11y-Ansage-Region ist unsichtbar, aber nicht stumm",
     "B6 Ein langer String bleibt in tiefer Verschachtelung lesbar (Mindestbreite)",
+    "B7 Handy: der gefaltete Brotkrumen bleibt bei 354 px in einer Zeile, auch mit breiter Schrift und langen Schlüsseln",
   ],
   navigation: [
     "C1 collapse-all / expand-all wirken auf alle Container",
@@ -835,6 +836,74 @@ const SECTIONS: Section[] = [
         mitDeckel && ohneDeckel
           ? `String ${mitDeckel.w}px breit, ${mitDeckel.h}px hoch (Pane ${mitDeckel.pane}px); ohne Boden ${ohneDeckel.w}px x ${ohneDeckel.h}px; Ansicht ${sn ? `${sn.scrollLeft}px seitlich gescrollt, Werkzeugleiste links bei ${sn.toolbarLinks} (vor dem Scrollen ${toolbarVorScroll}, ohne sticky ${toolbarOhneSticky})` : "nicht gescrollt"}`
           : "String nicht gefunden",
+      );
+
+      // B7 — Handy (is-mobile): der gefaltete Brotkrumen (root, …, drei Segmente, ⤢) brach am iPhone mit Theme-Schrift
+      // in eine zweite Zeile um (Segmente 62 statt 49 px breit, 1.22.1 gemessen am Geraet; die Mobil-Emulation mit der
+      // Mac-Schrift zeigte es nicht). Hier ohne `emulateMobile` (es laedt Obsidian neu und bricht den Lauf): die Klasse
+      // `is-mobile` auf dem Body, die Werkzeugleiste auf 378 px (Brotkrumen 354 px) und eine breite Schrift (Monospace
+      // 12 px: 7,2 px je Zeichen wie am Geraet). Zwei Faelle: Schluessel `ebene14` und sehr lange Schluessel.
+      // Gegenprobe im selben Lauf: ohne Nowrap und ohne Schrumpfen muss derselbe Aufbau in zwei Zeilen brechen.
+      const messeB7 = async (schluessel: string[], extraCss: string) => {
+        const tiefB7: Record<string, unknown> = {};
+        let cur: Record<string, unknown> = tiefB7;
+        for (const k of schluessel) {
+          const next: Record<string, unknown> = {};
+          cur[k] = next;
+          cur = next;
+        }
+        cur.marker = 1;
+        if (!(await openJsonFile(cdp, SMOKE_JSON, JSON.stringify(tiefB7, null, 2)))) return null;
+        await runCommand(cdp, "expand-all");
+        return cdp.evaluate<{ zeilen: number; h: number; w: number; segMin: number; fokusB: number; fokusDrueber: number; ellipse: boolean } | null>(
+          inView(`
+            const pfad = ${JSON.stringify(schluessel.join("."))};
+            const row = root.querySelector('.json-row[data-path="' + pfad + '"]');
+            if (!row) return null;
+            const warMobil = document.body.classList.contains("is-mobile");
+            const st = document.createElement("style");
+            st.id = "smoke-b7";
+            st.textContent = ".json-toolbar { width: 378px !important; box-sizing: border-box !important; } .json-breadcrumb { font-family: monospace !important; font-size: 12px !important; }" + ${JSON.stringify(extraCss)};
+            document.head.appendChild(st);
+            document.body.classList.add("is-mobile");
+            try {
+              row.click();
+              await new Promise((r) => setTimeout(r, 400));
+              const bc = root.querySelector(".json-breadcrumb");
+              if (!bc) return null;
+              const r = bc.getBoundingClientRect();
+              const kinder = [...bc.children].filter((e) => e.matches(".bc-seg, .bc-focus-btn"));
+              const tops = new Set(kinder.map((e) => Math.round(e.getBoundingClientRect().top)));
+              const segs = [...bc.querySelectorAll(".bc-seg")].map((e) => e.getBoundingClientRect().width);
+              const f = bc.querySelector(".bc-focus-btn");
+              const fr = f ? f.getBoundingClientRect() : null;
+              return {
+                zeilen: tops.size,
+                h: Math.round(r.height),
+                w: Math.round(r.width),
+                segMin: Math.round(Math.min(...segs) * 10) / 10,
+                fokusB: fr ? Math.round(fr.width * 10) / 10 : -1,
+                fokusDrueber: fr ? Math.round(fr.right - r.right) : 999,
+                ellipse: Boolean(bc.querySelector(".bc-ellipsis")),
+              };
+            } finally {
+              st.remove();
+              if (!warMobil) document.body.classList.remove("is-mobile");
+            }
+          `),
+        );
+      };
+      const ebenen = Array.from({ length: 16 }, (_, i) => `ebene${i + 1}`);
+      const langeSchluessel = [...Array.from({ length: 13 }, (_, i) => `e${i + 1}`), "konfiguration_mit_langem_namen", "noch_ein_sehr_langer_schluessel_name", "und_ein_dritter_langer_schluessel"];
+      const b7Normal = await messeB7(ebenen, "");
+      const b7Lang = await messeB7(langeSchluessel, "");
+      const b7Gegenprobe = await messeB7(ebenen, ".json-breadcrumb { flex-wrap: wrap !important; } .bc-seg { flex-shrink: 0 !important; overflow: visible !important; }");
+      const einZeilig = (m: typeof b7Normal): boolean =>
+        Boolean(m) && m!.ellipse && m!.zeilen === 1 && m!.h <= 48 && m!.w >= 350 && m!.segMin >= 43.5 && m!.fokusB >= 43.5 && m!.fokusDrueber <= 1;
+      check(
+        "B7 Handy: der gefaltete Brotkrumen bleibt bei 354 px in einer Zeile, auch mit breiter Schrift und langen Schlüsseln",
+        einZeilig(b7Normal) && einZeilig(b7Lang) && Boolean(b7Gegenprobe) && b7Gegenprobe!.zeilen >= 2,
+        `ebene1…16: ${b7Normal ? `${b7Normal.zeilen} Zeile(n), ${b7Normal.w} x ${b7Normal.h} px, kleinstes Segment ${b7Normal.segMin} px, ⤢ ${b7Normal.fokusB} px, ${b7Normal.fokusDrueber} px ueber dem Rand` : "nicht gemessen"}; lange Schluessel: ${b7Lang ? `${b7Lang.zeilen} Zeile(n), ${b7Lang.h} px hoch, kleinstes Segment ${b7Lang.segMin} px, ⤢ ${b7Lang.fokusB} px` : "nicht gemessen"}; Gegenprobe (Umbruch erlaubt, kein Schrumpfen): ${b7Gegenprobe ? `${b7Gegenprobe.zeilen} Zeile(n), ${b7Gegenprobe.h} px hoch` : "nicht gemessen"}`,
       );
     },
   },

@@ -61,6 +61,8 @@ export class Breadcrumb {
     const path = this.path;
     const focusLen = this.focusRoot.length;
     this.el.replaceChildren();
+    // The phone keeps a folded path in one row and lets it wrap only once it is unfolded (styles.css).
+    this.el.classList.toggle("is-expanded", this.expanded);
     const segments: Array<{ label: string; subPath: JsonPath }> = [{ label: "root", subPath: [] }];
     path.forEach((seg, i) => {
       const subPath = path.slice(0, i + 1);

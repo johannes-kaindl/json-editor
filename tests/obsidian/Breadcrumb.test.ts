@@ -164,6 +164,16 @@ describe("Breadcrumb: long paths are shortened in the middle", () => {
     expect(b.getElement().querySelector(".bc-ellipsis")).not.toBeNull();
   });
 
+  it("marks the unfolded path with is-expanded (the phone may wrap only then) and drops it on a new path", () => {
+    const b = new Breadcrumb({});
+    b.setPath(deep);
+    expect(b.getElement().classList.contains("is-expanded")).toBe(false);
+    (b.getElement().querySelector(".bc-ellipsis") as HTMLButtonElement).click();
+    expect(b.getElement().classList.contains("is-expanded")).toBe(true);
+    b.setPath([...deep, "i"]);
+    expect(b.getElement().classList.contains("is-expanded")).toBe(false);
+  });
+
   it("root stays a clickable segment and the last segment stays terminal", () => {
     const seen: unknown[] = [];
     const b = new Breadcrumb({ onSegmentClick: (p) => seen.push(p) });

@@ -76,8 +76,35 @@ describe("mobile layout: breadcrumb tap targets", () => {
   });
 
   it("gives the Show-as-root button the same 44 x 44 px target (measured 21 x 44)", () => {
-    const rule = css.match(/body\.is-mobile\s+\.bc-focus-btn\s*(?:,[^{]*)?\{([^}]*)\}/)?.[1] ?? "";
+    const rule = [...css.matchAll(/body\.is-mobile[^{}]*\.bc-focus-btn[^{}]*\{([^}]*)\}/g)].map((m) => m[1]).join("\n");
     expect(rule).toMatch(/min-width:\s*44px/);
     expect(rule).toMatch(/min-height:\s*44px/);
+  });
+});
+
+// iPhone 17 Pro (measured 2026-11-10, release build 1.22.1): the iOS theme font made the segments 62 px wide instead
+// of 49 px, so root … three segments and the 44 px ⤢ no longer fitted the 354 px row and ⤢ wrapped to a second row
+// (breadcrumb 92 px high, toolbar 233 instead of 185 px). A key's width depends on the font, so the folded row must not
+// depend on it: it never wraps, the tail segments shrink (with an ellipsis) down to their 44 px floor, the fixed parts
+// keep their size. happy-dom has no layout; the geometry is smoke point B7 with a wide font at 354 px.
+describe("mobile layout: the folded breadcrumb stays in one row", () => {
+  it("does not wrap while the path is folded, and wraps once it is unfolded", () => {
+    const folded = css.match(/body\.is-mobile\s+\.json-breadcrumb:not\(\.is-expanded\)\s*\{([^}]*)\}/)?.[1] ?? "";
+    expect(folded).toMatch(/flex-wrap:\s*nowrap/);
+  });
+
+  it("lets a segment shrink with an ellipsis, never below its 44 px floor", () => {
+    const rule = css.match(/body\.is-mobile\s+\.bc-seg\s*(?:,[^{]*)?\{([^}]*)\}/)?.[1] ?? "";
+    expect(rule).toMatch(/flex:\s*0 1 auto/);
+    expect(rule).toMatch(/overflow:\s*hidden/);
+    expect(rule).toMatch(/text-overflow:\s*ellipsis/);
+    expect(rule).toMatch(/white-space:\s*nowrap/);
+    expect(rule).toMatch(/min-width:\s*44px/);
+  });
+
+  it("keeps root, the fold, the separators and the Show-as-root button at full size", () => {
+    const rule =
+      css.match(/body\.is-mobile\s+\.bc-seg-root\s*,[^{]*\.bc-focus-btn\s*\{([^}]*)\}/)?.[1] ?? "";
+    expect(rule).toMatch(/flex:\s*none/);
   });
 });

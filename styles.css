@@ -943,10 +943,28 @@ body.is-mobile .json-mode-pill {
 body.is-mobile .bc-seg {
   min-width: 44px;
   min-height: 44px;
+  /* A key's width is the theme font's, not ours (an iPhone with a monospace theme made "ebene14" 62 px
+     instead of 49 px, and the ⤢ button wrapped to a second row, measured 2026-11-10): a segment shrinks
+     with an ellipsis down to its 44 px floor instead of pushing the row into a second line. */
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body.is-mobile .bc-seg-root,
+body.is-mobile .bc-ellipsis,
+body.is-mobile .bc-sep,
+body.is-mobile .bc-focus-btn {
+  flex: none;
 }
 body.is-mobile .bc-focus-btn {
   min-width: 44px;
   min-height: 44px;
+}
+/* Folded, the path is root, the fold and three segments plus ⤢: at their floors they fit 354 px in any font.
+   Unfolded (the … was pressed) it may be longer than a row and wraps. */
+body.is-mobile .json-breadcrumb:not(.is-expanded) {
+  flex-wrap: nowrap;
 }
 
 /* Phone layout, measured on an iPhone 17 Pro (402 px, 16 levels, 2026-11-09).
