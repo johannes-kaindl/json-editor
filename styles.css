@@ -937,8 +937,13 @@ body.is-mobile .json-search-clear {
 body.is-mobile .json-mode-pill {
   min-height: 44px;
 }
-/* The breadcrumb is a row of tap targets on a phone: segments and "Show as root". */
-body.is-mobile .bc-seg,
+/* The breadcrumb is a row of tap targets on a phone: segments and "Show as root". A segment is
+   only as wide as its label, so the fold "…" (20 px) and a short key missed 44 px on an iPhone
+   17 Pro (measured 2026-11-09); the width gets a floor like the height. */
+body.is-mobile .bc-seg {
+  min-width: 44px;
+  min-height: 44px;
+}
 body.is-mobile .bc-focus-btn {
   min-height: 44px;
 }

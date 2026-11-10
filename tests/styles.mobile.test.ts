@@ -65,3 +65,13 @@ describe("mobile layout: toolbar and indent", () => {
     expect(mobileBlock(".json-string")).toMatch(/min-width:\s*12ch/);
   });
 });
+
+// iPhone 17 Pro (measured 2026-11-09): the breadcrumb's "…" segment was 20 x 44 px, "root" 43 x 44 —
+// a segment is only as wide as its label, so short ones missed the 44 px target (Apple HIG).
+describe("mobile layout: breadcrumb tap targets", () => {
+  it("gives every breadcrumb segment, the fold included, a 44 px minimum width", () => {
+    const rule = css.match(/body\.is-mobile\s+\.bc-seg\s*(?:,[^{]*)?\{([^}]*)\}/)?.[1] ?? "";
+    expect(rule).toMatch(/min-width:\s*44px/);
+    expect(rule).toMatch(/min-height:\s*44px/);
+  });
+});
