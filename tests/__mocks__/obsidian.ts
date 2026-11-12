@@ -408,3 +408,13 @@ export class SuggestModal<T> {
   renderSuggestion(_item: T, _el: HTMLElement): void {}
   onChooseSuggestion(_item: T, _evt: MouseEvent | KeyboardEvent): void {}
 }
+
+/** Nur so viel, wie `write-ports` braucht: eine Markdown-Ansicht mit Datei, Editor und Modus. */
+export class MarkdownView {
+  file: { path: string } | null = null;
+  editor: unknown = null;
+  mode: "source" | "preview" = "source";
+  getMode(): "source" | "preview" {
+    return this.mode;
+  }
+}

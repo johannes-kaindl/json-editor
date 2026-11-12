@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+- **Repairing a broken code block from its rendered error bar now goes through the open editor when the note is in editing mode, so Ctrl/Cmd+Z takes the repair back; a note with Windows line endings keeps them.** The write also checks that the fence still opens a `json` or `jsonc` block before it replaces anything (kit `block-writer`).
+
 ## [1.22.2] — 2026-11-10
 
 ### Fixed

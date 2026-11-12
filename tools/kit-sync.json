@@ -12,7 +12,13 @@
       "dir": "src/vendor/kit",
       "source": "obsidian-kit",
       "from": "src/pure",
-      "modules": ["anthropic-wire", "endpoint-secret-hook", "endpoint-source", "override-guard"],
+      "modules": [
+        "anthropic-wire",
+        { "name": "block-writer", "ref": "0.82.2" },
+        "endpoint-secret-hook",
+        "endpoint-source",
+        "override-guard"
+      ],
       "rewrite": [["../vendor/code-kit/pure/", "./"], ["../vendor/code-kit/web/", "./"]]
     },
     {
@@ -85,7 +91,8 @@
         "request-section",
         "request-session",
         "secrets",
-        "shortcuts-bridge"
+        "shortcuts-bridge",
+        { "name": "write-ports", "ref": "0.82.2" }
       ],
       "rewrite": [
         ["../pure/", "../kit/"],

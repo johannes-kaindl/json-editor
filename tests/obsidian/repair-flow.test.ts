@@ -1,4 +1,11 @@
-import { type App, type Editor, type MarkdownPostProcessorContext, Notice, TFile } from "obsidian";
+import {
+  type App,
+  type Editor,
+  type MarkdownPostProcessorContext,
+  MarkdownView,
+  Notice,
+  TFile,
+} from "obsidian";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RepairModalOptions } from "../../src/obsidian/RepairModal";
 import { DEFAULT_SETTINGS } from "../../src/obsidian/SettingsTab";
@@ -21,11 +28,13 @@ const service = {
   run: vi.fn(async () => ({ ok: true, text: "{}", facts: null })),
 } as unknown as RepairService;
 
-function deps(data: { text: string }) {
+function deps(data: { text: string }, leaves: unknown[] = []) {
   const file = new (TFile as unknown as new (path: string) => TFile)("n.md");
   const app = {
+    workspace: { getLeavesOfType: () => leaves.map((view) => ({ view })) },
     vault: {
       getAbstractFileByPath: (p: string) => (p === "n.md" ? file : null),
+      read: async () => data.text,
       process: async (_f: TFile, fn: (d: string) => string) => {
         data.text = fn(data.text);
         return data.text;
@@ -108,6 +117,80 @@ describe("repairFromBlock", () => {
       ctx: ctxFor({ getSectionInfo: () => null }),
     });
     expect(await captured?.apply("{}")).toBe("stale");
+  });
+});
+
+describe("repairFromBlock — writes through the kit's writeBlockBody", () => {
+  beforeEach(() => {
+    captured = null;
+    NoticeMock.instances = [];
+  });
+  const open = (
+    data: { text: string },
+    leaves: unknown[] = [],
+    lang: "json" | "jsonc" = "json",
+  ) => {
+    repairFromBlock(deps(data, leaves), {
+      source: '{"a": 1,}',
+      errorMessage: "E",
+      lang,
+      el: document.createElement("div"),
+      ctx: ctxFor(),
+    });
+  };
+
+  it("keeps CRLF line endings of a CRLF note, also for a multi-line proposal", async () => {
+    const data = { text: NOTE.replace(/\n/g, "\r\n") };
+    open(data);
+    expect(await captured?.apply('{\n  "a": 1\n}')).toBe("ok");
+    expect(data.text).toBe(
+      ["# T", "", "```json", "{", '  "a": 1', "}", "```", "", "after", ""].join("\r\n"),
+    );
+    expect(data.text.replace(/\r\n/g, "")).not.toContain("\n");
+  });
+
+  it("trims trailing blank lines of the proposal: no empty line before the closing fence", async () => {
+    const data = { text: NOTE };
+    open(data);
+    expect(await captured?.apply('{"a": 1}\n\n')).toBe("ok");
+    expect(data.text).toBe(NOTE.replace('{"a": 1,}', '{"a": 1}'));
+  });
+
+  it("refuses when the opening fence on that line is another language", async () => {
+    const data = { text: NOTE.replace("```json", "```python") };
+    const before = data.text;
+    open(data);
+    expect(await captured?.apply("{}")).toBe("stale");
+    expect(data.text).toBe(before);
+  });
+
+  it("writes through the open editor (so Ctrl+Z works) and not through vault.process", async () => {
+    const data = { text: NOTE };
+    const view = new (
+      MarkdownView as unknown as new () => { file: { path: string }; editor: unknown }
+    )();
+    view.file = { path: "n.md" };
+    const replaceRange = vi.fn();
+    view.editor = { getValue: () => data.text, replaceRange };
+    open(data, [view]);
+    expect(await captured?.apply('{"a": 1}')).toBe("ok");
+    expect(replaceRange).toHaveBeenCalledTimes(1);
+    expect(data.text).toBe(NOTE);
+  });
+
+  it("falls back to vault.process in reading mode", async () => {
+    const data = { text: NOTE };
+    const view = new (
+      MarkdownView as unknown as new () => { file: { path: string }; editor: unknown; mode: string }
+    )();
+    view.file = { path: "n.md" };
+    view.mode = "preview";
+    const replaceRange = vi.fn();
+    view.editor = { getValue: () => data.text, replaceRange };
+    open(data, [view]);
+    expect(await captured?.apply('{"a": 1}')).toBe("ok");
+    expect(replaceRange).not.toHaveBeenCalled();
+    expect(data.text).toBe(NOTE.replace('{"a": 1,}', '{"a": 1}'));
   });
 });
 

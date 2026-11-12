@@ -2,6 +2,8 @@ import { type App, type Editor, type MarkdownPostProcessorContext, Notice, TFile
 import { jsoncParse } from "../core/jsonc";
 import { parse } from "../core/parse";
 import { type FenceLang, findFenceAt, spliceFence } from "../core/repair/fence";
+import { obsidianWritePorts } from "../vendor/kit-obsidian/write-ports";
+import { BlockChangedError, writeBlockBody } from "../vendor/kit/block-writer";
 import { t } from "../vendor/kit/i18n";
 import { type ApplyResult, RepairModal } from "./RepairModal";
 import type { JsonEditorSettings } from "./SettingsTab";
@@ -48,8 +50,8 @@ export function repairFromFile(deps: RepairDeps, req: FileRepairRequest): void {
 }
 
 /** Knopf in der Fehler-Titelzeile eines gerenderten Codeblocks. Die Position kommt erst beim
- *  Klick aus `getSectionInfo` (das Element haengt dann im DOM), geschrieben wird atomar ueber
- *  `vault.process` — und nur, wenn der Inhalt dort noch der ist, den das Modell gesehen hat. */
+ *  Klick aus `getSectionInfo` (das Element haengt dann im DOM), geschrieben wird mit `writeBlockBody` des Kits —
+ *  und nur, wenn Zaun-Sprache und Inhalt dort noch die sind, die das Modell gesehen hat. */
 export function repairFromBlock(
   deps: RepairDeps,
   block: {
@@ -66,14 +68,20 @@ export function repairFromBlock(
     if (!(file instanceof TFile)) return "no-file";
     const info = ctx.getSectionInfo(el);
     if (info === null) return "stale";
-    let result: ApplyResult = "stale";
-    await deps.app.vault.process(file, (data) => {
-      const next = spliceFence(data, info.lineStart, info.lineEnd, source, text);
-      if (next === null) return data;
-      result = "ok";
-      return next;
-    });
-    return result;
+    // Der Kit-Schreiber prueft Zaun-Sprache und Rumpf an der Stelle, schreibt ueber den offenen Editor
+    // (Strg+Z wirkt), sonst atomar ueber `vault.process`, und behaelt das Zeilenende der Notiz.
+    try {
+      await writeBlockBody(
+        obsidianWritePorts(deps.app),
+        { path: ctx.sourcePath, lineStart: info.lineStart, lineEnd: info.lineEnd, fence: lang },
+        source,
+        text.replace(/\s+$/, ""),
+      );
+      return "ok";
+    } catch (e) {
+      if (e instanceof BlockChangedError) return "stale";
+      throw e;
+    }
   });
 }
 
