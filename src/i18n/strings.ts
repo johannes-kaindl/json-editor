@@ -227,7 +227,7 @@ export const STRINGS = {
     "schema.errors.many": "{0} Schemafehler — fahre über die roten Zeilen für Details.",
     "schema.notLoaded": "Schema nicht geladen — {0}",
     "search.aria": "JSON durchsuchen",
-    "search.placeholder": "Schlüssel und Werte durchsuchen …",
+    "search.placeholder": "Schlüssel und Werte suchen …",
     "search.clear": "Suche leeren",
     "search.none": "Keine Treffer",
     "search.one": "{0} Treffer",
