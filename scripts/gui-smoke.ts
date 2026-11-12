@@ -207,6 +207,7 @@ const PUNKTE_JE_SECTION: Record<string, readonly string[]> = {
     "F3 Anfrage trägt Modell, Profilwerte und den Parser-Fehler",
     "F4 Anwenden ersetzt nur den Blockinhalt, der Rest bleibt byte-gleich",
     "F5 Modal schließt nach Anwenden",
+    "F5b Block mit Schluss-Leerzeile in einer CRLF-Notiz: Anwenden schreibt (nicht „geändert“) und behält CRLF",
     "F6 Ungültige Antwort sperrt Anwenden und lässt die Notiz unberührt",
     "F7 Große Datei: die Anfrage trägt nur das Fenster, der Vorschlag die ganze Datei, Anwenden schreibt byte-genau",
     "G1 Bearer-Token geht geschwärzt raus, der Vorschlag trägt das Original zurück",
@@ -1629,6 +1630,56 @@ const SECTIONS: Section[] = [
           angewendet && Boolean(zu),
           !angewendet ? "Anwenden nicht geklickt" : zu ? "geschlossen" : "noch offen",
         );
+
+        // F5b — Schluss-Leerzeile und CRLF (Welle 33, `writeBlockBody` statt `spliceFence`): der Kit-Schreiber vergleicht den Rumpf exakt, der
+        // alte schnitt am Ende Leerraum ab. Gemessen wird, was Obsidian dem Plugin als `source` gibt und ob Anwenden daran scheitert.
+        const crlf = ["# Repair", "", `${fence}json`, '{"a": 1, "b": [1, 2,,]', "", fence, "", "danach steht Text", ""].join("\r\n");
+        await cdp.evaluate(`
+          const file = app.vault.getAbstractFileByPath(${JSON.stringify(SMOKE_REPAIR_NOTE)});
+          await app.vault.modify(file, ${JSON.stringify(crlf)});
+          let leaf = app.workspace.getMostRecentLeaf(app.workspace.rootSplit);
+          if (!leaf || !leaf.parent) leaf = app.workspace.getLeaf(true);
+          await leaf.openFile(file, { state: { mode: "preview" } });
+          app.workspace.setActiveLeaf(leaf, { focus: true });
+          return true;
+        `);
+        const da5b = await pollUntil<boolean>(cdp, inView(`return root.querySelector(${JSON.stringify(knopfSel)}) ? true : null;`), 15_000, 400);
+        const klick5b = da5b ? await klick(cdp, elImView(`return root.querySelector(${JSON.stringify(knopfSel)});`)) : false;
+        const bereit5b = klick5b
+          ? await pollUntil<boolean>(
+              cdp,
+              `
+                const cols = document.querySelectorAll(".json-repair-modal .json-repair-col");
+                const apply = document.querySelector(".json-repair-modal .modal-button-container button.mod-cta");
+                return cols.length === 2 && apply && !apply.disabled ? true : null;
+              `,
+              15_000,
+              300,
+            )
+          : null;
+        const anw5b = bereit5b ? await klick(cdp, `document.querySelector(".json-repair-modal .modal-button-container button.mod-cta")`) : false;
+        const ergebnis5b = anw5b
+          ? await pollUntil<{ text: string; hinweis: string }>(
+              cdp,
+              `
+                const file = app.vault.getAbstractFileByPath(${JSON.stringify(SMOKE_REPAIR_NOTE)});
+                const text = await app.vault.read(file);
+                const st = document.querySelector(".json-repair-modal .json-repair-status.is-error");
+                if (text.includes('"b": [1, 2]') && !text.includes(",,")) return { text, hinweis: "geschrieben" };
+                return st ? { text, hinweis: "Hinweis: " + st.textContent } : null;
+              `,
+              8000,
+              300,
+            )
+          : null;
+        const t5b = ergebnis5b?.text ?? "";
+        const gemischt = /(^|[^\r])\n/.test(t5b);
+        check(
+          "F5b Block mit Schluss-Leerzeile in einer CRLF-Notiz: Anwenden schreibt (nicht „geändert“) und behält CRLF",
+          ergebnis5b?.hinweis === "geschrieben" && t5b.includes("\r\n") && !gemischt,
+          ergebnis5b ? `${ergebnis5b.hinweis}; CRLF ${t5b.includes("\r\n") ? "ja" : "nein"}; gemischte Zeilenenden ${gemischt ? "JA" : "nein"}` : anw5b ? "weder Datei noch Hinweis" : "Modal nicht bereit",
+        );
+        await cdp.evaluate(`document.querySelector(".json-repair-modal .modal-button-container button")?.click(); return true;`).catch(() => undefined);
 
         // Ungueltige Modellantwort: Anwenden bleibt gesperrt, die Datei unangetastet.
         modus = "kaputt";
