@@ -1,3 +1,4 @@
+import { t } from "../vendor/kit/i18n";
 import { activeDoc, makeEl } from "./dom";
 export interface SearchBarOptions {
   onQueryChange: (query: string) => void;
@@ -20,8 +21,8 @@ export class SearchBar {
     this.input = makeEl("input");
     this.input.type = "text";
     this.input.className = "json-search-input";
-    this.input.setAttribute("aria-label", "Search JSON");
-    this.input.placeholder = "Search keys and values…";
+    this.input.setAttribute("aria-label", t("search.aria"));
+    this.input.placeholder = t("search.placeholder");
     this.input.spellcheck = false;
     this.el.appendChild(this.input);
 
@@ -37,7 +38,7 @@ export class SearchBar {
     this.clearBtn = makeEl("button");
     this.clearBtn.className = "json-search-clear";
     this.clearBtn.type = "button";
-    this.clearBtn.setAttribute("aria-label", "Clear search");
+    this.clearBtn.setAttribute("aria-label", t("search.clear"));
     this.clearBtn.textContent = "×";
     this.clearBtn.hidden = true;
     this.el.appendChild(this.clearBtn);
@@ -68,14 +69,16 @@ export class SearchBar {
     }
     this.countEl.hidden = false;
     if (info.matchCount === 0) {
-      this.countEl.textContent = "No matches";
+      this.countEl.textContent = t("search.none");
       this.countEl.classList.add("is-empty");
       return;
     }
     this.countEl.classList.remove("is-empty");
     if (info.activeIndex === undefined) {
-      const noun = info.matchCount === 1 ? "match" : "matches";
-      this.countEl.textContent = `${info.matchCount} ${noun}`;
+      this.countEl.textContent = t(
+        info.matchCount === 1 ? "search.one" : "search.many",
+        info.matchCount,
+      );
     } else {
       this.countEl.textContent = `${info.activeIndex + 1}/${info.matchCount}`;
     }

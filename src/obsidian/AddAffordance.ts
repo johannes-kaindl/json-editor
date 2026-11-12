@@ -1,3 +1,4 @@
+import { t } from "../vendor/kit/i18n";
 import { makeEl } from "./dom";
 export interface AddAffordanceOptions {
   kind: "object" | "array";
@@ -14,8 +15,8 @@ export function createAddAffordance(opts: AddAffordanceOptions): HTMLElement {
   const trigger = makeEl("button");
   trigger.className = "json-add-trigger";
   trigger.type = "button";
-  trigger.textContent = opts.kind === "object" ? "+ Add key" : "+ Add item";
-  trigger.title = opts.kind === "object" ? "Add a new key" : "Add a new item";
+  trigger.textContent = opts.kind === "object" ? t("add.addKey") : t("add.addItem");
+  trigger.title = opts.kind === "object" ? t("add.tipKey") : t("add.tipItem");
   wrap.appendChild(trigger);
 
   if (opts.kind === "array") {
@@ -31,7 +32,7 @@ export function createAddAffordance(opts: AddAffordanceOptions): HTMLElement {
       const input = makeEl("input");
       input.type = "text";
       input.className = "json-add-input";
-      input.placeholder = "Key";
+      input.placeholder = t("add.key");
       let resolved = false;
       const commit = () => {
         if (resolved) return;

@@ -3,6 +3,7 @@ import { parsePathStr, pathToString } from "../core/path";
 import { renderTree } from "../core/render";
 import { findMatches } from "../core/search";
 import type { JsonPath, JsonValue, MarkerStyle } from "../core/types";
+import { t } from "../vendor/kit/i18n";
 import { createAddAffordance } from "./AddAffordance";
 import { createCopyButton } from "./CopyButton";
 import { createRowActions } from "./RowActions";
@@ -674,7 +675,7 @@ export class TreeView {
     const input = makeEl("input");
     input.type = "text";
     input.className = "json-inline-edit json-key-rename";
-    input.setAttribute("aria-label", `Rename key ${currentKey}`);
+    input.setAttribute("aria-label", t("tree.renameAria", currentKey));
     input.value = currentKey;
     keyEl.replaceWith(input);
     input.focus();
@@ -957,7 +958,7 @@ export class TreeView {
       const value = locateValueByPathStr(this.current, pathStr);
       const path = parsePathStr(pathStr);
       const btn = createCopyButton(value, path, (what) =>
-        this.announce(what === "path" ? "Path copied" : "Value copied"),
+        this.announce(what === "path" ? t("copy.pathDone") : t("copy.valueDone")),
       );
       row.appendChild(btn);
     });
@@ -982,7 +983,7 @@ export class TreeView {
     };
 
     // Der Name sagt, WAS bearbeitet wird — ohne ihn liest ein Screenreader nur „Eingabefeld".
-    const editLabel = `Edit value at ${pathToString(path)}`;
+    const editLabel = t("tree.editAria", pathToString(path));
     if (typeof value === "string") {
       replaceWithInput(valueEl, "text", value, editLabel, (raw, committed) => {
         finish(committed ? raw : undefined);

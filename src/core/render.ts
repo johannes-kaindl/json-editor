@@ -1,3 +1,4 @@
+import { t } from "../vendor/kit/i18n";
 import { pathToString } from "./path";
 import type { JsonPath, JsonValue, RenderOptions } from "./types";
 
@@ -19,7 +20,7 @@ export function renderTree(value: JsonValue, opts: RenderOptions): HTMLElement {
   const root = opts.makeEl("div");
   root.className = "json-tree-root";
   root.setAttribute("role", "tree");
-  root.setAttribute("aria-label", "JSON content");
+  root.setAttribute("aria-label", t("a11y.content"));
   renderValue(root, value, opts.rootPath ?? [], 0, opts);
   return root;
 }
@@ -81,7 +82,7 @@ function makePrimitive(
       opts.onValueClick?.(path, value);
     });
   } else if (!opts.readonly && value === null) {
-    span.title = "Edit in source to change type";
+    span.title = t("tip.editInSource");
   }
   if (opts.onValueHover) {
     span.addEventListener("mouseenter", () => {
@@ -212,10 +213,10 @@ function appendSeparatorComma(row: HTMLElement, makeEl: RenderOptions["makeEl"])
 function makeExpandChip(target: HTMLElement, full: string, opts: RenderOptions): HTMLElement {
   const chip = opts.makeEl("span");
   chip.className = "json-more-chip";
-  chip.textContent = "Show more";
+  chip.textContent = t("view.showMore");
   chip.setAttribute("role", "button");
   chip.setAttribute("tabindex", "0");
-  chip.setAttribute("aria-label", "Show the full value");
+  chip.setAttribute("aria-label", t("view.showFull"));
   const reveal = (e: Event): void => {
     // Without this the click bubbles into the value span and opens the editor.
     e.stopPropagation();

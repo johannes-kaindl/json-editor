@@ -214,18 +214,14 @@ export default class JsonEditorPlugin extends Plugin {
     try {
       this.registerExtensions(["json"], JSON_VIEW_TYPE);
     } catch {
-      new Notice(
-        "JSON editor: another plugin already handles .json — file view disabled, code-block rendering still active.",
-      );
+      new Notice(t("main.extTaken", ".json"));
     }
     // Separate try/catch so a .jsonc collision doesn't skip the .json claim
     // (and vice versa) — each extension degrades independently.
     try {
       this.registerExtensions(["jsonc"], JSON_VIEW_TYPE);
     } catch {
-      new Notice(
-        "JSON editor: another plugin already handles .jsonc — file view disabled, code-block rendering still active.",
-      );
+      new Notice(t("main.extTaken", ".jsonc"));
     }
   }
 

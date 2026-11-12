@@ -2,6 +2,7 @@ import { type App, PluginSettingTab, type Setting, type SettingDefinitionItem } 
 import type { Plugin } from "obsidian";
 import { DEFAULT_LLM_SETTINGS, type LlmSettings } from "../core/repair/settings";
 import {
+  HELP_SETTING_TEXTS_DE,
   HELP_SETTING_TEXTS_EN,
   githubHelpUrls,
   helpSettingDefinition,
@@ -77,47 +78,50 @@ export class JsonEditorSettingsTab extends PluginSettingTab implements SettingCo
     return [
       // UI-STANDARD §8 „Hilfe-Zeile": als erstes Element, vor jeder Überschrift. Nur EN-Texte:
       // dieser Tab ist englisch, die Zeile spricht die Sprache ihres Tabs.
-      helpSettingDefinition({ ...githubHelpUrls("json-editor"), texts: HELP_SETTING_TEXTS_EN }),
+      helpSettingDefinition({
+        ...githubHelpUrls("json-editor"),
+        texts: getLang() === "de" ? HELP_SETTING_TEXTS_DE : HELP_SETTING_TEXTS_EN,
+      }),
       {
-        name: "Default mode",
-        desc: "Which view opens by default when a .json file is opened.",
+        name: t("set.defaultMode"),
+        desc: t("set.defaultModeDesc"),
         control: {
           type: "dropdown",
           key: "defaultMode",
-          options: { tree: "Tree", source: "Source" },
+          options: { tree: t("view.tree"), source: t("view.source") },
         },
       },
       {
-        name: "Indent",
-        desc: "Spaces or tab used when serializing JSON from tree edits.",
+        name: t("set.indent"),
+        desc: t("set.indentDesc"),
         control: {
           type: "dropdown",
           key: "indent",
-          options: { "2": "Two spaces", "4": "Four spaces", tab: "Tab" },
+          options: { "2": t("set.indent2"), "4": t("set.indent4"), tab: t("set.indentTab") },
         },
       },
       {
-        name: "Tree marker style",
-        desc: "Visual style of the tree: modern (no markers) or classic (┐├┘).",
+        name: t("set.marker"),
+        desc: t("set.markerDesc"),
         control: {
           type: "dropdown",
           key: "markerStyle",
-          options: { modern: "Modern (clean indent)", classic: "Classic (┐├┘)" },
+          options: { modern: t("set.markerModern"), classic: t("set.markerClassic") },
         },
       },
       {
-        name: "Auto-collapse depth",
-        desc: "Nodes strictly deeper than this depth start collapsed. 0 = collapse all but root.",
+        name: t("set.autoCollapse"),
+        desc: t("set.autoCollapseDesc"),
         control: { type: "text", key: "autoCollapseDepth" },
       },
       {
-        name: "Validate against JSON schema",
-        desc: "Off by default. When enabled, the plugin automatically loads a sibling schema file next to the current .json file (e.g. data.json → data.schema.json) and highlights validation errors in real time. Enabling this auto-loads schema files from your vault — only turn it on if you trust those files.",
+        name: t("set.validate"),
+        desc: t("set.validateDesc"),
         control: { type: "toggle", key: "validateAgainstSchema" },
       },
       {
-        name: "Companion schema suffix",
-        desc: "Suffix used to find the sibling schema file. Default '.schema.json' resolves data.json → data.schema.json.",
+        name: t("set.suffix"),
+        desc: t("set.suffixDesc"),
         control: { type: "text", key: "companionSchemaSuffix" },
       },
       {

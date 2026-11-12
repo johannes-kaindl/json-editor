@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Changed
+- **The whole interface is now available in German, not only the repair and the command names:** tree rows and their menus, search bar, breadcrumb, banners, empty-file page, code-block cards, tooltips and the settings tab follow Obsidian's language (English stays the fallback). Error messages of the editing core (for example "Key cannot be empty") and the schema validator's own messages stay English.
 - **Repairing a broken code block from its rendered error bar now goes through the open editor when the note is in editing mode, so Ctrl/Cmd+Z takes the repair back; a note with Windows line endings keeps them.** The write also checks that the fence still opens a `json` or `jsonc` block before it replaces anything (kit `block-writer`).
 
 ## [1.22.2] — 2026-11-10

@@ -63,7 +63,9 @@ export class Breadcrumb {
     this.el.replaceChildren();
     // The phone keeps a folded path in one row and lets it wrap only once it is unfolded (styles.css).
     this.el.classList.toggle("is-expanded", this.expanded);
-    const segments: Array<{ label: string; subPath: JsonPath }> = [{ label: "root", subPath: [] }];
+    const segments: Array<{ label: string; subPath: JsonPath }> = [
+      { label: t("bc.root"), subPath: [] },
+    ];
     path.forEach((seg, i) => {
       const subPath = path.slice(0, i + 1);
       const label = typeof seg === "number" ? `[${seg}]` : String(seg);
@@ -101,7 +103,7 @@ export class Breadcrumb {
       if (idx === 0) segEl.classList.add("bc-seg-root");
       if (focusLen > 0 && idx < focusLen) segEl.classList.add("bc-seg-outside");
       if (focusLen > 0 && idx === focusLen) segEl.classList.add("bc-seg-focus-root");
-      if (focusLen > 0 && idx === 0) segEl.setAttribute("aria-label", "Show whole file");
+      if (focusLen > 0 && idx === 0) segEl.setAttribute("aria-label", t("bc.wholeFile"));
       segEl.textContent = s.label;
       segEl.addEventListener("click", () => {
         this.opts.onSegmentClick?.(s.subPath);
@@ -113,8 +115,8 @@ export class Breadcrumb {
       const focusBtn = makeEl("button");
       focusBtn.type = "button";
       focusBtn.className = "bc-focus-btn";
-      focusBtn.setAttribute("aria-label", "Show as root");
-      focusBtn.title = "Show as root";
+      focusBtn.setAttribute("aria-label", t("row.showRoot"));
+      focusBtn.title = t("row.showRoot");
       focusBtn.textContent = "⤢";
       focusBtn.addEventListener("click", () => this.opts.onFocusRequest?.(this.path));
       this.el.appendChild(focusBtn);

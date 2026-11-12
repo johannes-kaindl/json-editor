@@ -1,3 +1,4 @@
+import { t } from "../vendor/kit/i18n";
 import { makeEl } from "./dom";
 /**
  * Warn banner shown when a file is too large to render as a tree responsively
@@ -25,9 +26,8 @@ export class LargeFileBanner {
     const btn = makeEl("button");
     btn.type = "button";
     btn.className = "json-large-file-load";
-    btn.textContent = "Load tree anyway";
-    btn.title =
-      "Render this large file as an interactive tree instead of plain text (may be slow to open).";
+    btn.textContent = t("large.load");
+    btn.title = t("large.tip");
     btn.addEventListener("click", () => onLoadAnyway());
     this.el.appendChild(btn);
   }

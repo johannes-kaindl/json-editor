@@ -1,5 +1,5 @@
 import type { JsonType } from "../core/edit";
-import { JSON_TYPES, TYPE_LABELS } from "../core/type-labels";
+import { JSON_TYPES, typeLabel } from "../core/type-labels";
 import { makeEl } from "./dom";
 
 export interface TypeMenuOptions {
@@ -21,7 +21,7 @@ export function openTypeMenu(anchor: HTMLElement, opts: TypeMenuOptions): void {
     opt.type = "button";
     opt.className = "json-type-option";
     opt.dataset.type = t;
-    opt.textContent = TYPE_LABELS[t];
+    opt.textContent = typeLabel(t);
     opt.setAttribute("role", "menuitem");
     if (t === opts.currentType) {
       opt.disabled = true;

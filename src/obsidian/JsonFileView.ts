@@ -210,9 +210,7 @@ export class JsonFileView extends TextFileView {
 
   private updateLargeFileBanner(): void {
     if (this.largeFile && !this.largeFileOverride) {
-      this.largeFileBanner.show(
-        "Large file — opened in Source mode to stay responsive; tree rendering may freeze the UI.",
-      );
+      this.largeFileBanner.show(t("large.msg"));
     } else {
       this.largeFileBanner.hide();
     }
@@ -260,9 +258,7 @@ export class JsonFileView extends TextFileView {
   private updateLossyState(): void {
     this.lossyRoundtrip = this.currentValue !== null && hasNumberRoundtripLoss(this.data);
     if (this.lossyRoundtrip) {
-      this.lossBanner.show(
-        "This file contains numbers JSON can't represent exactly (e.g. integers larger than 2^53). Tree editing is disabled to avoid silently rewriting them — switch to Source mode to edit.",
-      );
+      this.lossBanner.show(t("loss.msg"));
     } else {
       this.lossBanner.hide();
     }
@@ -311,11 +307,11 @@ export class JsonFileView extends TextFileView {
     this.toggleEl.className = "json-mode-toggle";
     this.treePillEl = makeEl("button");
     this.treePillEl.className = "json-mode-pill";
-    this.treePillEl.textContent = "Tree";
+    this.treePillEl.textContent = t("view.tree");
     this.treePillEl.addEventListener("click", () => this.switchTo("tree"));
     this.sourcePillEl = makeEl("button");
     this.sourcePillEl.className = "json-mode-pill";
-    this.sourcePillEl.textContent = "Source";
+    this.sourcePillEl.textContent = t("view.source");
     this.sourcePillEl.addEventListener("click", () => this.switchTo("source"));
     this.toggleEl.appendChild(this.treePillEl);
     this.toggleEl.appendChild(this.sourcePillEl);
@@ -345,16 +341,16 @@ export class JsonFileView extends TextFileView {
     this.collapseBtn = this.makeToolbarIconButton(
       "json-collapse-toggle-btn",
       "chevrons-down-up",
-      "Collapse all",
+      t("cmd.collapseAll"),
       () => this.toggleCollapseAll(),
     );
     this.toolbarEl.appendChild(this.collapseBtn);
     // Mobile has no hardware Mod+Z (audit 4.5): expose undo/redo in the toolbar.
     if (Platform.isMobile) {
-      this.undoBtn = this.makeToolbarIconButton("json-undo-btn", "rotate-ccw", "Undo", () =>
+      this.undoBtn = this.makeToolbarIconButton("json-undo-btn", "rotate-ccw", t("tb.undo"), () =>
         this.undo(),
       );
-      this.redoBtn = this.makeToolbarIconButton("json-redo-btn", "rotate-cw", "Redo", () =>
+      this.redoBtn = this.makeToolbarIconButton("json-redo-btn", "rotate-cw", t("tb.redo"), () =>
         this.redo(),
       );
       this.toolbarEl.appendChild(this.undoBtn);
@@ -685,7 +681,7 @@ export class JsonFileView extends TextFileView {
   private refreshCollapseButton(): void {
     if (!this.collapseBtn) return;
     const expanded = this.treeView?.hasExpandedBelowFirstLevel() ?? false;
-    const label = expanded ? "Collapse all" : "Expand all";
+    const label = expanded ? t("cmd.collapseAll") : t("cmd.expandAll");
     this.collapseBtn.setAttribute("aria-label", label);
     this.collapseBtn.title = label;
     setIcon(this.collapseBtn, expanded ? "chevrons-down-up" : "chevrons-up-down");
@@ -730,13 +726,13 @@ export class JsonFileView extends TextFileView {
     wrap.className = "json-empty-state";
     const title = makeEl("div");
     title.className = "json-empty-state-title";
-    title.textContent = "This file is empty";
+    title.textContent = t("empty.title");
     const hint = makeEl("div");
     hint.className = "json-empty-state-hint";
-    hint.textContent = "Create an empty object to get started.";
+    hint.textContent = t("empty.hint");
     const btn = makeEl("button");
     btn.className = "json-empty-state-init";
-    btn.textContent = "Create empty object";
+    btn.textContent = t("empty.create");
     btn.addEventListener("click", () => {
       this.setViewData("{}", false);
       this.requestSave();

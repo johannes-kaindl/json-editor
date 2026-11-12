@@ -1,3 +1,4 @@
+import { t } from "../vendor/kit/i18n";
 import { makeEl } from "./dom";
 export class SchemaBanner {
   private el: HTMLDivElement;
@@ -25,14 +26,13 @@ export class SchemaBanner {
     }
     this.el.hidden = false;
     this.el.classList.remove("is-schema-parse-error");
-    const noun = count === 1 ? "error" : "errors";
-    this.el.textContent = `${count} schema ${noun} — hover the red rows for details.`;
+    this.el.textContent = t(count === 1 ? "schema.errors.one" : "schema.errors.many", count);
   }
 
   setSchemaParseError(message: string): void {
     this.el.hidden = false;
     this.el.classList.add("is-schema-parse-error");
-    this.el.textContent = `Schema not loaded — ${message}`;
+    this.el.textContent = t("schema.notLoaded", message);
   }
 
   hide(): void {

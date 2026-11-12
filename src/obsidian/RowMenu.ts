@@ -1,7 +1,8 @@
 import { Menu } from "obsidian";
 import type { JsonType } from "../core/edit";
-import { JSON_TYPES, TYPE_LABELS } from "../core/type-labels";
+import { JSON_TYPES, typeLabel } from "../core/type-labels";
 import type { JsonPath, JsonValue } from "../core/types";
+import { t } from "../vendor/kit/i18n";
 
 export interface RowMenuOptions {
   value: JsonValue;
@@ -34,13 +35,13 @@ export function openRowMenu(evt: MouseEvent, opts: RowMenuOptions): Menu {
 
   menu.addItem((i) =>
     i
-      .setTitle("Copy value")
+      .setTitle(t("row.copyValue"))
       .setIcon("copy")
       .onClick(() => opts.onCopyValue()),
   );
   menu.addItem((i) =>
     i
-      .setTitle("Copy path")
+      .setTitle(t("row.copyPath"))
       .setIcon("route")
       .onClick(() => opts.onCopyPath()),
   );
@@ -48,7 +49,7 @@ export function openRowMenu(evt: MouseEvent, opts: RowMenuOptions): Menu {
   if (opts.onFocus && opts.value !== null && typeof opts.value === "object") {
     menu.addItem((i) =>
       i
-        .setTitle("Show as root")
+        .setTitle(t("row.showRoot"))
         .setIcon("scan")
         .onClick(() => opts.onFocus?.()),
     );
@@ -58,28 +59,28 @@ export function openRowMenu(evt: MouseEvent, opts: RowMenuOptions): Menu {
     if (opts.canRename) {
       menu.addItem((i) =>
         i
-          .setTitle("Rename key")
+          .setTitle(t("row.renameKey"))
           .setIcon("pencil")
           .onClick(() => opts.onRename()),
       );
     }
     menu.addItem((i) =>
       i
-        .setTitle("Change type")
+        .setTitle(t("row.changeType"))
         .setIcon("shapes")
         .onClick(() => openTypeChoiceMenu(evt, opts.currentType, opts.onChangeType)),
     );
     menu.addSeparator();
     menu.addItem((i) =>
       i
-        .setTitle("Move up")
+        .setTitle(t("row.moveUp"))
         .setIcon("arrow-up")
         .setDisabled(!opts.moveUpEnabled)
         .onClick(() => opts.onMoveUp()),
     );
     menu.addItem((i) =>
       i
-        .setTitle("Move down")
+        .setTitle(t("row.moveDown"))
         .setIcon("arrow-down")
         .setDisabled(!opts.moveDownEnabled)
         .onClick(() => opts.onMoveDown()),
@@ -87,7 +88,7 @@ export function openRowMenu(evt: MouseEvent, opts: RowMenuOptions): Menu {
     menu.addSeparator();
     menu.addItem((i) =>
       i
-        .setTitle("Delete")
+        .setTitle(t("row.delete"))
         .setIcon("trash-2")
         .setWarning(true)
         .onClick(() => opts.onDelete()),
@@ -111,7 +112,7 @@ function openTypeChoiceMenu(
   const menu = new Menu();
   for (const t of JSON_TYPES) {
     menu.addItem((i) => {
-      i.setTitle(TYPE_LABELS[t]);
+      i.setTitle(typeLabel(t));
       if (t === current) i.setDisabled(true);
       else i.onClick(() => onPick(t));
     });

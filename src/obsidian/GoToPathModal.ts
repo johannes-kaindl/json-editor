@@ -1,4 +1,5 @@
 import { type App, SuggestModal } from "obsidian";
+import { t } from "../vendor/kit/i18n";
 
 /**
  * "Go to path" — the tree's answer to VS Code's Go to Symbol, in Obsidian's own
@@ -13,12 +14,10 @@ export class GoToPathModal extends SuggestModal<string> {
     private onChoose: (pathStr: string) => void,
   ) {
     super(app);
-    this.setPlaceholder("Go to path…");
+    this.setPlaceholder(t("goto.placeholder"));
     // A capped list must say so — silently showing a prefix reads as "that path
     // does not exist" when it merely fell off the end.
-    this.emptyStateText = truncated
-      ? `No match in the first ${paths.length} paths of this file`
-      : "No matching path";
+    this.emptyStateText = truncated ? t("goto.noMatchCapped", paths.length) : t("goto.noMatch");
   }
 
   getSuggestions(query: string): string[] {

@@ -61,15 +61,15 @@ function makeCopyButton(doc: Document, source: string): HTMLButtonElement {
   const btn = makeEl("button", doc);
   btn.className = "json-codeblock-copy";
   btn.type = "button";
-  btn.textContent = "Copy";
+  btn.textContent = t("code.copy");
   btn.addEventListener("click", () => {
     void copyToClipboard(source, {
       onCopied: () => {
         btn.classList.add("copied");
-        btn.textContent = "Copied";
+        btn.textContent = t("code.copied");
         window.setTimeout(() => {
           btn.classList.remove("copied");
-          btn.textContent = "Copy";
+          btn.textContent = t("code.copy");
         }, 800);
       },
     });
@@ -109,7 +109,7 @@ function renderFallback(
   head.className = "json-codeblock-head";
   const label = makeEl("span", doc);
   label.className = "json-codeblock-label";
-  label.textContent = `${lang === "jsonc" ? "JSONC" : "JSON"} · error`;
+  label.textContent = t("code.error", lang === "jsonc" ? "JSONC" : "JSON");
   head.appendChild(label);
   if (onRepair)
     head.appendChild(makeRepairButton(doc, () => onRepair({ source, errorMessage, lang, el })));
@@ -117,7 +117,7 @@ function renderFallback(
 
   const body = makeEl("div", doc);
   body.className = "json-codeblock-error";
-  body.textContent = `Invalid ${lang === "jsonc" ? "JSONC" : "JSON"}: ${errorMessage}`;
+  body.textContent = t("code.invalid", lang === "jsonc" ? "JSONC" : "JSON", errorMessage);
   card.appendChild(body);
 
   el.appendChild(card);

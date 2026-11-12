@@ -1,5 +1,6 @@
 import { pathToString } from "../core/path";
 import type { JsonPath, JsonValue } from "../core/types";
+import { t } from "../vendor/kit/i18n";
 import { makeEl } from "./dom";
 
 export interface TooltipContent {
@@ -109,7 +110,7 @@ export function tooltipContentForValue(value: JsonValue, path: JsonPath): Toolti
     return { typeLabel: "string", pathStr, preview: `"${preview}"` };
   }
   if (Array.isArray(value)) {
-    return { typeLabel: "array", pathStr, preview: `${value.length} items` };
+    return { typeLabel: "array", pathStr, preview: t("tip.items", value.length) };
   }
-  return { typeLabel: "object", pathStr, preview: `${Object.keys(value).length} entries` };
+  return { typeLabel: "object", pathStr, preview: t("tip.entries", Object.keys(value).length) };
 }

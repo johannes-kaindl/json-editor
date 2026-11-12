@@ -1,6 +1,7 @@
 import { pathToString } from "../core/path";
 import type { JsonPath, JsonValue } from "../core/types";
 import { copyToClipboard } from "../vendor/kit-obsidian/clipboard";
+import { t } from "../vendor/kit/i18n";
 import { makeEl } from "./dom";
 
 export function createCopyButton(
@@ -14,8 +15,8 @@ export function createCopyButton(
   btn.className = "json-copy-btn";
   btn.type = "button";
   btn.textContent = "⧉";
-  btn.title = "Copy value (alt-click: copy path)";
-  btn.setAttribute("aria-label", "Copy value");
+  btn.title = t("copy.tip");
+  btn.setAttribute("aria-label", t("row.copyValue"));
 
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
