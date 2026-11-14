@@ -175,7 +175,7 @@ Ein ungültiger `` ```json ``- oder `` ```jsonc ``-Codeblock erscheint als Fehle
 2. Die Antwort wird mit demselben Parser geprüft, der den Block abgelehnt hat. Nur eine gültige Antwort lässt sich anwenden; bei einer ungültigen steht der Grund im Modal.
 3. Ein Modal zeigt das Dokument einmal, Wort für Wort: was die Reparatur entfernt, ist durchgestrichen, was sie hinzufügt, ist unterstrichen (eine Zeile darüber sagt es; die Markierung hängt nicht an Rot und Grün). **Anwenden** ersetzt nur den Inhalt genau dieses Codeblocks (der Rest der Notiz bleibt byte-gleich), **Neu versuchen** fragt das Modell erneut, **Verwerfen** schreibt nichts.
 
-<img src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/main/docs/images/repair-modal.png" width="820" alt="Der Reparatur-Dialog: oben der Parser-Fehler, darunter das reparierte Dokument einmal in einer Spalte, das ergänzte Komma in der Platforms-Liste unterstrichen, eine Zeile darüber erklärt die Markierung, unten Verwerfen, Neu versuchen und Anwenden.">
+<img src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/main/docs/images/repair-modal.png" width="820" alt="Der Reparatur-Dialog: oben der Parser-Fehler, darunter das reparierte Dokument einmal in einer Spalte, das Wort None durchgestrichen und null unterstrichen im Eintrag signedBy, eine Zeile darüber erklärt die Markierung, unten Verwerfen, Neu versuchen und Anwenden.">
 
 <sub>Bewusst eine Spalte, damit es auf ein Handy passt; geschrieben wird erst nach <em>Anwenden</em>.</sub>
 

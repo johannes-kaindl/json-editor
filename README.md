@@ -197,7 +197,7 @@ An invalid `` ```json `` or `` ```jsonc `` code block renders as an error card. 
 2. The answer is checked with the same parser that rejected the block. Only a valid answer can be applied; an invalid one shows its reason instead.
 3. A modal shows the document once, word by word: what the repair removes is struck through, what it adds is underlined (a line above says so; the marks do not depend on red and green). **Apply** replaces only the content of that one code block (the rest of the note stays byte-identical), **Try again** asks the model again, **Discard** writes nothing.
 
-<img src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/main/docs/images/repair-modal.png" width="820" alt="The repair dialog: the parser error on top, the repaired document once in one column with the added comma in the platforms list underlined, a line above explaining the marks, and Discard, Try again and Apply at the bottom.">
+<img src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/main/docs/images/repair-modal.png" width="820" alt="The repair dialog: the parser error on top, the repaired document once in one column with the word None struck through and null underlined in the signedBy entry, a line above explaining the marks, and Discard, Try again and Apply at the bottom.">
 
 <sub>One column on purpose, so it fits a phone; nothing is written until you press <em>Apply</em>.</sub>
 

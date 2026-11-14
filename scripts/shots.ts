@@ -95,10 +95,10 @@ const FENSTER_HOEHE = 900;
 const JSON_DATEI = "trailhead.json";
 const JSONC_DATEI = "tsconfig.jsonc";
 const NOTIZ = "Release notes.md";
-/** Notiz mit einem Block, dem ein Komma fehlt — Motiv des Reparatur-Bildes. */
+/** Notiz mit einem Block, der ein Python-`None` statt `null` trägt — Motiv des Reparatur-Bildes (ein ganzes Wort wird ersetzt, damit Durchstreichung und Unterstreichung im Bild stehen). */
 const REPARATUR_NOTIZ = "Release checklist.md";
-const REPARATUR_BLOCK_KAPUTT = '  "platforms": ["darwin-arm64", "linux-x64" "win32-x64"],';
-const REPARATUR_BLOCK_HEIL = '  "platforms": ["darwin-arm64", "linux-x64", "win32-x64"],';
+const REPARATUR_BLOCK_KAPUTT = '  "signedBy": None,';
+const REPARATUR_BLOCK_HEIL = '  "signedBy": null,';
 
 /** Der Fake-Endpunkt des Reparatur-Bildes (Zustand eines Laufs, vom naechsten Bild zurueckgesetzt). */
 let reparaturStub: { stop(): Promise<void> } | null = null;
@@ -484,8 +484,8 @@ const SHOTS: Shot[] = [
     name: "repair-modal.png",
     klasse: "feature",
     async run(cdp) {
-      // Fake-Endpunkt statt Modell: die Oberflaeche ist echt, die Antwort steht fest (der Block mit dem fehlenden
-      // Komma, repariert). Kein Modell wird geladen, kein Token fliesst.
+      // Fake-Endpunkt statt Modell: die Oberflaeche ist echt, die Antwort steht fest (der Block mit dem Python-`None`,
+      // repariert zu `null`). Kein Modell wird geladen, kein Token fliesst.
       const quelle = readFileSync(join(cwd(), OUT_DIR, "fixture/notes", REPARATUR_NOTIZ), "utf-8");
       const block = /```json\n([\s\S]*?)\n```/.exec(quelle)?.[1];
       if (!block || !block.includes(REPARATUR_BLOCK_KAPUTT)) return null;
