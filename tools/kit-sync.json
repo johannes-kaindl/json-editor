@@ -32,6 +32,7 @@
         "endpoint",
         "endpoint_config",
         "endpoint_diagnostics",
+        { "name": "error-message", "ref": "0.68.0" },
         "error_body",
         "i18n",
         "json-error-position",

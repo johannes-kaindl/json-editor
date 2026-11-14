@@ -13,7 +13,14 @@ export interface CompiledSchema {
 
 export type SchemaCompileResult =
   | { ok: true; schema: CompiledSchema }
-  | { ok: false; error: string };
+  | { ok: false; error: string; errorCode?: SchemaErrorCode; errorArgs?: readonly string[] };
+
+/** The compiler's own findings, so the UI can translate them. A text the validator library produced has no code and stays as it is. */
+export type SchemaErrorCode =
+  | "schemaTooLarge"
+  | "schemaNotJson"
+  | "schemaUnsafePattern"
+  | "schemaNotDraft07";
 
 /** Reject schemas larger than this before parsing (cheap DoS guard). */
 const MAX_SCHEMA_BYTES = 1_000_000;
@@ -62,26 +69,41 @@ const META_VALIDATOR = new Validator(DRAFT_07_META_SCHEMA, "7", false);
 
 export function compileSchema(text: string): SchemaCompileResult {
   if (text.length > MAX_SCHEMA_BYTES) {
-    return { ok: false, error: "Schema is too large" };
+    return { ok: false, error: "Schema is too large", errorCode: "schemaTooLarge" };
   }
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
   } catch (e) {
-    return { ok: false, error: `Schema is not valid JSON: ${(e as Error).message}` };
+    const detail = (e as Error).message;
+    return {
+      ok: false,
+      error: `Schema is not valid JSON: ${detail}`,
+      errorCode: "schemaNotJson",
+      errorArgs: [detail],
+    };
   }
 
   const patterns: string[] = [];
   collectPatterns(parsed, patterns);
   for (const p of patterns) {
     if (UNSAFE_PATTERN.test(p)) {
-      return { ok: false, error: `Schema contains a potentially unsafe regex pattern: ${p}` };
+      return {
+        ok: false,
+        error: `Schema contains a potentially unsafe regex pattern: ${p}`,
+        errorCode: "schemaUnsafePattern",
+        errorArgs: [p],
+      };
     }
   }
 
   if (!META_VALIDATOR.validate(parsed).valid) {
-    return { ok: false, error: "Schema is not a valid JSON Schema (draft-07)" };
+    return {
+      ok: false,
+      error: "Schema is not a valid JSON Schema (draft-07)",
+      errorCode: "schemaNotDraft07",
+    };
   }
 
   let validator: Validator;

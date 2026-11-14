@@ -1,4 +1,5 @@
 import { type JsonType, computeInsertionIndex, editValue, jsonTypeOf } from "../core/edit";
+import { CoreError } from "../core/errors";
 import { parsePathStr, pathToString } from "../core/path";
 import { renderTree } from "../core/render";
 import { findMatches } from "../core/search";
@@ -998,7 +999,8 @@ export class TreeView {
         // big integers losslessly.
         if (Number.isInteger(n) && !Number.isSafeInteger(n)) {
           this.opts.onError?.(
-            new Error(
+            new CoreError(
+              "numberTooLarge",
               "Number too large to edit in tree mode without losing precision — use Source mode.",
             ),
           );

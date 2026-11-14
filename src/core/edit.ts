@@ -1,3 +1,4 @@
+import { CoreError } from "./errors";
 import type { JsonPath, JsonValue } from "./types";
 
 /** Own-property check that does not walk the prototype chain (audit 2.16). */
@@ -23,7 +24,11 @@ export function editValue(value: JsonValue, path: JsonPath, newVal: JsonValue): 
 
   if (Array.isArray(value)) {
     if (typeof head !== "number") {
-      throw new Error(`Expected numeric index at array, got ${typeof head}`);
+      throw new CoreError(
+        "expectedIndexAt",
+        `Expected numeric index at array, got ${typeof head}`,
+        [typeof head],
+      );
     }
     const copy = value.slice();
     copy[head] = editValue(value[head], rest, newVal);
@@ -32,13 +37,19 @@ export function editValue(value: JsonValue, path: JsonPath, newVal: JsonValue): 
 
   if (value !== null && typeof value === "object") {
     if (typeof head !== "string") {
-      throw new Error(`Expected string key at object, got ${typeof head}`);
+      throw new CoreError("expectedKeyAt", `Expected string key at object, got ${typeof head}`, [
+        typeof head,
+      ]);
     }
     const obj = value;
     return { ...obj, [head]: editValue(obj[head], rest, newVal) };
   }
 
-  throw new Error(`Cannot descend into ${typeof value} at path segment ${String(head)}`);
+  throw new CoreError(
+    "cannotDescend",
+    `Cannot descend into ${typeof value} at path segment ${String(head)}`,
+    [typeof value, String(head)],
+  );
 }
 
 function getAt(value: JsonValue, path: JsonPath): JsonValue {
@@ -49,7 +60,11 @@ function getAt(value: JsonValue, path: JsonPath): JsonValue {
     } else if (cur !== null && typeof cur === "object" && typeof seg === "string") {
       cur = (cur as { [k: string]: JsonValue })[seg];
     } else {
-      throw new Error(`Cannot descend into ${typeof cur} at path segment ${String(seg)}`);
+      throw new CoreError(
+        "cannotDescend",
+        `Cannot descend into ${typeof cur} at path segment ${String(seg)}`,
+        [typeof cur, String(seg)],
+      );
     }
   }
   return cur;
@@ -61,13 +76,13 @@ export function addObjectKey(
   key: string,
   newVal: JsonValue,
 ): JsonValue {
-  if (key === "") throw new Error("Key cannot be empty");
+  if (key === "") throw new CoreError("keyEmpty", "Key cannot be empty");
   const parent = getAt(value, parentPath);
   if (parent === null || typeof parent !== "object" || Array.isArray(parent)) {
-    throw new Error("Parent is not an object");
+    throw new CoreError("parentNotObject", "Parent is not an object");
   }
   const obj = parent;
-  if (hasOwn(obj, key)) throw new Error(`Key "${key}" already exists`);
+  if (hasOwn(obj, key)) throw new CoreError("keyExists", `Key "${key}" already exists`, [key]);
   const updated: { [k: string]: JsonValue } = { ...obj, [key]: newVal };
   if (parentPath.length === 0) return updated;
   return editValue(value, parentPath, updated);
@@ -81,7 +96,7 @@ export function addArrayItem(
 ): JsonValue {
   const parent = getAt(value, parentPath);
   if (!Array.isArray(parent)) {
-    throw new Error("Parent is not an array");
+    throw new CoreError("parentNotArray", "Parent is not an array");
   }
   const updated = parent.slice();
   if (atIndex === undefined || atIndex >= updated.length) {
@@ -95,7 +110,7 @@ export function addArrayItem(
 
 export function deleteAt(value: JsonValue, path: JsonPath): JsonValue {
   if (path.length === 0) {
-    throw new Error("Cannot delete root");
+    throw new CoreError("cannotDeleteRoot", "Cannot delete root");
   }
   const parentPath = path.slice(0, -1);
   const lastSeg = path[path.length - 1];
@@ -103,7 +118,11 @@ export function deleteAt(value: JsonValue, path: JsonPath): JsonValue {
 
   if (Array.isArray(parent)) {
     if (typeof lastSeg !== "number") {
-      throw new Error(`Expected numeric index for array, got ${typeof lastSeg}`);
+      throw new CoreError(
+        "expectedIndexFor",
+        `Expected numeric index for array, got ${typeof lastSeg}`,
+        [typeof lastSeg],
+      );
     }
     const updated = parent.slice();
     updated.splice(lastSeg, 1);
@@ -113,7 +132,11 @@ export function deleteAt(value: JsonValue, path: JsonPath): JsonValue {
 
   if (parent !== null && typeof parent === "object") {
     if (typeof lastSeg !== "string") {
-      throw new Error(`Expected string key for object, got ${typeof lastSeg}`);
+      throw new CoreError(
+        "expectedKeyFor",
+        `Expected string key for object, got ${typeof lastSeg}`,
+        [typeof lastSeg],
+      );
     }
     const obj = parent;
     if (!hasOwn(obj, lastSeg)) return value;
@@ -122,7 +145,7 @@ export function deleteAt(value: JsonValue, path: JsonPath): JsonValue {
     return editValue(value, parentPath, updated);
   }
 
-  throw new Error(`Cannot delete from ${typeof parent}`);
+  throw new CoreError("cannotDeleteFrom", `Cannot delete from ${typeof parent}`, [typeof parent]);
 }
 
 export type JsonType = "string" | "number" | "boolean" | "null" | "object" | "array";
@@ -173,7 +196,9 @@ function typeOf(value: JsonValue): JsonType {
     case "object":
       return "object";
     default:
-      throw new Error(`Unsupported value type: ${typeof value}`);
+      throw new CoreError("unsupportedType", `Unsupported value type: ${typeof value}`, [
+        typeof value,
+      ]);
   }
 }
 
@@ -193,10 +218,10 @@ export function moveArrayItem(
 ): JsonValue {
   const parent = getAt(value, parentPath);
   if (!Array.isArray(parent)) {
-    throw new Error("Parent is not an array");
+    throw new CoreError("parentNotArray", "Parent is not an array");
   }
   if (fromIdx < 0 || fromIdx >= parent.length) {
-    throw new Error("Index out of bounds");
+    throw new CoreError("indexOutOfBounds", "Index out of bounds");
   }
   const clampedTo = Math.max(0, Math.min(toIdx, parent.length - 1));
   if (clampedTo === fromIdx) return value;
@@ -215,12 +240,12 @@ export function moveObjectKey(
 ): JsonValue {
   const parent = getAt(value, parentPath);
   if (parent === null || typeof parent !== "object" || Array.isArray(parent)) {
-    throw new Error("Parent is not an object");
+    throw new CoreError("parentNotObject", "Parent is not an object");
   }
   const obj = parent;
   const keys = Object.keys(obj);
   const currentPos = keys.indexOf(key);
-  if (currentPos === -1) throw new Error("Key not found");
+  if (currentPos === -1) throw new CoreError("keyNotFound", "Key not found");
   const clamped = Math.max(0, Math.min(toPos, keys.length - 1));
   if (clamped === currentPos) return value;
   const reordered = keys.slice();
@@ -250,22 +275,26 @@ export function computeInsertionIndex(
 }
 
 export function renameKey(value: JsonValue, path: JsonPath, newKey: string): JsonValue {
-  if (path.length === 0) throw new Error("Cannot rename root");
-  if (newKey === "") throw new Error("Key cannot be empty");
+  if (path.length === 0) throw new CoreError("cannotRenameRoot", "Cannot rename root");
+  if (newKey === "") throw new CoreError("keyEmpty", "Key cannot be empty");
   const parentPath = path.slice(0, -1);
   const oldKey = path[path.length - 1];
   if (typeof oldKey !== "string") {
-    throw new Error("Cannot rename an array index — use moveArrayItem (not in 1.0.0)");
+    throw new CoreError(
+      "cannotRenameIndex",
+      "Cannot rename an array index — use moveArrayItem (not in 1.0.0)",
+    );
   }
   if (oldKey === newKey) return value;
 
   const parent = getAt(value, parentPath);
   if (parent === null || typeof parent !== "object" || Array.isArray(parent)) {
-    throw new Error("Parent is not an object");
+    throw new CoreError("parentNotObject", "Parent is not an object");
   }
   const obj = parent;
   if (!hasOwn(obj, oldKey)) return value;
-  if (hasOwn(obj, newKey)) throw new Error(`Key "${newKey}" already exists`);
+  if (hasOwn(obj, newKey))
+    throw new CoreError("keyExists", `Key "${newKey}" already exists`, [newKey]);
 
   // Preserve insertion order: rebuild object replacing oldKey with newKey at
   // the same position.

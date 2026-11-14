@@ -57,6 +57,7 @@ import { TreeView } from "./TreeView";
 import { closeActiveMenu } from "./TypeMenu";
 import { copyJsonPath, copyJsonValue } from "./clipboard";
 import { makeEl } from "./dom";
+import { errorText, schemaErrorText } from "./error-text";
 import type { FileRepairRequest } from "./repair-flow";
 
 /**
@@ -400,7 +401,7 @@ export class JsonFileView extends TextFileView {
     const result = compileSchema(schemaText);
     if (!result.ok) {
       this.currentSchema = null;
-      this.schemaBanner.setSchemaParseError(result.error);
+      this.schemaBanner.setSchemaParseError(schemaErrorText(result));
       return;
     }
     this.currentSchema = result.schema;
@@ -526,7 +527,7 @@ export class JsonFileView extends TextFileView {
         onMoveItem: (parentPath, fromIdx, toIdx) => this.handleMoveItem(parentPath, fromIdx, toIdx),
         onMoveKey: (parentPath, key, toPos) => this.handleMoveKey(parentPath, key, toPos),
         onChangeType: (path, newType) => this.handleChangeType(path, newType),
-        onError: (err) => new Notice(err.message),
+        onError: (err) => new Notice(errorText(err)),
       });
       this.treeView.setValue(this.currentValue);
       this.breadcrumb.setFocusRoot([]);
@@ -752,7 +753,7 @@ export class JsonFileView extends TextFileView {
       if (this.isJsonc) this.commitJsonc(jsoncEditValue(this.data, path, newVal));
       else this.applyMutation(editValue(this.currentValue, path, newVal), "Edit value");
     } catch (e) {
-      new Notice((e as Error).message);
+      new Notice(errorText(e));
     }
   }
 
@@ -765,7 +766,7 @@ export class JsonFileView extends TextFileView {
           `Add key "${key}"`,
         );
     } catch (e) {
-      new Notice((e as Error).message);
+      new Notice(errorText(e));
     }
   }
 
@@ -774,7 +775,7 @@ export class JsonFileView extends TextFileView {
       if (this.isJsonc) this.commitJsonc(jsoncAddItem(this.data, parentPath, null));
       else this.applyMutation(addArrayItem(this.currentValue, parentPath, null), "Add item");
     } catch (e) {
-      new Notice((e as Error).message);
+      new Notice(errorText(e));
     }
   }
 
@@ -787,7 +788,7 @@ export class JsonFileView extends TextFileView {
       // und bietet das Rueckgaengig an derselben Stelle an (Entscheidung Johannes 2026-10-15).
       if (children > 0) this.noticeDeleted(path, children);
     } catch (e) {
-      new Notice((e as Error).message);
+      new Notice(errorText(e));
     }
   }
 
@@ -829,7 +830,7 @@ export class JsonFileView extends TextFileView {
       if (this.isJsonc) this.commitJsonc(jsoncRenameKey(this.data, path, newKey));
       else this.applyMutation(renameKey(this.currentValue, path, newKey), `Rename to "${newKey}"`);
     } catch (e) {
-      new Notice((e as Error).message);
+      new Notice(errorText(e));
     }
   }
 
@@ -843,7 +844,7 @@ export class JsonFileView extends TextFileView {
       if (next === this.currentValue) return;
       this.applyMutation(next, "Reorder item");
     } catch (e) {
-      new Notice((e as Error).message);
+      new Notice(errorText(e));
     }
   }
 
@@ -857,7 +858,7 @@ export class JsonFileView extends TextFileView {
       if (next === this.currentValue) return;
       this.applyMutation(next, `Reorder key "${key}"`);
     } catch (e) {
-      new Notice((e as Error).message);
+      new Notice(errorText(e));
     }
   }
 
@@ -871,7 +872,7 @@ export class JsonFileView extends TextFileView {
       if (next === this.currentValue) return;
       this.applyMutation(next, `Change type to ${newType}`);
     } catch (e) {
-      new Notice((e as Error).message);
+      new Notice(errorText(e));
     }
   }
 
