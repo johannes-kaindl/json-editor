@@ -28,7 +28,6 @@
       "modules": [
         "backend-probe",
         "capabilities",
-        "diff",
         "embeddings-client",
         "endpoint",
         "endpoint_config",
@@ -52,7 +51,8 @@
         "sse",
         "text-window",
         "think-splitter",
-        "timeout"
+        "timeout",
+        { "name": "word-diff", "ref": "0.68.0" }
       ]
     },
     {
@@ -65,7 +65,13 @@
       "dir": "src/vendor/kit-obsidian",
       "source": "obsidian-kit",
       "from": "src/obsidian",
-      "modules": ["settings_walker", "folder-suggest", "collapsible", "help-setting"]
+      "modules": [
+        "settings_walker",
+        "folder-suggest",
+        "collapsible",
+        "help-setting",
+        { "name": "redline", "ref": "0.88.0" }
+      ]
     },
     {
       "dir": "src/vendor/kit-obsidian",

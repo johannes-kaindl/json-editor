@@ -126,7 +126,7 @@ einem Abbruch.
 | E6 | Im Embed steht die Wurzel-Klammer links, nicht zentriert | Obsidians `.internal-embed.file-embed` setzt `text-align: center`, die Wurzelzeile erbte es; nur im echten Theme-CSS messbar (Abnahme am Screenshot, Welle 23) |
 | **F — Reparatur per LLM** (Fake-Endpunkt im Treiber-Prozess, kein Netz, kein Modell) | | |
 | F1 | Die Fehlerkarte eines kaputten Codeblocks zeigt den Reparatur-Knopf | Markdown-Post-Processor im echten Lesemodus-DOM |
-| F2 | Der Klick öffnet das Modal mit Diff (Original links, Vorschlag rechts), Anwenden ist frei | echter Mausklick auf den Host-Knopf, Modal und Diff im Live-DOM |
+| F2 | Der Klick öffnet das Modal mit Diff (eine Redline-Spalte: durchgestrichen entfernt, unterstrichen hinzugefügt), Anwenden ist frei | echter Mausklick auf den Host-Knopf, Modal und Diff im Live-DOM |
 | F3 | Die Anfrage trägt Modell, Profilwerte (`temperature`, `stream: false`) und den Parser-Fehler | der Fake-Endpunkt hält den Request fest, den das Plugin über den Obsidian-Transport wirklich gesendet hat; ein Unit-Test sähe nur den gebauten Prompt |
 | F4 | Anwenden ersetzt nur den Blockinhalt, der Rest der Notiz bleibt byte-gleich | echter Schreibweg auf die Platte |
 | F5 | Das Modal schließt nach Anwenden | Modal-Lebenszyklus im Host; ohne Klick gab es nie ein Modal, das sich schließen könnte, deshalb prüft der Punkt den Klick mit |

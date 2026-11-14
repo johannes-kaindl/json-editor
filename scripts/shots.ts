@@ -73,6 +73,16 @@ import {
 import { startLlmStub } from "../../tools/obsidian-cdp/llm-stub.js";
 import { buildVault, stagingVaultDir } from "../../tools/obsidian-cdp/vault.js";
 
+/** In-page: the repair modal shows ONE redline column (since Welle 34). `cols[0]` = the original (same + struck-through), `cols[1]` = the proposal (same + underlined); an absent redline gives `[]`. */
+const SPALTEN_JS = `
+  const rl = document.querySelector(".json-repair-modal .okit-redline");
+  const cols = rl ? [
+    { textContent: [...rl.childNodes].filter((n) => n.nodeName !== "INS").map((n) => n.textContent).join("") },
+    { textContent: [...rl.childNodes].filter((n) => n.nodeName !== "DEL").map((n) => n.textContent).join("") },
+  ] : [];
+`;
+
+
 const PLUGIN_ID = "json-editor";
 const REPO_NAME = "json-editor";
 const OUT_DIR = "docs/images";
@@ -508,7 +518,7 @@ const SHOTS: Shot[] = [
       const fertig = await pollUntil<boolean>(
         cdp,
         `
-          const cols = document.querySelectorAll(".json-repair-modal .json-repair-col");
+          ${SPALTEN_JS}
           const ok = document.querySelector(".json-repair-modal .modal-button-container button.mod-cta");
           return cols.length === 2 && ok && !ok.disabled ? true : null;
         `,

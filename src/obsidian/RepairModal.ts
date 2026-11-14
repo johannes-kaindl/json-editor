@@ -1,6 +1,5 @@
 import { type App, ButtonComponent, Modal } from "obsidian";
 import type { RepairResult } from "../core/repair/client";
-import { sideBySide } from "../core/repair/diff-view";
 import type { FenceLang } from "../core/repair/fence";
 import {
   LLM_CONNECTION_STRINGS_DE,
@@ -8,8 +7,9 @@ import {
   isManagerErrorCode,
   managerErrorText,
 } from "../vendor/kit-obsidian/llm-connection-strings";
-import { diffLines } from "../vendor/kit/diff";
+import { renderRedline } from "../vendor/kit-obsidian/redline";
 import { getLang, t } from "../vendor/kit/i18n";
+import { diffWords, wordDiffSegments } from "../vendor/kit/word-diff";
 
 export type ApplyResult = "ok" | "stale" | "no-file";
 
@@ -134,24 +134,13 @@ export class RepairModal extends Modal {
   private renderDiff(proposal: string): void {
     this.bodyEl.empty();
     this.bodyEl.removeAttribute("role");
-    const grid = this.bodyEl.createDiv({ cls: "json-repair-diff" });
-    const head = grid.createDiv({ cls: "json-repair-diff-head" });
-    head.createSpan({ text: t("repair.original") });
-    head.createSpan({ text: t("repair.proposal") });
-    const left = grid.createEl("pre", { cls: "json-repair-col" });
-    const right = grid.createEl("pre", { cls: "json-repair-col" });
-    left.setAttribute("aria-label", t("repair.aria.left"));
-    right.setAttribute("aria-label", t("repair.aria.right"));
-    for (const row of sideBySide(diffLines(this.opts.source, proposal))) {
-      const l = left.createDiv({
-        cls: `json-repair-line is-${row.kind === "chg" ? "del" : row.kind === "add" ? "empty" : row.kind}`,
-      });
-      l.setText(row.left ?? "");
-      const r = right.createDiv({
-        cls: `json-repair-line is-${row.kind === "chg" ? "add" : row.kind === "del" ? "empty" : row.kind}`,
-      });
-      r.setText(row.right ?? "");
-    }
+    const box = this.bodyEl.createDiv({ cls: "json-repair-diff" });
+    box.createDiv({ cls: "json-repair-legend", text: t("repair.legend") });
+    const { changes } = diffWords(this.opts.source, proposal);
+    renderRedline(box, wordDiffSegments(this.opts.source, proposal, changes), {
+      cls: "json-repair-redline",
+      labels: { del: t("repair.aria.del"), ins: t("repair.aria.ins") },
+    });
   }
 
   private async confirm(): Promise<void> {

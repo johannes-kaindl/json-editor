@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+- **The repair dialog shows the change in one column, word by word, instead of two side-by-side columns.** On a phone each of the two columns was about 160 px wide, so the line with the missing comma was cut off. Now the whole text stands once: what the repair removes is struck through, what it adds is underlined (and a line above says so), so the marks do not depend on red and green.
+
 ## [1.23.0] — 2026-11-12
 
 ### Changed

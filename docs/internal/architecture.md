@@ -23,7 +23,7 @@ src/
 │   ├── collapse-state.ts       pure per-file collapse state (resolveCollapsed, recordFileState, capStates; LRU, limit 50)
 │   ├── paths.ts                collectPaths(value, limit) → every addressable path as a string + a truncation flag (cap 5000)
 │   ├── path.ts                 pathToString + parsePathStr (inverses)
-│   └── repair/                 LLM repair of broken code blocks: fence, prompt, client, diff-view, settings, window (first parser error and its spot), windowed (the ladder: windows above 200 lines, then the whole document) (see .claude/rules/reparatur-llm.md)
+│   └── repair/                 LLM repair of broken code blocks: fence, prompt, client, settings, window (first parser error and its spot), windowed (the ladder: windows above 200 lines, then the whole document) (see .claude/rules/reparatur-llm.md)
 ├── obsidian/                   adapter layer, imports core/ + the Obsidian API
 │   ├── JsonFileView.ts         extends TextFileView; owns mode toggle, toolbar, unified History<string>, applyMutation, undo/redo, banners, setSchema, companion schema
 │   ├── TreeView.ts             wraps core/render + inline edit/rename + copy buttons + scrollToPath + applyFilter + roving-tabindex keyboard nav + RowActions + AddAffordance + drag-handle + drop handling + TypeMenu wiring + setValidationErrors

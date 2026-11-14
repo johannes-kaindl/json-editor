@@ -74,6 +74,16 @@ import { type Bilanz, createBilanz, parseArgs, runDriver } from "../../tools/obs
 import { capture } from "../../tools/obsidian-cdp/shot.js";
 import { buildHerkunft, requireEigenerBuild } from "../../tools/obsidian-cdp/vault.js";
 
+/** In-page: the repair modal shows ONE redline column (since Welle 34). `cols[0]` = the original (same + struck-through), `cols[1]` = the proposal (same + underlined); an absent redline gives `[]`. */
+const SPALTEN_JS = `
+  const rl = document.querySelector(".json-repair-modal .okit-redline");
+  const cols = rl ? [
+    { textContent: [...rl.childNodes].filter((n) => n.nodeName !== "INS").map((n) => n.textContent).join("") },
+    { textContent: [...rl.childNodes].filter((n) => n.nodeName !== "DEL").map((n) => n.textContent).join("") },
+  ] : [];
+`;
+
+
 const PLUGIN_ID = "json-editor";
 /** Interner View-Registrierungs-Key — NICHT die Plugin-id (`.claude/rules/ansicht-und-start.md`: nie ändern). */
 const VIEW_TYPE = "json-editor-view";
@@ -448,7 +458,7 @@ async function pruefeClaude(cdp: Cdp, notiz: (block: string) => string): Promise
       ? await pollUntil<{ links: string; rechts: string; anwenden: boolean }>(
           cdp,
           `
-            const cols = document.querySelectorAll(".json-repair-modal .json-repair-col");
+            ${SPALTEN_JS}
             if (cols.length !== 2) return null;
             const apply = document.querySelector(".json-repair-modal .modal-button-container button.mod-cta");
             return { links: cols[0].textContent, rechts: cols[1].textContent, anwenden: Boolean(apply) && !apply.disabled };
@@ -1576,7 +1586,7 @@ const SECTIONS: Section[] = [
           ? await pollUntil<{ links: string; rechts: string; anwenden: boolean }>(
               cdp,
               `
-                const cols = document.querySelectorAll(".json-repair-modal .json-repair-col");
+                ${SPALTEN_JS}
                 if (cols.length !== 2) return null;
                 const apply = document.querySelector(".json-repair-modal .modal-button-container button.mod-cta");
                 return { links: cols[0].textContent, rechts: cols[1].textContent, anwenden: Boolean(apply) && !apply.disabled };
@@ -1588,7 +1598,7 @@ const SECTIONS: Section[] = [
         check(
           "F2 Klick öffnet das Modal mit Diff, Anwenden ist frei",
           Boolean(diff) && diff!.links.includes(",,") && !diff!.rechts.includes(",,") && diff!.anwenden,
-          diff ? "Original links, Vorschlag rechts, Anwenden aktiv" : geklickt ? "Modal ohne Diff" : "Knopf nicht klickbar",
+          diff ? "Redline in einer Spalte (Original und Vorschlag), Anwenden aktiv" : geklickt ? "Modal ohne Diff" : "Knopf nicht klickbar",
         );
         const gesendet = letzter() as { model?: string; stream?: boolean; temperature?: number; messages?: { content: string }[] } | null;
         check(
@@ -1649,7 +1659,7 @@ const SECTIONS: Section[] = [
           ? await pollUntil<boolean>(
               cdp,
               `
-                const cols = document.querySelectorAll(".json-repair-modal .json-repair-col");
+                ${SPALTEN_JS}
                 const apply = document.querySelector(".json-repair-modal .modal-button-container button.mod-cta");
                 return cols.length === 2 && apply && !apply.disabled ? true : null;
               `,
@@ -1761,7 +1771,7 @@ const SECTIONS: Section[] = [
           ? await pollUntil<{ rechts: string; anwenden: boolean }>(
               cdp,
               `
-                const cols = document.querySelectorAll(".json-repair-modal .json-repair-col");
+                ${SPALTEN_JS}
                 if (cols.length !== 2) return null;
                 const apply = document.querySelector(".json-repair-modal .modal-button-container button.mod-cta");
                 return { rechts: cols[1].textContent, anwenden: Boolean(apply) && !apply.disabled };
@@ -1820,7 +1830,7 @@ const SECTIONS: Section[] = [
           const spalten = await pollUntil<{ links: string; rechts: string }>(
             cdp,
             `
-              const cols = document.querySelectorAll(".json-repair-modal .json-repair-col");
+              ${SPALTEN_JS}
               if (cols.length !== 2) return null;
               return { links: cols[0].textContent, rechts: cols[1].textContent };
             `,
@@ -1952,7 +1962,7 @@ const SECTIONS: Section[] = [
           ? await pollUntil<{ links: string; rechts: string; anwenden: boolean }>(
               cdp,
               `
-                const cols = document.querySelectorAll(".json-repair-modal .json-repair-col");
+                ${SPALTEN_JS}
                 if (cols.length !== 2) return null;
                 const apply = document.querySelector(".json-repair-modal .modal-button-container button.mod-cta");
                 return { links: cols[0].textContent, rechts: cols[1].textContent, anwenden: Boolean(apply) && !apply.disabled };
@@ -1964,7 +1974,7 @@ const SECTIONS: Section[] = [
         check(
           "H2 Klick öffnet das Modal mit Diff, Anwenden ist frei",
           Boolean(diff) && diff!.anwenden && diff!.rechts.includes("}") && !diff!.links.includes('2}'),
-          diff ? "Original links, Vorschlag rechts, Anwenden aktiv" : geklickt ? "Modal ohne Diff" : "Knopf nicht klickbar",
+          diff ? "Redline in einer Spalte (Original und Vorschlag), Anwenden aktiv" : geklickt ? "Modal ohne Diff" : "Knopf nicht klickbar",
         );
         if (shotPfad !== null && diff) {
           writeFileSync(shotPfad.replace(/(\.png)?$/, "-datei.png"), await capture(cdp));
@@ -2039,7 +2049,7 @@ const SECTIONS: Section[] = [
             ? await pollUntil<{ rechts: string; anwenden: boolean }>(
                 cdp,
                 `
-                  const cols = document.querySelectorAll(".json-repair-modal .json-repair-col");
+                  ${SPALTEN_JS}
                   if (cols.length !== 2) return null;
                   const apply = document.querySelector(".json-repair-modal .modal-button-container button.mod-cta");
                   return { rechts: cols[1].textContent, anwenden: Boolean(apply) && !apply.disabled };

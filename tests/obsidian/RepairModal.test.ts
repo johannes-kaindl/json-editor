@@ -56,14 +56,43 @@ describe("RepairModal", () => {
     expect(buttons().Apply?.disabled).toBe(false);
   });
 
-  it("renders original left, proposal right, with the changed line marked on both sides", async () => {
+  it("shows the change as one redline column: only the changed comma is struck through, the rest stays plain", async () => {
     const { modal } = open();
     await flush();
-    const cols = modal.contentEl.querySelectorAll(".json-repair-col");
-    expect(cols.length).toBe(2);
-    expect(cols[0]?.querySelector(".is-del")?.textContent).toBe('  "a": 1,');
-    expect(cols[1]?.querySelector(".is-add")?.textContent).toBe('  "a": 1');
-    expect(cols[0]?.children.length).toBe(cols[1]?.children.length);
+    expect(modal.contentEl.querySelector(".json-repair-col")).toBeNull();
+    const redline = modal.contentEl.querySelectorAll(".okit-redline");
+    expect(redline.length).toBe(1);
+    const dels = [...modal.contentEl.querySelectorAll(".okit-redline-del")];
+    expect(dels.map((d) => d.textContent)).toEqual([","]);
+    expect(modal.contentEl.querySelector(".okit-redline-ins")).toBeNull();
+    // the redline text is the original with the deletion in place: the whole code stays readable in one column
+    expect(redline[0]?.textContent).toBe(SOURCE);
+    expect(dels[0]?.getAttribute("aria-label")).toBe("Removed: ,");
+  });
+
+  it("marks an inserted word as underlined and keeps the unchanged words around it plain", async () => {
+    const { modal } = open({
+      source: '{ "name": "x" "id": 1 }',
+      run: async () => ({ ok: true, text: '{ "name": "x", "id": 1 }' }),
+    });
+    await flush();
+    expect(
+      [...modal.contentEl.querySelectorAll(".okit-redline-ins")].map((n) => n.textContent),
+    ).toEqual([","]);
+    expect(modal.contentEl.querySelector(".okit-redline-ins")?.getAttribute("aria-label")).toBe(
+      "Added: ,",
+    );
+    expect(modal.contentEl.querySelector(".okit-redline")?.textContent).toBe(
+      '{ "name": "x", "id": 1 }',
+    );
+  });
+
+  it("explains the marks in words, because colour is never the only channel", async () => {
+    const { modal } = open();
+    await flush();
+    expect(modal.contentEl.querySelector(".json-repair-legend")?.textContent).toBe(
+      "Struck through: removed. Underlined: added.",
+    );
   });
 
   it("Apply writes exactly the proposal, then confirms and closes", async () => {
