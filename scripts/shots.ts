@@ -757,7 +757,8 @@ async function main(): Promise<void> {
           fehlend++;
           continue;
         }
-        const png = await capture(cdp, box ?? undefined);
+        // Der Reparatur-Dialog ist einspaltig nur noch rund 900 px breit: mit Faktor 2 aufgenommen und auf 1200 heruntergerechnet, sonst begrenzt der README-Lint die Anzeige auf die halbe Dateibreite.
+        const png = await capture(cdp, box ?? undefined, shot.name === "repair-modal.png" ? 2 : 1);
         console.log(
           `  ✓ ${await writeShot(cdp, shot.name, png, { ...opts, thumb: shot.klasse === "detail" })}`,
         );

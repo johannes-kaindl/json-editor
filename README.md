@@ -50,7 +50,7 @@ Everything stays inside your vault. The plugin uses Obsidian's own CSS variables
 - **Long values are shortened** at 120 characters with a *Show more* chip. Editing and copying always use the full value.
 - **Breadcrumb** showing the current path; clicking a segment scrolls back up the tree.
 - **Copy buttons** on hover — click copies the value, Alt-click copies the JSON path.
-- **Repair broken JSON with an LLM** — an invalid `` ```json `` / `` ```jsonc `` block shows a *Repair* button in its error card (and the command *Repair JSON in the current code block* works at the cursor). The block (of a long one, only the lines around the error) and the parser error go to a language model; you see a side-by-side line diff and nothing is written until you press *Apply*. See [Repair with an LLM](#repair-with-an-llm).
+- **Repair broken JSON with an LLM** — an invalid `` ```json `` / `` ```jsonc `` block shows a *Repair* button in its error card (and the command *Repair JSON in the current code block* works at the cursor). The block (of a long one, only the lines around the error) and the parser error go to a language model; you see the change word by word in one column and nothing is written until you press *Apply*. See [Repair with an LLM](#repair-with-an-llm).
 - **Theme-aware styling** via Obsidian CSS variables — no hardcoded colors, no theme breakage.
 - **Embedded code blocks** — `` ```json `` and `` ```jsonc `` fences in any Markdown note render as a titled card with a collapsible tree (the `` ```jsonc `` variant tolerates comments). Blocks over 20 lines auto-collapse. Invalid JSON renders as a styled error card with line/column info, not a crash.
 - **Embedded JSON files** — `![[settings.json]]` (or `.jsonc`) in a note shows the file's content in reading view as a collapsed, read-only tree titled with the file name, instead of a bare file chip. Files over 512 KB, `![[file.json#part]]` and files that fail to parse (error card) are the exceptions; nothing is edited there, open the file for that.
@@ -195,11 +195,11 @@ An invalid `` ```json `` or `` ```jsonc `` code block renders as an error card. 
 
 1. The block's text and the parser's error message are sent to a language model, with the instruction to change as little as possible and answer with the document only. A text of more than 200 lines goes only in part: the 20 lines before and after the first error. The model answers with just those lines, the plugin puts them back and checks the whole document; if that does not fix it, the window grows (at most three windows), and in the end the whole text is sent as before. When the parser names no spot for its error (a trailing comma before `]`, for example), the whole text is sent right away.
 2. The answer is checked with the same parser that rejected the block. Only a valid answer can be applied; an invalid one shows its reason instead.
-3. A modal shows the original on the left and the proposal on the right, with the changed lines marked. **Apply** replaces only the content of that one code block (the rest of the note stays byte-identical), **Try again** asks the model again, **Discard** writes nothing.
+3. A modal shows the document once, word by word: what the repair removes is struck through, what it adds is underlined (a line above says so; the marks do not depend on red and green). **Apply** replaces only the content of that one code block (the rest of the note stays byte-identical), **Try again** asks the model again, **Discard** writes nothing.
 
-<img src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/main/docs/images/repair-modal.png" width="820" alt="The repair dialog: the parser error on top, the original and the proposed document side by side with the line that lacks a comma marked red and its fix green, and Discard, Try again and Apply at the bottom.">
+<img src="https://raw.githubusercontent.com/johannes-kaindl/json-editor/main/docs/images/repair-modal.png" width="820" alt="The repair dialog: the parser error on top, the repaired document once in one column with the added comma in the platforms list underlined, a line above explaining the marks, and Discard, Try again and Apply at the bottom.">
 
-<sub>Original on the left, proposal on the right; nothing is written until you press <em>Apply</em>.</sub>
+<sub>One column on purpose, so it fits a phone; nothing is written until you press <em>Apply</em>.</sub>
 
 If the note changed between the request and *Apply*, nothing is written and the modal says so.
 
