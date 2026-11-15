@@ -3,6 +3,8 @@
  *  `ctx.getSectionInfo` sie liefert: `lineStart`/`lineEnd` sind die Zaun-Zeilen selbst) und
  *  einen Beleg, dass der Text dort noch der ist, den das Modell gesehen hat. */
 
+import { findFenceAt as scanFenceAt } from "../../vendor/kit/fences";
+
 export type FenceLang = "json" | "jsonc";
 
 export interface Fence {
@@ -15,36 +17,18 @@ export interface Fence {
   content: string;
 }
 
-const OPEN = /^(\s*)(`{3,}|~{3,})\s*(json|jsonc)\s*$/i;
-
-/** Der ```json-/```jsonc-Block, in dem `line` liegt (Zaun-Zeilen eingeschlossen), sonst null. */
+/** Der ```json-/```jsonc-Block, in dem `line` liegt (Zaun-Zeilen eingeschlossen), sonst null.
+ *
+ *  Die Suche ist der Zaun-Scanner des Kits (code-kit `fences`, CommonMark: Einzug bis drei Spalten). Drei Abweichungen gegen die frühere eigene Fassung, gemessen
+ *  am 2026-11-15 (code-kit-Test `fences-scanner`), hier entschieden und in `tests/core/repair/fence.test.ts` festgehalten:
+ *  1. Der Rumpf einer CRLF-Notiz kommt LF-verbunden (früher mit `\r` je Zeile); der Palettenbefehl liest den Editor, und der gibt nur `\n`.
+ *  2. Ein ```json-Zaun INNERHALB eines anderen Zauns (etwa in einem ```md-Beispiel) ist Inhalt des äußeren, kein Block mehr.
+ *  3. Die Sprache ist das erste Wort der Info-Zeile: ```json title="x" gilt als json (Obsidian reicht dem Code-Block-Prozessor ebenfalls das erste Wort). */
 export function findFenceAt(text: string, line: number): Fence | null {
-  const lines = text.split("\n");
-  let i = 0;
-  while (i < lines.length) {
-    const open = OPEN.exec(lines[i] ?? "");
-    if (!open) {
-      i++;
-      continue;
-    }
-    const marker = open[2] ?? "```";
-    const closeRe = new RegExp(`^\\s*${marker[0] === "~" ? "~" : "`"}{${marker.length},}\\s*$`);
-    let j = i + 1;
-    while (j < lines.length && !closeRe.test(lines[j] ?? "")) j++;
-    // Ein nie geschlossener Zaun hat keine verlaesslichen Grenzen — dort wird nichts repariert.
-    if (j >= lines.length) return null;
-    const end = j;
-    if (line >= i && line <= end) {
-      return {
-        lang: (open[3] ?? "json").toLowerCase() === "jsonc" ? "jsonc" : "json",
-        start: i,
-        end,
-        content: lines.slice(i + 1, j).join("\n"),
-      };
-    }
-    i = j + 1;
-  }
-  return null;
+  const f = scanFenceAt(text, line, { maxIndent: 3 });
+  // Ein nie geschlossener Zaun hat keine verlaesslichen Grenzen — dort wird nichts repariert.
+  if (f === null || !f.closed || (f.lang !== "json" && f.lang !== "jsonc")) return null;
+  return { lang: f.lang, start: f.openLine, end: f.closeLine, content: f.body };
 }
 
 /** Ersetzt den Inhalt des Blocks zwischen den Zaun-Zeilen `start`/`end`. `null`, wenn der Text
