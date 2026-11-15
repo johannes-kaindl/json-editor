@@ -10,7 +10,11 @@ import {
 import { CoreError } from "../../src/core/errors";
 import { compileSchema } from "../../src/core/schema";
 
-function codeOf(fn: () => unknown): { code: string; args: readonly string[]; message: string } {
+function codeOf(fn: () => unknown): {
+  code: string;
+  args: readonly (string | number)[];
+  message: string;
+} {
   try {
     fn();
   } catch (e) {

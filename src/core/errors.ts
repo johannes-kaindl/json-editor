@@ -1,3 +1,5 @@
+import { CodedError } from "../vendor/kit/coded-error";
+
 /** An error of the editing core or the schema compiler that the UI can show in the user's language.
  *  `message` stays the English text (tests, logs, a plain `catch`); `code` names the case and `args` the
  *  values the text mentions, in the order the translations use them (`{0}`, `{1}`). Pure: no Obsidian import. */
@@ -20,14 +22,9 @@ export type CoreErrorCode =
   | "unsupportedType"
   | "numberTooLarge";
 
-export class CoreError extends Error {
-  readonly code: CoreErrorCode;
-  readonly args: readonly string[];
-
+export class CoreError extends CodedError<CoreErrorCode> {
   constructor(code: CoreErrorCode, message: string, args: readonly string[] = []) {
-    super(message);
+    super(code, message, args);
     this.name = "CoreError";
-    this.code = code;
-    this.args = args;
   }
 }

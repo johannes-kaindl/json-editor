@@ -32,6 +32,27 @@ describe("errorText", () => {
     expect(errorText("plain")).toBe("plain");
   });
 
+  it("shows the English message, not the raw key, when a code has no translation", () => {
+    setLang("de");
+    const ohne = new CoreError("keyEmpty", "Key cannot be empty");
+    (ohne as { code: string }).code = "noTranslationForThis";
+    expect(errorText(ohne)).toBe("Key cannot be empty");
+    // Gegenprobe: derselbe Fehler mit bekanntem Code wird übersetzt (die Messung kann also anschlagen).
+    expect(errorText(new CoreError("keyEmpty", "Key cannot be empty"))).toBe(
+      "Der Schlüssel darf nicht leer sein.",
+    );
+  });
+
+  it("translates by shape: an error of another class that carries a code and args is translated too", () => {
+    setLang("de");
+    const fremd = Object.assign(new Error("Key cannot be empty"), { code: "keyEmpty", args: [] });
+    expect(errorText(fremd)).toBe("Der Schlüssel darf nicht leer sein.");
+    // Gegenprobe: ein Fehler mit Code, aber ohne args (Node: ENOENT) bleibt, was er ist.
+    expect(errorText(Object.assign(new Error("no such file"), { code: "ENOENT" }))).toBe(
+      "no such file",
+    );
+  });
+
   it("has a text in both languages for every code the core can throw", () => {
     const codes = [
       "keyEmpty",

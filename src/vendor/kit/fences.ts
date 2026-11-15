@@ -1,4 +1,4 @@
-// vendored from code-kit@0.73.0, src/ts/pure/fences.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from code-kit@0.74.0, src/ts/pure/fences.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 // Origin: obsidian-plugins `3d-codeblocks/src/core/shapes/fence.ts` (`fenceFor`), `src/core/shapes/references.ts` (`shapesBlock`,
 // here `wrapInFence` with the language as a parameter) and `src/obsidian/panel-accept.ts` (`closesOpenFence`, here on the opening
 // line instead of the notes text and a fence object). The scanner (`listFences`/`findFenceAt`) has the shape of obsidian-kit

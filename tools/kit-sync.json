@@ -4,7 +4,7 @@
       "ref": "0.92.0"
     },
     "code-kit": {
-      "ref": "0.73.0"
+      "ref": "0.74.0"
     }
   },
   "targets": [
@@ -23,6 +23,7 @@
         "anthropic-wire",
         "backend-probe",
         "capabilities",
+        "coded-error",
         "embeddings-client",
         "endpoint",
         "endpoint_config",

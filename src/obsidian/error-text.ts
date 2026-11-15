@@ -1,13 +1,12 @@
-import { CoreError } from "../core/errors";
 import type { SchemaCompileResult } from "../core/schema";
-import { errorMessage } from "../vendor/kit/error-message";
+import { codedErrorText } from "../vendor/kit/coded-error";
 import { t } from "../vendor/kit/i18n";
 
-/** The text of an error for the user's language. A `CoreError` is translated from its code; any other error
- *  (a library, the platform) keeps the message it came with. */
+/** The text of an error for the user's language. A coded error (the `CoreError` of the core, recognised by its `code` and `args`) is
+ *  translated from its code; when no translation exists its English `message` stands, never the raw key. Any other error (a library,
+ *  the platform) keeps the message it came with. */
 export function errorText(e: unknown): string {
-  if (e instanceof CoreError) return t(`err.${e.code}`, ...e.args);
-  return errorMessage(e);
+  return codedErrorText(e, t, "err.");
 }
 
 /** The banner text for a schema that did not compile: the compiler's own findings are translated, the
