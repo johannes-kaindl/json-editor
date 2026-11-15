@@ -1,4 +1,4 @@
-// vendored from obsidian-kit@0.70.0, src/testing/linear-probe.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from obsidian-kit@0.92.0, src/testing/linear-probe.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 // Linearitätsprobe für Tests (ReDoS-Konvention). Nur in Tests (vitest, Node): importiert `node:vm`.
 //
 // Warum es sie gibt: zweimal wurde eine Regex mit überlinearer Laufzeit veröffentlicht (Welle 15 und 16),
@@ -10,6 +10,14 @@
 // `<think>…</think>` das Präfix `"<think>"`, bei `^(a+)+$` das Präfix `"a"` mit Suffix `"!"`). Eine Eingabe,
 // die die Funktion früh verlassen lässt, misst den teuren Teil nie — ein Zweig vor der verdächtigen Stelle
 // gehört in die Eingabe (LESSONS 2026-10-11).
+//
+// Unter Last (Welle 28, gemessen auf 18 Kernen mit `yes`-Prozessen, Load 9 bis 156): Die Zeitgrenze trägt ein Verhältnis t(50 000)/t(10 000) von 12, ein lineares Stück liegt ruhig bei 4,5 bis 7,5, ein
+// quadratisches bei etwa 25: der Abstand ist nach beiden Seiten nur etwa Faktor zwei. Gemessen vor der Änderung, je Test 10 Läufe: die Regex- und Format-Proben (daily-notes, plugin-id, anthropicBaseOf, die
+// quadratische Funktion von `pruefeLinear`) kippten in 0 von 10 bei Load 11 bis 19 und 0 von 10 bei Load 32 bis 72; `pruefeLinearFuzz` an `llm-json` (lineare Funktion, 150 000 Zeichen) fiel dagegen bei Load
+// um 33 in 2 von 10 Läufen mit Verhältnis 12,3 durch (und einmal im Gate bei Load 45). Ursache: `bestOf` wiederholt einen Lauf über 500 ms nicht, t(50 000) ist eine Einzelmessung und fängt den Lastschub allein
+// ab. Seit 0.72.0 wird ein überlinearer Befund am großen Lauf einmal nachgemessen (nur unter 4 s, sonst verdoppelten sich die Gegenproben); danach 0 von 15 bei Load 17 und 0 von 15 bei Load 74 bis 156. Eine
+// Voraussetzung bleibt: eine dauerhafte Last weit über der Kernzahl hebt t(50 000) in beiden Messungen. Test-Funktionen für eine QUADRATISCHE Einheit laufen auf der Wanduhr (`spin`), nicht mit CPU-Schritten:
+// deren Zeit wächst mit der Last und verschiebt das Verhältnis.
 import { createContext, runInContext } from "node:vm";
 
 /** Eingabelängen der Probe. */
@@ -57,6 +65,21 @@ function bestOf(run: () => void): number {
   return best;
 }
 
+/** Ab dieser Laufzeit bei n = 50 000 wird ein überlinearer Befund nicht nachgemessen: eine echt quadratische Funktion braucht dort sechs bis vierzehn Sekunden, das Nachmessen verdoppelte die Gegenproben. */
+const RETRY_MAX_MS = 4_000;
+
+/** Das Urteil, mit einer Nachmessung des GROSSEN Laufs: `bestOf` wiederholt einen Lauf über 500 ms nicht, t(50 000) ist also eine Einzelmessung, t(10 000) dagegen der Beste von drei. Unter Last
+ *  (gemessen Welle 28, Load über 30 auf 18 Kernen) verschiebt das das Verhältnis nach oben: eine lineare Funktion (`llm-json`, 150 000 Zeichen) fiel in 2 von 10 Läufen mit 12,3 über die Grenze 12 (ruhig 4,5 bis 7,5).
+ *  Ist das Urteil überlinear und der große Lauf kürzer als {@link RETRY_MAX_MS}, wird er einmal wiederholt und der bessere zählt; eine echt quadratische Funktion bleibt beim zweiten Lauf überlinear. */
+function verdictMitNachmessung(steps: LinearProbeStep[], nachmessen: () => number): LinearProbeResult {
+  const v = verdict(steps, undefined);
+  const t50 = steps.find((s) => s.n === 50_000)?.ms ?? 0;
+  if (v.linear || t50 >= RETRY_MAX_MS) return v;
+  const nochmal = nachmessen();
+  if (nochmal >= t50) return v;
+  return verdict(steps.map((s) => (s.n === 50_000 ? { n: s.n, ms: nochmal } : s)), undefined);
+}
+
 /** Misst `re.test(praefix.repeat(n) + suffix)` für n ∈ {1 000, 10 000, 50 000} in einem `node:vm`-Kontext mit
  *  Frist je Lauf (`timeoutMs`, Default 2 000): eine exponentielle Regex hängt sonst den Testlauf, und in einen
  *  Worker ließe sich die Regex nicht schicken (nicht klonbar). Ein Abbruch ist `linear: false`. */
@@ -82,11 +105,13 @@ export function pruefeLinearRegex(re: RegExp, praefix: string, suffix = "", opts
 export function pruefeLinear<T>(fn: (eingabe: T) => unknown, eingabe: string | ((n: number) => T)): LinearProbeResult {
   const make = typeof eingabe === "string" ? (n: number): T => eingabe.repeat(n) as T : eingabe;
   const steps: LinearProbeStep[] = [];
+  let groß: T | undefined;
   for (const n of LINEAR_PROBE_SIZES) {
     const arg = make(n);
+    if (n === 50_000) groß = arg;
     steps.push({ n, ms: bestOf(() => { fn(arg); }) });
   }
-  return verdict(steps, undefined);
+  return verdictMitNachmessung(steps, () => bestOf(() => { fn(groß as T); }));
 }
 
 /** Ein Befund von {@link pruefeLinearFuzz}. */
@@ -141,7 +166,7 @@ function leiter(fn: (eingabe: string) => unknown, make: (n: number) => string, l
       message: `${label}: überlinear — n=1000: ${s1.ms.toFixed(1)} ms, n=10000: ${s10.ms.toFixed(1)} ms (Faktor ${(s10.ms / Math.max(s1.ms, 0.05)).toFixed(0)}), 50 000 nicht gefahren`,
     };
   }
-  const v = verdict([s1, s10, lauf(50_000)], undefined);
+  const v = verdictMitNachmessung([s1, s10, lauf(50_000)], () => lauf(50_000).ms);
   return { linear: v.linear, message: `${label}: ${v.message}` };
 }
 

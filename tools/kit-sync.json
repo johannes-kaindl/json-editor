@@ -1,10 +1,10 @@
 {
   "sources": {
     "obsidian-kit": {
-      "ref": "0.70.0"
+      "ref": "0.92.0"
     },
     "code-kit": {
-      "ref": "0.37.5"
+      "ref": "0.73.0"
     }
   },
   "targets": [
@@ -12,13 +12,7 @@
       "dir": "src/vendor/kit",
       "source": "obsidian-kit",
       "from": "src/pure",
-      "modules": [
-        "anthropic-wire",
-        { "name": "block-writer", "ref": "0.82.2" },
-        "endpoint-secret-hook",
-        "endpoint-source",
-        "override-guard"
-      ],
+      "modules": ["block-writer", "endpoint-secret-hook", "endpoint-source", "override-guard"],
       "rewrite": [["../vendor/code-kit/pure/", "./"], ["../vendor/code-kit/web/", "./"]]
     },
     {
@@ -26,14 +20,16 @@
       "source": "code-kit",
       "from": "src/ts/pure",
       "modules": [
+        "anthropic-wire",
         "backend-probe",
         "capabilities",
         "embeddings-client",
         "endpoint",
         "endpoint_config",
         "endpoint_diagnostics",
-        { "name": "error-message", "ref": "0.68.0" },
+        "error-message",
         "error_body",
+        "fences",
         "i18n",
         "json-error-position",
         "llm-answer",
@@ -41,10 +37,7 @@
         "model-context",
         "model-list-cache",
         "reasoning",
-        {
-          "name": "redact",
-          "ref": "0.60.0"
-        },
+        "redact",
         "replace-span",
         "sampling-profiles",
         "secrets",
@@ -53,7 +46,7 @@
         "text-window",
         "think-splitter",
         "timeout",
-        { "name": "word-diff", "ref": "0.68.0" }
+        "word-diff"
       ]
     },
     {
@@ -66,13 +59,7 @@
       "dir": "src/vendor/kit-obsidian",
       "source": "obsidian-kit",
       "from": "src/obsidian",
-      "modules": [
-        "settings_walker",
-        "folder-suggest",
-        "collapsible",
-        "help-setting",
-        { "name": "redline", "ref": "0.88.0" }
-      ]
+      "modules": ["settings_walker", "folder-suggest", "collapsible", "help-setting", "redline"]
     },
     {
       "dir": "src/vendor/kit-obsidian",
@@ -88,18 +75,23 @@
         "embedding-connection",
         "endpoint-list",
         "endpoint-plumbing",
-        "endpoint-status-text",
         "endpoint-secrets",
         "endpoint-source",
+        "endpoint-status-text",
         "llm-connection",
         "llm-connection-strings",
+        "model-bar",
+        "model-bar-strings",
         "model-picker",
         "plugin-api",
         "request-section",
         "request-session",
         "secrets",
+        "setting-body-host",
         "shortcuts-bridge",
-        { "name": "write-ports", "ref": "0.82.2" }
+        "status-indicator",
+        "thinking-control",
+        "write-ports"
       ],
       "rewrite": [
         ["../pure/", "../kit/"],

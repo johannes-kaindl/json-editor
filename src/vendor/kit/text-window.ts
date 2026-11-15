@@ -1,4 +1,4 @@
-// vendored from code-kit@0.37.5, src/ts/pure/text-window.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from code-kit@0.73.0, src/ts/pure/text-window.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 /** A window of whole lines around a spot in a text, and the way back: put an edited window into the text again, byte for byte outside it.
  *
  *  Origin: json-editor `src/core/repair/window.ts` (`TextWindow`, `lineWindow`, `spliceWindow`, `eolOf`; Welle 27, part 4). There the
@@ -10,8 +10,8 @@
  *  **Offsets belong to the original text.** `start` and `end` of a {@link TextWindow} index the text the window was made from, CRLF
  *  included; `text` is the same lines with `\n` (the model never sees a `\r`). `spliceWindow` cuts by those offsets, never by re-joined
  *  lines, so everything outside the window is the original bytes — also in a file with mixed line ends. The window itself takes the line
- *  end the FILE starts with ({@link detectEol}, the first one that occurs): in a file that mixes both, a window may therefore change its
- *  own line ends, never those outside it. A window made from another text is refused (`RangeError`), not spliced.
+ *  end CRLF as soon as the FILE holds any ({@link detectEol}, any `\r\n`; until 0.37.x the first line end that occurs): in a file that
+ *  mixes both, a window may therefore change its own line ends, never those outside it. A window made from another text is refused (`RangeError`), not spliced.
  *
  *  **What counts as a line.** The text up to a `\n`, without a `\r` in front of it. A lone `\r` is no line end (old Mac files are not
  *  files this was built for). The empty rest behind a final line end is no line: `"a\nb\n"` has two lines, `""` has one (empty). */
@@ -49,11 +49,14 @@ function lineSpans(text: string): Array<[number, number]> {
   return spans;
 }
 
-/** The line end of a text: the first one that occurs — `"\r\n"` when the first `\n` follows a `\r`, else `"\n"` (also for no line end
- *  at all, and for a lone `\r`). */
+/** The line end of a text: `"\r\n"` when the text holds a `\r\n` anywhere, else `"\n"` (also for no line end at all, and for a lone `\r`).
+ *  The rule of the four writers that edit a note in place (diachronic, vault-rag, 3d-codeblocks, obsidian-kit `frontmatter-patch`); since
+ *  0.38.0, before that the first line end that occurs (the measurement behind the change: no note in 12 942 held a CRLF, Johannes decided
+ *  2026-10-26). Reads the whole text when there is no CRLF in it. A caller that checks SEVERAL parts calls it per part: joining them first
+ *  would make a false `\r\n` at the seam. A text that ends on a lone `\r` is LF here; a consumer that cuts its text at `\n` and so keeps
+ *  that `\r` as a suffix handles it around this call. */
 export function detectEol(text: string): "\n" | "\r\n" {
-  const i = text.indexOf("\n");
-  return i > 0 && text.charCodeAt(i - 1) === 13 ? "\r\n" : "\n";
+  return text.includes("\r\n") ? "\r\n" : "\n";
 }
 
 /** The window with `radius` lines before and after the line in which `offset` lies (cut at the edges of the text). An offset behind

@@ -1,11 +1,13 @@
-// vendored from obsidian-kit@0.70.0, src/obsidian/request-section.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
-import { Notice, Setting, setIcon } from "obsidian";
+// vendored from obsidian-kit@0.92.0, src/obsidian/request-section.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+import { Notice, Setting } from "obsidian";
+import { buildStatus, paintStatus, type StatusParts } from "./status-indicator";
 import { collapsibleSection, type CollapsibleStorage } from "./collapsible";
 import { copyToClipboard } from "./clipboard";
 import type { RequestSession } from "./request-session";
+import type { ApiErrorCode, EndpointTransport } from "../kit/endpoint-source";
 import { isModelLoaded, type LoadedModel } from "../kit/capabilities";
 import {
-  FAMILY_IDS, THINKING_LEVELS, resolveRequestParams, thinkingFor, validateOverride,
+  FAMILY_IDS, resolveRequestParams, resolveThinkingLevel, thinkingFor, thinkingLevels, validateOverride, withThinkingLevel,
   type BackendId, type FamilyId, type FamilyKey, type FieldExplain, type FieldId, type ModeId, type ModelFamilyId,
   type RequestSettings, type ThinkingLevel, type DeviationKind,
 } from "../kit/sampling-profiles";
@@ -25,6 +27,11 @@ export interface RequestSectionState {
   model: string;
   sentModel: string;
   defaultModel?: string;
+  /** Seit 0.73.0: der Transport der Quelle (`EndpointSourceResult.transport`, nur der Manager-Pfad kennt ihn); fehlt er, ist es `"http"`. Der Abschnitt zeichnet ihn nicht, ein Wirt liest ihn hier statt aus `resolve()`. */
+  transport?: EndpointTransport;
+  /** Seit 0.87.0: der Grund der Auflösung (`EndpointSourceResult.reason`), wenn sie einen trägt: eine verwaiste Wahl (`disabled`, `not-found`, `secret-missing`)
+   *  fiel auf „Automatisch“ zurück, oder es gibt keinen Endpunkt. Die Modellzeile zeigt daraus das Warnzeichen mit Grund. */
+  reason?: ApiErrorCode;
 }
 export interface RequestSectionStrings {
   title: string;
@@ -84,9 +91,12 @@ export interface RequestSectionOptions {
   /** Phase 2 (Systemprompt): der Konsument hängt hier sein Kapitel ein. */
   promptSlot?(el: HTMLElement): void;
   /** Zeigt den Schalter „Stufenwahl im Chat“. Default `false`: er wirkt nur dort, wo das Plugin
-   *  `settings.levelPickerInChat` an `buildThinkingControl` (`levelPicker`) reicht. Ist die
-   *  Einstellung schon `true`, bleibt der Schalter sichtbar, sonst ließe sie sich nicht mehr abschalten. */
+   *  `settings.levelPickerInChat` an ein frei eingebautes `buildThinkingControl` (`levelPicker`) reicht, also **nicht** mit der Modellzeile (`buildModelBar`): die zeigt die Stufe seit 0.73.0
+   *  immer als Dropdown. Seit 0.76.0 hält ein gespeichertes `levelPickerInChat: true` die Zeile nicht mehr am Leben; der Wert bleibt in den Daten, das Plugin muss nichts ändern. */
   levelPicker?: boolean;
+  /** Seit 0.86.0, optional: die stream-Einstellung des Plugins (`createLlmConnection({ stream })`). `false` bringt die Reserve von `xhigh` und `max` auf die von `high`
+   *  (Claude: 16000 statt 64000, code-kit 0.66.0), damit der Abschnitt zeigt, was `LlmConnection` sendet. Fehlt sie, gilt wie dort der Stream. */
+  stream?: boolean;
 }
 
 const SAVE_FAILED_FALLBACK = "Could not save the request settings.";
@@ -121,20 +131,17 @@ export function buildRequestSection(opts: RequestSectionOptions): void {
   const state = opts.state();
   const settings = opts.settings();
   const key = famKey(state.family);
+  // Das Modell, das auf den Draht geht (ein Alias des Managers ist hier schon aufgelöst): seine Zeile in der Stufentabelle von code-kit gilt, und mit ihm klemmt `resolveRequestParams`
+  // die gespeicherte Stufe, damit der Abschnitt zeigt, was `LlmConnection` sendet (0.73.0).
+  const model = state.sentModel || state.model;
+  const modelPart = { ...(model !== "" ? { model } : {}), ...(opts.stream !== undefined ? { stream: opts.stream } : {}) };
 
   // Speichern: ein Fehler wird zur Notice und färbt den Status-Indikator (entsteht erst weiter unten).
-  const ui: { status?: HTMLElement } = {};
+  const ui: { status?: StatusParts } = {};
   const failed = (): void => {
     const msg = st.saveFailed ?? SAVE_FAILED_FALLBACK;
     new Notice(msg);
-    const statusEl = ui.status;
-    if (!statusEl) return;
-    statusEl.removeClass("is-ok", "is-warning");
-    statusEl.addClass("is-error");
-    statusEl.setAttribute("aria-label", msg);
-    statusEl.empty();
-    setIcon(statusEl.createSpan(), "circle-x");
-    statusEl.createSpan({ text: msg });
+    if (ui.status) paintStatus(ui.status, "error", msg);
   };
   const persist = (next: RequestSettings, then?: () => void): void => {
     void opts.save(next).then(then, failed);
@@ -164,7 +171,7 @@ export function buildRequestSection(opts: RequestSectionOptions): void {
   // 2b. Backend oder Familie unbekannt (neuerer Manager als diese Tabelle): ehrlich zeigen, was daraus wurde.
   const firstMode = opts.modes[0];
   if (firstMode !== undefined && st.unrecognised) {
-    const probe = resolveRequestParams({ family: state.family, mode: firstMode, backend: state.backend, thinking: thinkingFor(settings, firstMode) });
+    const probe = resolveRequestParams({ family: state.family, mode: firstMode, backend: state.backend, thinking: thinkingFor(settings, firstMode), ...modelPart });
     if (probe.unrecognised) body.createDiv({ cls: "okit-request-warning mod-warning", text: st.unrecognised(probe.unrecognised) });
   }
 
@@ -174,7 +181,7 @@ export function buildRequestSection(opts: RequestSectionOptions): void {
     const ov = settings.overrides[mode]?.[key] ?? {};
     const level = thinkingFor(settings, mode);
     const resolved = resolveRequestParams({
-      family: state.family, mode, backend: state.backend, thinking: level,
+      family: state.family, mode, backend: state.backend, thinking: level, ...modelPart,
       ...(opts.maxTokens(mode) !== undefined ? { maxTokens: opts.maxTokens(mode) } : {}),
       overrides: ov,
     });
@@ -211,16 +218,18 @@ export function buildRequestSection(opts: RequestSectionOptions): void {
         }));
       }
     }
-    // Denkstufe je Modus
-    new Setting(body).setName(st.thinkingLevel).addDropdown((d) => {
-      for (const l of THINKING_LEVELS) d.addOption(l, st.level(l));
-      d.setValue(level).onChange((v) => {
-        const next = clone(opts.settings());
-        next.thinking[mode] = v as ThinkingLevel;
-        if (v !== "off") next.lastOnLevel[mode] = v as ThinkingLevel;
-        persist(next, () => opts.rerender());
+    // Denkstufe je Modus: die Stufen des Modells (`thinkingLevels`), die gespeicherte durch `resolveThinkingLevel` darauf gebracht (nie still überschrieben, gespeichert wird bei einer Wahl).
+    // Ohne Stufen (Haiku 4.5, Claude über Open WebUI) gibt es keine Zeile: sie zeigte etwas, das nie gesendet wird.
+    const offered = thinkingLevels(state.family, state.backend, model);
+    if (offered.levels.length > 0) {
+      new Setting(body).setName(st.thinkingLevel).addDropdown((d) => {
+        for (const l of offered.levels) d.addOption(l, st.level(l));
+        d.setValue(resolveThinkingLevel(level, state.family, state.backend, model)).onChange((v) => {
+          // Der Handler klont vorher: `withThinkingLevel` teilt `overrides` und was es nicht ändert mit dem Eingang, und das Ergebnis geht in `save`.
+          persist(withThinkingLevel(clone(opts.settings()), mode, v as ThinkingLevel), () => opts.rerender());
+        });
       });
-    });
+    }
     // Ruhende Überschreibungen
     for (const fam of [...FAMILY_IDS, "unknown"] as FamilyKey[]) {
       if (fam === key) continue;
@@ -236,7 +245,8 @@ export function buildRequestSection(opts: RequestSectionOptions): void {
   }
 
   // 4. Stufenwahl im Chat
-  if (opts.levelPicker === true || settings.levelPickerInChat) {
+  // Seit 0.76.0 folgt die Zeile allein der Option des Plugins: ein gespeichertes `levelPickerInChat: true` hält sie nicht mehr am Leben (ein Plugin mit Modellzeile meldet die Stufenwahl nie an, die Zeile ist dort wirkungslos).
+  if (opts.levelPicker === true) {
     new Setting(body).setName(st.levelPicker).setDesc(st.levelPickerDesc).addToggle((t) =>
       t.setValue(settings.levelPickerInChat).onChange((v) => {
         const next = clone(opts.settings());
@@ -260,13 +270,10 @@ export function buildRequestSection(opts: RequestSectionOptions): void {
 
   // 6. Abweichungen (Status-Indikator, UI-STANDARD §8)
   const devs = opts.session.deviations();
-  const status = body.createDiv({ cls: `okit-request-status ${devs.length === 0 ? "is-ok" : "is-warning"}` });
+  // Seit 0.76.0 über den Baustein `status-indicator` (DOM: Wurzel, Symbol, Text, aria-label). Die Farben des ganzen Zeilentextes bleiben in REQUEST_SECTION_CSS, ein Konsument kopiert deshalb nichts Neues.
+  const status = buildStatus(body, "okit-request-status");
   ui.status = status;
-  const label = devs.length === 0 ? st.deviationsOk : st.deviationsWarn(devs.length);
-  status.setAttribute("aria-label", label);
-  const icon = status.createSpan();
-  setIcon(icon, devs.length === 0 ? "circle-check" : "alert-triangle");
-  status.createSpan({ text: label });
+  paintStatus(status, devs.length === 0 ? "ok" : "warning", devs.length === 0 ? st.deviationsOk : st.deviationsWarn(devs.length));
   for (const d of devs) {
     const line = body.createDiv({ cls: "okit-request-deviation", text: st.deviation(d.kind, d.count, d.detail) });
     if (d.kind === "family-detected" && opts.openManager !== undefined && st.setFamily !== undefined) {
