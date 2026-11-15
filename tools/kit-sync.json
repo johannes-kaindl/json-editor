@@ -1,7 +1,7 @@
 {
   "sources": {
     "obsidian-kit": {
-      "ref": "0.93.0"
+      "ref": "0.94.0"
     },
     "code-kit": {
       "ref": "0.74.0"
@@ -81,8 +81,6 @@
         "endpoint-status-text",
         "llm-connection",
         "llm-connection-strings",
-        "model-bar",
-        "model-bar-strings",
         "model-picker",
         "plugin-api",
         "request-section",
@@ -91,7 +89,6 @@
         "setting-body-host",
         "shortcuts-bridge",
         "status-indicator",
-        "thinking-control",
         "write-ports"
       ],
       "rewrite": [
