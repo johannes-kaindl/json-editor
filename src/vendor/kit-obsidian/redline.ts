@@ -1,4 +1,4 @@
-// vendored from obsidian-kit@0.92.0, src/obsidian/redline.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from obsidian-kit@0.93.0, src/obsidian/redline.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 /**
  * Redline (Diff-Ansicht auf Wortebene): ein Text mit durchgestrichener Löschung und unterstrichener Einfügung in EINER Spalte, damit es
  * auf dem iPhone trägt. Gebaut für Diachronic (Prüfkarten und Vergleichsansicht), containerunabhängig: der Baustein füllt einen
