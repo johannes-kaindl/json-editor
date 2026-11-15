@@ -53,6 +53,7 @@ import { argv, cwd, env, exit } from "node:process";
 import {
   type Cdp,
   attachTo,
+  bereiteInstanzVor,
   closeExtraLeaves,
   openExisting,
   pollUntil,
@@ -248,25 +249,41 @@ async function inhaltBox(cdp: Cdp, padding = PADDING): Promise<Rect | null> {
   `);
 }
 
+/** Das Reparatur-Bild laesst Modal, Fake-Endpunkt (Eintrag in den Einstellungen) und den Stub-Server zurueck. Der Server haelt den Prozess am Leben,
+ *  solange er lauscht: Bis 2026-11-15 schloss ihn erst das Zuruecksetzen VOR dem naechsten Bild, also nie, wenn das Reparatur-Bild das letzte war
+ *  (`--only repair-modal.png`; die Einstellungs-Aufnahme setzt nicht zurueck). Der Lauf stand danach, bis ihn jemand abbrach (gemessen am 2026-11-15:
+ *  `process._getActiveHandles()` nach `main()` war Server + Socket). Deshalb auch im `finally` von `main`. */
+async function reparaturAufraeumen(cdp: Cdp): Promise<void> {
+  if (!reparaturStub) return;
+  const stub = reparaturStub;
+  reparaturStub = null;
+  await cdp
+    .evaluate(`
+      for (const m of document.querySelectorAll(".json-repair-modal")) m.querySelector(".modal-button-container button")?.click();
+      const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
+      if (plugin && window.__shotsEndpunkteVorher) { plugin.settings.endpoints = window.__shotsEndpunkteVorher; plugin.settings.choice = window.__shotsWahlVorher ?? {}; plugin.llm.invalidate(); await plugin.persist?.(); }
+      delete window.__shotsEndpunkteVorher; delete window.__shotsWahlVorher;
+      return true;
+    `)
+    .catch(() => undefined);
+  await stub.stop().catch(() => undefined);
+}
+
+/** Wartet hoechstens `ms` auf `p`: ein Aufraeumschritt, der nie antwortet, haelt den Lauf nicht fest. */
+async function mitFrist(p: Promise<unknown>, ms: number): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const frist = new Promise<void>((r) => {
+    timer = setTimeout(r, ms);
+  });
+  await Promise.race([p.catch(() => undefined), frist]);
+  clearTimeout(timer);
+}
+
 /** Zustand vor jedem Bild zuruecksetzen. Welcher Zustand zurueckbleibt, darf das
  *  naechste Bild nicht bestimmen: die Suche des Such-Bildes filterte im naechsten Motiv
  *  weiter, und das sah aus wie ein Fehlschlag des Rezepts (gemessen 2026-08-22). */
 async function zustandZuruecksetzen(cdp: Cdp): Promise<void> {
-  // Das Reparatur-Bild laesst Modal, Fake-Endpunkt und dessen Eintrag in den Einstellungen zurueck: sonst
-  // zeigte settings.png einen Endpunkt, den nur der Treiber angelegt hat.
-  if (reparaturStub) {
-    await cdp
-      .evaluate(`
-        for (const m of document.querySelectorAll(".json-repair-modal")) m.querySelector(".modal-button-container button")?.click();
-        const plugin = app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}];
-        if (plugin && window.__shotsEndpunkteVorher) { plugin.settings.endpoints = window.__shotsEndpunkteVorher; plugin.settings.choice = window.__shotsWahlVorher ?? {}; plugin.llm.invalidate(); await plugin.persist?.(); }
-        delete window.__shotsEndpunkteVorher; delete window.__shotsWahlVorher;
-        return true;
-      `)
-      .catch(() => undefined);
-    await reparaturStub.stop().catch(() => undefined);
-    reparaturStub = null;
-  }
+  await reparaturAufraeumen(cdp);
   // Der Auslieferungszustand, nicht der zuletzt gesetzte: das Schema-Bild schaltet die
   // Validierung ein, und ohne dieses Zuruecksetzen trugen ALLE folgenden Bilder das
   // Fehler-Banner — korrektes Verhalten, im falschen Motiv (gemessen 2026-08-22).
@@ -670,6 +687,8 @@ async function main(): Promise<void> {
 
   try {
     await requireVisible(cdp);
+    // Frisches Profil: Vertrauensdialog bestaetigen, Restricted Mode aufheben, Plugin laden. Ohne den Aufruf fehlt das Plugin im Renderer und jedes Bild scheitert an `plugin.settings`.
+    console.log(`Instanz: ${(await bereiteInstanzVor(cdp, { pluginIds: [PLUGIN_ID], nurVault: REPO_NAME, sprache: "en" })).hinweis}`);
     await new Promise((r) => setTimeout(r, 500));
 
     // Aufnahmesprache: geprueft wird, was GERENDERT ist. `localStorage["language"]` ist
@@ -783,12 +802,17 @@ async function main(): Promise<void> {
     console.log(`\n${ok} Bild(er) geschrieben, ${fehlend} offen.`);
     if (fehlend) exit(1);
   } finally {
-    await releaseAlwaysOnTop(cdp).catch(() => undefined);
+    await mitFrist(reparaturAufraeumen(cdp), 10_000);
+    await mitFrist(releaseAlwaysOnTop(cdp), 5_000);
     cdp.close();
   }
 }
 
-main().catch((err: Error) => {
-  console.error(err.message);
-  exit(1);
-});
+// `exit` am Ende: nach dem Lauf darf nichts den Prozess halten (ein offener Server, ein Socket, der nicht schliesst). Fehlende Bilder setzen Exit 1 schon in `main`.
+main().then(
+  () => exit(0),
+  (err: Error) => {
+    console.error(err.message);
+    exit(1);
+  },
+);
