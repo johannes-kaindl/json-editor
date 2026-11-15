@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.24.0] — 2026-11-15
+
 ### Changed
 - **Error messages of the editing core and the schema compiler now follow Obsidian's language.** "Key cannot be empty", "Parent is not an array", "Cannot delete root", a key that already exists, the too-large-number notice and the schema banner's own findings (too large, not JSON, unsafe pattern, not draft-07) appear in German with a German interface. The validator library's own messages for a value that breaks the schema stay English (technical text from the library).
 - **The repair dialog shows the change in one column, word by word, instead of two side-by-side columns.** On a phone each of the two columns was about 160 px wide, so the line with the missing comma was cut off. Now the whole text stands once: what the repair removes is struck through, what it adds is underlined (and a line above says so), so the marks do not depend on red and green. Measured on an iPhone at 402 px width: the dialog is 370 px wide, the change column 320 px, nothing overflows, and removed and added words differ by strikethrough and underline, not only by colour.
