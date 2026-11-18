@@ -17,21 +17,15 @@
  * `--port` ist Pflicht (kein Standardport; 9222 gehört der regulären Instanz). Vertrauensdialog und Restricted
  * Mode eines frischen Profils erledigt `bereiteInstanzVor` (zentrale Brücke) vor der ersten Messung.
  *
- * ```bash
- * echo "$STAGING_VAULTS_DIR"                                       # muss gesetzt sein (~/.zshenv)
- * D="$STAGING_VAULTS_DIR/json-editor/.obsidian/plugins/json-editor"; mkdir -p "$D"
- * OBSIDIAN_PLUGIN_DIR="$D" npm run deploy                          # Vault von Hand eingerichtet (kein buildVault)
- * UD=/tmp/obs-test-json-editor; mkdir -p "$UD"
- * lsof -nP -iTCP:9398 -sTCP:LISTEN && echo "Port belegt — anderen nehmen"
- * pgrep -f "user-data-dir=$UD" && echo "Profil belegt — $UD-w19 nehmen, nie beenden"
- * cp ~/Library/Application\ Support/obsidian/obsidian-*.asar "$UD"/   # aktuelle Version statt gebündelter
- * node -e 'const p=process.env.STAGING_VAULTS_DIR+"/json-editor";require("fs").writeFileSync(process.argv[1]+"/obsidian.json",JSON.stringify({vaults:{"json-editor":{path:p,ts:Date.now(),open:true}},language:"en"}))' "$UD"
- * /Applications/Obsidian.app/Contents/MacOS/Obsidian --user-data-dir="$UD" --remote-debugging-port=9398 &   # je Messlauf frischer Prozess, PID merken
- * python3 ~/.claude/hooks/obsidian-cdp-lock.py acquire --label json-editor --intent "Smoke :9398" --exclusive focus --port 9398 --ttl 300
- * npm run smoke:gui -- --port 9398 --vault json-editor
- * npm run smoke:gui -- --port 9398 --vault json-editor --section layout --keep
- * python3 ~/.claude/hooks/obsidian-cdp-lock.py release            # danach nur die eigene PID beenden
- * ```
+ * Lauf: `tools/obsidian-cdp/messlauf.sh` (Dach, README § Messlauf in einem Aufruf) startet die Zweitinstanz, hält den Lock (`--exclusive focus`, davor, mit `export`)
+ * und räumt auf; das Rezept steht nur dort. Für diesen Treiber: `REPO=json-editor PORT=9398 SMOKE_ARGS="--vault json-editor" OHNE_SETUP=1` (Port als Vorschlag, jeder freie geht).
+ *
+ * Weitere Läufe (als `SMOKE_ARGS`):
+ *   --vault json-editor --section layout --keep
+ *
+ * Besonderheiten dieses Treibers (aus dem früheren Rezept übernommen):
+ *   D="$STAGING_VAULTS_DIR/json-editor/.obsidian/plugins/json-editor"
+ *   OBSIDIAN_PLUGIN_DIR="$D" npm run deploy   # Vault von Hand eingerichtet (kein buildVault)
  *
  * Der erste Lauf nach der Profilanlage ist ein Aufwärmlauf und zählt nicht.
  *
