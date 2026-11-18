@@ -1,7 +1,7 @@
 {
   "source": "obsidian-kit",
-  "version": "0.94.0",
-  "sha": "bf78d8b",
+  "version": "0.95.0",
+  "sha": "3853245",
   "vendored": "kit-css.ts, linear-probe.ts",
   "license": "AGPL-3.0-or-later"
 }

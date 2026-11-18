@@ -1,8 +1,9 @@
-// vendored from code-kit@0.74.0, src/ts/pure/fences.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from code-kit@0.75.0, src/ts/pure/fences.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 // Origin: obsidian-plugins `3d-codeblocks/src/core/shapes/fence.ts` (`fenceFor`), `src/core/shapes/references.ts` (`shapesBlock`,
 // here `wrapInFence` with the language as a parameter) and `src/obsidian/panel-accept.ts` (`closesOpenFence`, here on the opening
 // line instead of the notes text and a fence object). The scanner (`listFences`/`findFenceAt`) has the shape of obsidian-kit
-// `src/pure/fence-scan.ts` (itself from 3d-codeblocks `listFences`), widened by `closed` and `maxIndent`; `normalizeBlockBody` is the
+// `src/pure/fence-scan.ts` (itself from 3d-codeblocks `listFences`), widened by `closed` and `maxIndent`; `findNestedFenceAt` is obsidian-kit's
+// reader for fences in quotes and under list items (0.75.0); `normalizeBlockBody` is the
 // comparison rule measured on 2026-11-14 (cockpit `_SDD/2026-11-14-zeilenende-regeln-zaun-module`).
 //
 // What the scanner reads: the note as FLAT text. A fence inside a quote, a callout or a list item is not found (its opening line starts
@@ -75,6 +76,8 @@ interface FenceRun {
   len: number;
   /** Index after the run. */
   end: number;
+  /** Columns of indent in front of the run (a tab advances to the next multiple of 4). */
+  indent: number;
 }
 
 /** The run of three or more fence characters at the start of `line`, after an indent of at most `maxIndent` columns; `null` if there is
@@ -93,7 +96,7 @@ function fenceRun(line: string, maxIndent: number): FenceRun | null {
   if (ch !== "`" && ch !== "~") return null;
   let end = i;
   while (line.charAt(end) === ch) end++;
-  return end - i >= 3 ? { ch, len: end - i, end } : null;
+  return end - i >= 3 ? { ch, len: end - i, end, indent: col } : null;
 }
 
 /** Does `line` close a fence of character `ch` and length `len`: the same character, at least as long, nothing but blanks after it. */
@@ -105,6 +108,11 @@ function closes(line: string, ch: string, len: number, maxIndent: number): boole
     if (c !== 0x20 && c !== 0x09) return false;
   }
   return true;
+}
+
+/** The language of an info string: its first word, lower-cased (a blank in front is a space or a tab). */
+function langOf(info: string): string {
+  return (/^[ \t]*([^\s`]*)/.exec(info)?.[1] ?? "").toLowerCase();
 }
 
 /** The scan; `visit` returns `true` to stop. Linear: a fence swallows the lines up to its closing line (or to the end), so every line is
@@ -129,8 +137,7 @@ function scan(text: string, maxIndent: number, visit: (f: Fence) => boolean): vo
     while (j < lines.length && !closes(lines[j] ?? "", run.ch, run.len, maxIndent)) j += 1;
     const closed = j < lines.length;
     const closeLine = closed ? j : lines.length - 1;
-    const lang = (/^[ \t]*([^\s`]*)/.exec(info)?.[1] ?? "").toLowerCase();
-    if (visit({ lang, openLine: i, closeLine, closed, body: lines.slice(i + 1, closed ? j : lines.length).join("\n") })) return;
+    if (visit({ lang: langOf(info), openLine: i, closeLine, closed, body: lines.slice(i + 1, closed ? j : lines.length).join("\n") })) return;
     i = closeLine + 1;
   }
 }
@@ -153,6 +160,121 @@ export function findFenceAt(text: string, line: number, opts?: FenceOptions): Fe
     return false;
   });
   return found;
+}
+
+// ── Fences the flat scanner does not see ───────────────────────────────────────────────────────────────────────────────────────────
+//
+// Origin: obsidian-kit `src/pure/fence-scan.ts` `findNestedFenceAt` (there from the Opus review A3 of 2026-11-04: `insertAtCursor` put a new block into
+// the middle of the fence of a callout). A fence in a quote or callout (`> ```js`) and a fence indented under a list item are none for `listFences`.
+// This reader answers one question, "does the line lie in such a fence?", and returns the same `Fence`. It does not serve for writing: the body has
+// no quote signs and no de-indent, there is no fingerprint to check.
+//
+// Differences from the original, each with a case in `tests/fences-nested.test.ts` (D1 to D5): the original counts indent with blanks only, this one by
+// the column rule of `fenceRun` (a tab advances to the next multiple of 4), so (D1) a tab in front of the info string no longer ends it empty, (D2) a
+// fence indented with a tab under a list item is found, (D3) so is one behind `>` plus a tab, (D4) a closing line indented with a tab closes, (D5) a
+// list item indented with a tab is one. One more is a choice for the parameter the original lacks: the indent from which a fence counts as nested is
+// `maxIndent + 1` (4 by default, as in the original), so what the flat scanner does not see at its width this reader does, without a gap.
+// What stays as in the original: a line that starts with other whitespace (a no-break space) counts those characters as indent where it looks for the
+// list item above, and the fence in a quote has any indent.
+
+const LIST_ITEM = /^[ \t]*(?:[-*+]|\d{1,9}[.)])(?: |$)/;
+
+interface QuoteRow {
+  /** How many `>` signs (nested quotes included) stand in front. */
+  depth: number;
+  /** The line without them. */
+  rest: string;
+}
+
+/** Take the quote signs (` {0,3}> ?`, repeated) off the front. */
+function stripQuote(line: string): QuoteRow {
+  let pos = 0;
+  let depth = 0;
+  for (;;) {
+    let p = pos;
+    while (p < line.length && p - pos < 3 && line.charCodeAt(p) === 0x20) p += 1;
+    if (line.charCodeAt(p) !== 0x3e) break;
+    p += 1;
+    if (line.charCodeAt(p) === 0x20) p += 1;
+    pos = p;
+    depth += 1;
+  }
+  return { depth, rest: depth === 0 ? line : line.slice(pos) };
+}
+
+/** Columns of leading whitespace the way `trimStart` reads whitespace (a tab to the next multiple of 4, any other whitespace character as one). */
+function leadingColumns(s: string): number {
+  let col = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c === 0x20) col += 1;
+    else if (c === 0x09) col += 4 - (col % 4);
+    else if (s.charAt(i).trim() === "") col += 1;
+    else break;
+  }
+  return col;
+}
+
+/** The fence in a quote, a callout or under a list item (indent over `maxIndent`) that holds the 0-based `line`, its opening and closing line
+ *  included; `null` when none does. Fences `listFences` finds with the same `opts`, and the lines inside them (an example in a Markdown fence),
+ *  do not count here. A fence with no closing line ends with its quote (the first line with fewer quote signs) or with the text and has
+ *  `closed: false`. `body` holds the lines without their quote signs. Linear in the length of the text (the list item above a line is looked
+ *  up on a stack of the lines before it, not by walking back). */
+export function findNestedFenceAt(text: string, line: number, opts?: FenceOptions): Fence | null {
+  const maxIndent = resolveMaxIndent(opts);
+  const lines = text.split(/\r?\n/);
+  const flat = listFences(text, opts);
+  const rows = lines.map((l) => stripQuote(l.charCodeAt(0) === 0xfeff ? l.slice(1) : l));
+  // The nearest line above with less indent than a fence line: the stack holds, bottom to top, strictly growing indents of the lines read so far.
+  const stackIndent: number[] = [];
+  const stackItem: boolean[] = [];
+  let pushed = 0;
+  const underListItem = (index: number, indent: number): boolean => {
+    for (; pushed < index; pushed++) {
+      const r = rows[pushed]?.rest ?? "";
+      if (r.trim() === "") continue;
+      const own = leadingColumns(r);
+      while (stackIndent.length > 0 && (stackIndent[stackIndent.length - 1] ?? 0) >= own) { stackIndent.pop(); stackItem.pop(); }
+      stackIndent.push(own);
+      stackItem.push(LIST_ITEM.test(r));
+    }
+    let lo = 0;
+    let hi = stackIndent.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if ((stackIndent[mid] ?? 0) < indent) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo > 0 && stackItem[lo - 1] === true;
+  };
+  let f = 0;
+  let i = 0;
+  while (i < lines.length && i <= line) {
+    while (f < flat.length && (flat[f]?.closeLine ?? 0) < i) f += 1;
+    const fl = flat[f];
+    if (fl !== undefined && i >= fl.openLine) { i = fl.closeLine + 1; continue; }
+    const row = rows[i];
+    const run = row ? fenceRun(row.rest, Infinity) : null;
+    if (!row || run === null) { i += 1; continue; }
+    // Under a quote any indent counts; otherwise only an indent the flat scanner did not take, and only under a list item.
+    const nested = row.depth > 0 || (run.indent > maxIndent && underListItem(i, run.indent));
+    const info = row.rest.slice(run.end);
+    if (!nested || (run.ch === "`" && info.includes("`"))) { i += 1; continue; }
+    let j = i + 1;
+    let closed = false;
+    while (j < lines.length) {
+      const r = rows[j];
+      if (!r || r.depth < row.depth) break; // the quote is over
+      if (closes(r.rest, run.ch, run.len, Infinity)) { closed = true; break; }
+      j += 1;
+    }
+    const closeLine = closed ? j : j - 1;
+    if (line >= i && line <= closeLine) {
+      return { lang: langOf(info), openLine: i, closeLine, closed, body: rows.slice(i + 1, closed ? closeLine : closeLine + 1).map((r) => r.rest).join("\n") };
+    }
+    i = closeLine + 1;
+  }
+  return null;
 }
 
 /** The rule for COMPARING a block body with a text that should hold the same (the other half of `wrapInFence`, which WRITES): a leading

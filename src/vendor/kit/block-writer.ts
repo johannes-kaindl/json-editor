@@ -1,4 +1,4 @@
-// vendored from obsidian-kit@0.94.0, src/pure/block-writer.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from obsidian-kit@0.95.0, src/pure/block-writer.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 // Herkunft: 3d-codeblocks `src/obsidian/block-writer.ts` (Kit-Kandidat seit 2026-07-25 laut
 // Dach-REGISTRY, gehoben 2026-11-02 ins Kit nach Bibliothek-ab-Eins fuer svg-studio). Inhalt
 // unveraendert uebernommen: kein obsidian-Import, die Obsidian-Seite steht in
