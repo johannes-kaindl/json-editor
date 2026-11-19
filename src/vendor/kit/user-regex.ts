@@ -1,4 +1,4 @@
-// vendored from code-kit@0.80.0, src/ts/pure/user-regex.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from code-kit@0.82.0, src/ts/pure/user-regex.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 // Origin: obsidian-plugins `obsidian-transmute/src/core/regex/guard.ts` (`assessPattern`) and `compile.ts` (`compileRule`), moved here as the wish of
 // mailstone (Capture session `mailstone-34`: the Bibliothek gate refused its own build of the same thing). Moved, not rewritten: the rules of the guard are
 // the rules of the original, one by one. transmute keeps its own parts (`effectiveFlags`, `isMultilinePattern`, the `RuleDraft` type) and takes this over later.

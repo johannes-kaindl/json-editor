@@ -1,4 +1,4 @@
-// vendored from code-kit@0.80.0, src/ts/pure/redact.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from code-kit@0.82.0, src/ts/pure/redact.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 // uebernommen aus ghostline/src/core/context.ts (redactText) und settings-assistant/src/core/secrets.ts (redactFields), 2026-10-09; vault-crews/src/core/redact.ts und llm-lab/src/core/redact_secrets.ts + redact_pii.ts (redactKeys, redactKeysInValue, createPiiRedactor), 2026-10-10
 /** Redaction of secrets, in two entry points (plus a reversible session for text): over free
  *  text and over parsed JSON.
@@ -311,13 +311,22 @@ export function redactKeysInValue<T>(value: T, keys: readonly (string | undefine
 
 export type PiiLabel = "EMAIL" | "IBAN" | "PHONE" | "URLCRED" | "CUSTOM";
 
-// The patterns of llm-lab/src/core/redact_pii.ts, in meaning unchanged (a differential test pins that). The EMAIL pattern
+// The patterns of llm-lab/src/core/redact_pii.ts, in meaning unchanged except IBAN (a differential test pins that). The EMAIL pattern
 // has a lead more (the character in front, group 1, kept; the hit is group 2): without it every start inside a long
 // run of local-part characters scans to the end of the run, quadratic; the leftmost start of a run is the only one that
 // can succeed, so the matches are the same. It was a lookbehind up to 0.58.0, see `LEAD_RULES`.
+//
+// IBAN carries a lead too, but there it CHANGES what is read (Welle 36, kp2c; same cause as the secret rules of 0.79.1): llm-lab's `\b` before the two
+// capitals is no boundary after a word character, so `iban_DE89370400440532013000` kept its `DE` and the digits went as a PHONE by accident, no IBAN
+// label. The lead (the character in front, kept) is read as: the start, or anything that is NOT a capital letter and NOT a digit. So a hit now also starts
+// behind `_` and behind a lowercase letter (`iban_DE89…`, `ibanDE89…`), the places the old pattern could not read, and nowhere else changes (the
+// differential test pins that: the texts that differ all have an IBAN-shaped hit behind `_` or a lowercase letter). What it must not cut, and why a
+// capital or a digit in front stays unread: the sixteen to thirty characters are then the tail of a longer capital/digit token (an ID, a serial number,
+// a base32 or hex string, `ORDER2024DE89…`, `X1DE89…`); reading the tail would blank the middle of a token that is not an IBAN. The closing `\b` stays.
+// No lookbehind (iOS Safari before 16.4). Linear: every attempt reads a lead character, two capitals, two digits and at most ~40 more characters.
 const PII_PATTERNS: readonly (readonly [Exclude<PiiLabel, "CUSTOM">, RegExp])[] = [
   ["EMAIL", /(^|[^A-Za-z0-9._%+-])([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g],
-  ["IBAN", /\b[A-Z]{2}\d{2}(?:[ ]?[A-Za-z0-9]{4}){2,7}(?:[ ]?[A-Za-z0-9]{1,4})?\b/g],
+  ["IBAN", /(^|[^A-Z0-9])([A-Z]{2}\d{2}(?:[ ]?[A-Za-z0-9]{4}){2,7}(?:[ ]?[A-Za-z0-9]{1,4})?\b)/g],
   ["PHONE", /(?:\+\d{1,3}[ /-]?)?(?:\(?\d{2,5}\)?[ /-]?)\d{3,}(?:[ -]?\d{2,})+/g],
   ["URLCRED", /\/\/[^\s:/@]+:[^\s:/@]+@/g],
 ];
@@ -369,7 +378,7 @@ export function createPiiRedactor(opts: PiiRedactorOptions = {}): PiiRedactor {
       seen.set(hit, created);
       return created;
     };
-    return label === "EMAIL" ? text.replace(re, (_m, lead: string, hit: string) => lead + token(hit)) : text.replace(re, token);
+    return label === "EMAIL" || label === "IBAN" ? text.replace(re, (_m, lead: string, hit: string) => lead + token(hit)) : text.replace(re, token);
   };
 
   return {
