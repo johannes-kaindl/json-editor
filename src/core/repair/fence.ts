@@ -45,7 +45,7 @@ export function spliceFence(
   if (start < 0 || end <= start || end >= lines.length) return null;
   const current = lines.slice(start + 1, end).join("\n");
   if (current.trimEnd() !== expected.trimEnd()) return null;
-  const insert = replacement.replace(/\s+$/, "").split("\n");
+  const insert = replacement.trimEnd().split("\n");
   lines.splice(start + 1, end - start - 1, ...insert);
   return lines.join("\n");
 }

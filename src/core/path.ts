@@ -27,6 +27,7 @@ export function parsePathStr(pathStr: string): JsonPath {
   const segments: JsonPath = [];
   let i = 0;
   let buf = "";
+  let nextClose = -2;
   const flushString = () => {
     if (buf.length > 0) {
       segments.push(buf);
@@ -60,10 +61,17 @@ export function parsePathStr(pathStr: string): JsonPath {
         segments.push(raw);
         i = j + 2; // skip `"]`
       } else {
-        const close = pathStr.indexOf("]", i);
-        const inner = pathStr.slice(i + 1, close);
-        segments.push(Number.parseInt(inner, 10));
-        i = close + 1;
+        // Cached: without it, every unclosed `[` searched the whole rest again (quadratic on `[[[[…`). -1 stays -1: no `]` after an earlier position means none after a later one.
+        if (nextClose !== -1 && nextClose < i) nextClose = pathStr.indexOf("]", i);
+        const close = nextClose;
+        if (close === -1) {
+          // Unclosed bracket: `close + 1` would be 0 and the scan would start over forever. Read the `[` as plain text.
+          buf += c;
+          i++;
+        } else {
+          segments.push(Number.parseInt(pathStr.slice(i + 1, close), 10));
+          i = close + 1;
+        }
       }
     } else {
       buf += c;

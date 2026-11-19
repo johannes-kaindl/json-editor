@@ -58,4 +58,10 @@ describe("parsePathStr", () => {
   it("maps the root sentinel back to the empty path", () => {
     expect(parsePathStr("root")).toEqual([]);
   });
+
+  it("terminates on an unclosed bracket and reads the `[` as text", () => {
+    expect(parsePathStr("a[")).toEqual(["a", "["]);
+    expect(parsePathStr("[a")).toEqual(["[a"]);
+    expect(parsePathStr("a[1")).toEqual(["a", "[1"]);
+  });
 });

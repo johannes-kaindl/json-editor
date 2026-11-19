@@ -82,6 +82,9 @@ describe("findFenceAt — Kit-Scanner, entschiedene Abweichungen", () => {
 });
 
 describe("spliceFence", () => {
+  it("schneidet Leerraum am Ende der Ersetzung ab (auch Tabulator, Zeilenumbruch, geschütztes Leerzeichen), in der Mitte bleibt er", () => {
+    expect(spliceFence("```json\nx\n```", 0, 2, "x", "y z \t\n\u00a0 ")).toBe("```json\ny z\n```");
+  });
   it("ersetzt nur den Inhalt, der Rest der Notiz bleibt byte-gleich", () => {
     const out = spliceFence(NOTE, 2, 4, '{"a": 1,}', '{"a": 1}');
     expect(out).toBe(NOTE.replace('{"a": 1,}', '{"a": 1}'));
