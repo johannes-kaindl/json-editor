@@ -1,4 +1,4 @@
-// vendored from obsidian-kit@0.95.0, src/pure/block-writer.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from obsidian-kit@0.101.0, src/pure/block-writer.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 // Herkunft: 3d-codeblocks `src/obsidian/block-writer.ts` (Kit-Kandidat seit 2026-07-25 laut
 // Dach-REGISTRY, gehoben 2026-11-02 ins Kit nach Bibliothek-ab-Eins fuer svg-studio). Inhalt
 // unveraendert uebernommen: kein obsidian-Import, die Obsidian-Seite steht in
@@ -17,6 +17,39 @@
 // zwischenzeitlich getippt wurde — ohne diese Pruefung wuerden fremde Zeilen
 // ueberschrieben. Das ist der gefaehrlichste Fehler dieses Features und wird
 // durch Vergleich statt durch Vertrauen ausgeschlossen.
+
+// ## Seit der Aufnahme von K9 Etappe 2 ueber `editAtomic` (`./note-edit`)
+//
+// `writeBlockBody` und `replaceLines` tragen die Zweigleisigkeit (Editor, sonst `vault.process`) nicht mehr selbst: beide uebergeben `editAtomic` eine `decide`, die den Fingerabdruck
+// pruefen (`bodyMatches`, `linesAt`) und den ganzen neuen Text liefern. Die Signaturen sind unveraendert, beide werfen `BlockChangedError`, wenn die Stelle nicht mehr passt; ein
+// Wurf von `vault.process` kommt unveraendert beim Aufrufer an (wie vorher). Aufrufer ausserhalb des Kits: `3d-codeblocks` (`block-child.ts`, `shapes-convert.ts`), `json-editor`
+// (`repair-flow.ts`), siehe MIGRATION.
+//
+// Vier Verhaltensaenderungen, jede mit Grund (Schreibvertrag `editAtomic`, Zusagen Z1 bis Z8):
+// 1. **Differenzspanne statt Rumpfspanne (Z4).** Auf dem Editorweg ersetzt ein `replaceRange` nur die Spanne, in der sich alter und neuer Text unterscheiden, nicht den ganzen Rumpf:
+//    Schreibmarke und Auswahl ausserhalb der Aenderung bleiben, es entsteht ein Undo-Schritt. Grund: derselbe Schreiber wie fuer jede andere Nutzernotiz; ein eigener Weg haette
+//    keine andere Aufgabe.
+// 2. **Kein Vorlesen auf dem Vault-Weg (Z1).** Vorher las `writeBlockBody` erst `vault.read`, pruefte, und pruefte im `process` ein zweites Mal. Jetzt gibt es nur die Pruefung
+//    im `process`-Callback (die zweite war die, die zaehlte). Grund: ein Lesen ohne Schreiben im selben Zug ist ein Fenster, kein Schutz.
+// 3. **`\r` im Editortext fuehrt auf den Vault-Weg (Z2).** Enthaelt `getValue()` ein `\r`, stimmen Editor-Offsets und Rohtext nicht sicher ueberein; `editAtomic` schreibt dann ueber
+//    `vault.process`. Im echten Obsidian kommt der Fall nicht vor (`getValue()` liefert immer LF, Pilot `note-edit` P5); die Fake-Editoren der Tests liefern ihn.
+// 4. **Dieselbe Zeilenende-Regel auf beiden Wegen.** Vorher gaben der Editor- und der Vault-Weg von `replaceLines` der letzten Ersatzzeile verschiedene Zeilenenden (Editor: nie ein `\r`,
+//    Vault: das `\r` bleibt, solange hinter dem Bereich noch Text steht). Jetzt gilt die Regel des Vault-Wegs, weil `decide` einen Weg nicht kennt. Der Test
+//    „editor path: lone \r …“ erwartet deshalb `"Y\r"` statt `"Y"`.
+//
+// `persistWaitMs: 0`: Weder `writeBlockBody` noch `replaceLines` wartet darauf, dass Obsidian den Editor auf die Platte speichert (rund 2 s). Die Aufrufer melden sofort, und sie haben
+// keine `opts`; wer danach von der Platte liest, wartet selbst.
+//
+// **Undo-Abstand (Pilot `note-edit` P9, Obsidian 1.15.1, siehe Kopf von `note-edit.ts`):** Folgt das Schreiben ueber den Editorweg etwa 100 ms auf eine Tastatureingabe, nimmt Strg+Z das
+// Getippte mit zurueck; bei 600 ms und 2000 ms Abstand nur die Aenderung des Kits. Wo dazwischen die Grenze liegt, ist ungemessen. Ein Klick auf Uebernehmen liegt in der Regel ueber 600 ms
+// nach der letzten Tastatureingabe, ein Block-Ersatz aus `block-child.ts` (3d-codeblocks, Speichern-Knopf) ebenso: keine Bauaenderung, nur benannt.
+// Dazu: `vault.process` arbeitet auf dem Text der PLATTE; ein Block-Ersatz ueber `vault.process` landete bei ungespeicherter Eingabe neben dem Getippten in falscher Reihenfolge
+// (7 von 7 Laeufen, kein Verlust). Das ist ein zusaetzlicher Grund fuer den Editorweg.
+//
+// **Wohin `beforeWrite` gehoert:** nicht hierher. `editAtomic` kennt keinen asynchronen Haken (er brauchte ein `await` im einen Zug); den Schnappschuss vor dem Ueberschreiben setzt
+// `acceptIntoBlock` in `panel-accept` davor, mit dem Stand von `locateBlock`.
+
+import { editAtomic, type EditResult } from "./note-edit";
 
 /** Zeilen des Blocks: `lineStart` ist die ```-Zeile, `lineEnd` die schliessende. */
 export interface BlockLocation {
@@ -170,53 +203,34 @@ function replaceBody(content: string, loc: BlockLocation, nextBody: string): str
   ].join("\n");
 }
 
+type Verdict = "ok" | "changed";
+
+/** Ergebnis von `editAtomic` in die Zusage der Schreiber uebersetzen: Fehler des Schreibens kommen unveraendert an, eine nicht mehr passende Stelle ist `BlockChangedError`. */
+function settle(r: EditResult<Verdict>): void {
+  if (r.kind === "error") throw r.error;
+  if (r.outcome === "changed") throw new BlockChangedError();
+}
+
 export async function writeBlockBody(
   ports: WritePorts,
   loc: BlockLocation,
   expectedBody: string,
   nextBody: string,
 ): Promise<void> {
-  const editor = ports.editorFor(loc.path);
-
-  if (editor) {
-    const content = editor.getValue();
-    if (!bodyMatches(content, loc, expectedBody)) throw new BlockChangedError();
-
-    const styledNextBody = applyLineEndingStyle(nextBody, resolveLineEndingStyle(content, loc));
-
-    if (loc.lineEnd === loc.lineStart + 1) {
-      // Leerer Rumpf: Die Fences liegen direkt aneinander, es gibt keine Zeile
-      // zwischen ihnen zu ersetzen. `lastBodyLine` waere dann `loc.lineStart`,
-      // also VOR `loc.lineStart + 1` — ein invertierter Bereich (from nach to).
-      // Statt zu ersetzen, an der Stelle einfuegen; das \n ist Teil des Einfuegens,
-      // nicht optional (sonst verschmilzt der Rumpf mit der schliessenden Fence).
-      editor.replaceRange(
-        `${styledNextBody}\n`,
-        { line: loc.lineStart + 1, ch: 0 },
-        { line: loc.lineStart + 1, ch: 0 },
-      );
-      return;
-    }
-
-    const lines = content.split("\n");
-    const lastBodyLine = loc.lineEnd - 1;
-    editor.replaceRange(
-      styledNextBody,
-      { line: loc.lineStart + 1, ch: 0 },
-      { line: lastBodyLine, ch: (lines[lastBodyLine] ?? "").length },
-    );
-    return;
-  }
-
-  const content = await ports.vault.read(loc.path);
-  if (!bodyMatches(content, loc, expectedBody)) throw new BlockChangedError();
-
-  await ports.vault.process(loc.path, (current) => {
-    // Zwischen `read` und `process` kann sich die Datei geaendert haben — erneut pruefen.
-    if (!bodyMatches(current, loc, expectedBody)) throw new BlockChangedError();
-    const styledNextBody = applyLineEndingStyle(nextBody, resolveLineEndingStyle(current, loc));
-    return replaceBody(current, loc, styledNextBody);
-  });
+  settle(
+    await editAtomic<Verdict>(
+      ports,
+      loc.path,
+      (content) => {
+        // Fingerabdruck von Fence und Rumpf gegen den Text, ueber den geschrieben wird (Z1): kein Fenster zwischen Pruefen und Schreiben.
+        if (!bodyMatches(content, loc, expectedBody)) return { outcome: "changed", next: null };
+        const styledNextBody = applyLineEndingStyle(nextBody, resolveLineEndingStyle(content, loc));
+        // Auch bei leerem Rumpf (Fences direkt aneinander) richtig: `replaceBody` setzt die Zeilen zwischen die beiden Fences.
+        return { outcome: "ok", next: replaceBody(content, loc, styledNextBody) };
+      },
+      { persistWaitMs: 0 },
+    ),
+  );
 }
 
 const BOM = "\uFEFF";
@@ -249,36 +263,23 @@ export async function replaceLines(
   replacement: string,
 ): Promise<void> {
   const want = stripBom(normalizeLineEndings(expected));
-  const editor = ports.editorFor(path);
-
-  if (editor) {
-    const content = editor.getValue();
-    if (linesAt(content, from, to) !== want) throw new BlockChangedError();
-    const style = lineEndingSignal(content) ?? "lf";
-    const lines = content.split("\n");
-    // Offsets stammen aus dem ROHEN Puffer (ein einzelnes \r mitten in der Zeile zaehlt
-    // dort als Zeichen); nur das Zeilenend-\r der letzten Zeile bleibt stehen. Ein BOM
-    // in Zeile 0 wird nicht ueberschrieben.
-    const startCh = from === 0 && (lines[0] ?? "").startsWith(BOM) ? 1 : 0;
-    editor.replaceRange(
-      applyLineEndingStyle(replacement, style).replace(/\r$/, ""),
-      { line: from, ch: startCh },
-      { line: to, ch: (lines[to] ?? "").replace(/\r$/, "").length },
-    );
-    return;
-  }
-
-  // Prüfung und Schreiben in EINEM `process`-Aufruf: kein Fenster dazwischen.
-  await ports.vault.process(path, (current) => {
-    if (linesAt(current, from, to) !== want) throw new BlockChangedError();
-    const style = lineEndingSignal(current) ?? "lf";
-    const lines = current.split("\n");
-    const next = applyLineEndingStyle(replacement, style).split("\n");
-    // Letzte Zeile der Notiz ohne Zeilenende: kein \r anhaengen, ausser sie hatte eines.
-    if (to === lines.length - 1 && !(lines[to] ?? "").endsWith("\r")) {
-      next[next.length - 1] = (next[next.length - 1] ?? "").replace(/\r$/, "");
-    }
-    if (from === 0 && (lines[0] ?? "").startsWith(BOM)) next[0] = BOM + (next[0] ?? "");
-    return [...lines.slice(0, from), ...next, ...lines.slice(to + 1)].join("\n");
-  });
+  settle(
+    await editAtomic<Verdict>(
+      ports,
+      path,
+      (current) => {
+        if (linesAt(current, from, to) !== want) return { outcome: "changed", next: null };
+        const style = lineEndingSignal(current) ?? "lf";
+        const lines = current.split("\n");
+        const next = applyLineEndingStyle(replacement, style).split("\n");
+        // Letzte Zeile der Notiz ohne Zeilenende: kein \r anhaengen, ausser sie hatte eines.
+        if (to === lines.length - 1 && !(lines[to] ?? "").endsWith("\r")) {
+          next[next.length - 1] = (next[next.length - 1] ?? "").replace(/\r$/, "");
+        }
+        if (from === 0 && (lines[0] ?? "").startsWith(BOM)) next[0] = BOM + (next[0] ?? "");
+        return { outcome: "ok", next: [...lines.slice(0, from), ...next, ...lines.slice(to + 1)].join("\n") };
+      },
+      { persistWaitMs: 0 },
+    ),
+  );
 }

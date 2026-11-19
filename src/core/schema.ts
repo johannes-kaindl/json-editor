@@ -1,4 +1,5 @@
 import { type OutputUnit, type Schema, Validator } from "@cfworker/json-schema";
+import { assessRegexRisk } from "../vendor/kit/user-regex";
 import { DRAFT_07_META_SCHEMA } from "./draft07-meta-schema";
 import type { JsonPath, JsonValue } from "./types";
 
@@ -22,43 +23,12 @@ export type SchemaErrorCode =
   | "schemaUnsafePattern"
   | "schemaNotDraft07";
 
+/* Die Wache gegen ReDoS in `pattern`/`patternProperties` ist die des Kits (code-kit `user-regex`, `assessRegexRisk`; seit Welle 36 statt der eigenen
+   Heuristik `hasNestedQuantifier`). Sie ist eine Heuristik und die erste Linie, keine Garantie; die zweite ist, dass das Laden eines Schemas Opt-in ist
+   (`validateAgainstSchema` steht standardmäßig aus). Ein harter Schutz bräuchte einen Worker mit Frist, den Obsidian hier nicht bietet. */
+
 /** Reject schemas larger than this before parsing (cheap DoS guard). */
 const MAX_SCHEMA_BYTES = 1_000_000;
-
-/**
- * Conservative nested-quantifier heuristic: a group that is itself quantified
- * and contains an inner quantifier — covering both `+`/`*` and brace forms,
- * e.g. `(a+)+`, `(x+)*`, `(.*)+`, `(a{1,}){1,}`, `(\w{2,}){2,}` — the classic
- * catastrophic-backtracking shapes. This does NOT catch every possible ReDoS
- * (e.g. alternation-based `(a|a)+`); the primary defense is that schema
- * autoload is opt-in (validateAgainstSchema defaults to false). A truly hard
- * guarantee would require running validation in a Worker with a timeout — out
- * of scope for this minimal pre-submission fix, since a synchronous regex
- * cannot be aborted on the main thread.
- */
-// Linear statt eines einzigen Regexes `\([^)]*Q[^)]*\)\s*Q`: dessen zwei überlappende `[^)]*` machten die Wache selbst zur ReDoS (ein Muster aus 2 000 mal `(+`
-// brauchte 7 s, 4 000 mal 68 s, kubisch; gefunden vom Fuzz in `tests/core/linear-fuzz.test.ts`). Gleiche Aussage, ein Durchgang: je `)` das Stück seit dem
-// vorigen `)`; steht darin ein `(` mit einem Quantor dahinter und folgt auf das `)` (nach Leerraum) ein Quantor, ist das Muster verdächtig. Der Klammer-Quantor
-// heißt `\{\d*(?:,\d*)?\}` (eindeutig: das alte `\d*,?\d*` zerlegte eine lange Ziffernfolge auf n Arten).
-const QUANT_TOKEN = /[+*]|\{\d*(?:,\d*)?\}/;
-const QUANT_AFTER_GROUP = /\s*(?:[+*]|\{\d*(?:,\d*)?\})/y;
-
-function hasNestedQuantifier(pattern: string): boolean {
-  let segmentStart = 0;
-  let open = -1; // nächstes `(` ab `segmentStart`; Infinity = keines mehr (sonst suchte jedes `)` den ganzen Rest neu ab)
-  for (let close = pattern.indexOf(")"); close !== -1; close = pattern.indexOf(")", close + 1)) {
-    if (open < segmentStart) {
-      const found = pattern.indexOf("(", segmentStart);
-      open = found === -1 ? Number.POSITIVE_INFINITY : found;
-    }
-    if (open < close && QUANT_TOKEN.test(pattern.slice(open + 1, close))) {
-      QUANT_AFTER_GROUP.lastIndex = close + 1;
-      if (QUANT_AFTER_GROUP.test(pattern)) return true;
-    }
-    segmentStart = close + 1;
-  }
-  return false;
-}
 
 function collectPatterns(node: unknown, out: string[]): void {
   if (node === null || typeof node !== "object") return;
@@ -109,7 +79,7 @@ export function compileSchema(text: string): SchemaCompileResult {
   const patterns: string[] = [];
   collectPatterns(parsed, patterns);
   for (const p of patterns) {
-    if (hasNestedQuantifier(p)) {
+    if (!assessRegexRisk(p).ok) {
       return {
         ok: false,
         error: `Schema contains a potentially unsafe regex pattern: ${p}`,

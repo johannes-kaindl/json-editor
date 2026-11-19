@@ -17,6 +17,19 @@ const NOTE = [
   "",
 ].join("\n");
 
+describe("findFenceAt hinter einem Listenmarker (code-kit 0.78.0)", () => {
+  const LIST = ["- Punkt", "  - ```json", '    {"a": 1,}', "    ```", ""].join("\n");
+
+  it("findet einen Block auf der Zeile eines Listenmarkers nicht: sein Rumpf käme ohne Einzug und passte nie auf die Zeilen", () => {
+    for (const line of [1, 2, 3]) expect(findFenceAt(LIST, line)).toBeNull();
+  });
+
+  it("ein gewöhnlicher Block in derselben Notiz bleibt auffindbar", () => {
+    const text = `${LIST}\n\`\`\`json\n{"b": 1,}\n\`\`\`\n`;
+    expect(findFenceAt(text, 6)?.content).toBe('{"b": 1,}');
+  });
+});
+
 describe("findFenceAt", () => {
   it("findet den Block unter dem Cursor, inklusive Zaunzeilen", () => {
     for (const line of [2, 3, 4]) {

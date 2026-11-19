@@ -17,6 +17,7 @@ import { findFenceAt, spliceFence } from "../../src/core/repair/fence";
 import { extractDocument, validateRepair } from "../../src/core/repair/prompt";
 import { compileSchema } from "../../src/core/schema";
 import { findMatches } from "../../src/core/search";
+import { assessRegexRisk } from "../../src/vendor/kit/user-regex";
 import { pruefeLinear, pruefeLinearFuzz } from "../vendor/kit/linear-probe";
 
 const FUZZ_MS = 180_000;
@@ -128,13 +129,28 @@ describe("Notiz und Dokument", () => {
   });
 });
 
-describe("Verhalten unverändert: compileSchema meldet dieselben Muster als unsicher wie die frühere Regex", () => {
-  // Das Orakel ist die frühere Fassung (eine einzige Regex, auf kurzen Zeichenfolgen harmlos). Alle Zeichenfolgen bis Länge 5 aus den Zeichen, die den Unterschied machen.
-  // Außerhalb dieser Datei geprüft: 1 111 111 Zeichenfolgen bis Länge 6 aus zehn Zeichen, 3 521 unsichere, keine Abweichung.
+describe("Verhalten: compileSchema weist weiter ab, was die frühere Regex als unsicher meldete (Wache jetzt code-kit `assessRegexRisk`)", () => {
+  // Das Orakel ist die frühere Fassung (eine einzige Regex). Alle Zeichenfolgen bis Länge 5 aus den Zeichen, die den Unterschied machen.
+  // Gemessen 2026-11-19 an allen 29 000 Mustern: früher unsicher 216; davon bleiben 198 unsicher, 9 sind keine gültige Regex (ungeschlossene Klammer, das Schema fällt
+  // dann an der Meta-Prüfung durch) und 9 haben Leerraum zwischen `)` und Quantor (`(a+) +`: der Quantor gilt dem Leerzeichen, die Gruppe ist nicht verschachtelt,
+  // die frühere Regex übersprang den Leerraum zu Unrecht). Neu abgewiesen werden 684 Muster, ausnahmslos die Regel `adjacent-quantifiers` (dasselbe Atom zweimal
+  // hintereinander mit offenem Quantor, `a*a*`: quadratisch), nie eine andere.
   const QUANT = "(?:[+*]|\\{\\d*,?\\d*\\})";
   const ALT = new RegExp(`\\([^)]*${QUANT}[^)]*\\)\\s*${QUANT}`);
+  const gueltig = (m: string): boolean => {
+    try {
+      new RegExp(m);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const meldetUnsicher = (muster: string): boolean => {
+    const r = compileSchema(JSON.stringify({ type: "string", pattern: muster }));
+    return !r.ok && r.errorCode === "schemaUnsafePattern";
+  };
 
-  it("alle kurzen Muster aus Gruppen, Quantoren, Klammer-Quantor und Leerraum", () => {
+  it("jedes früher unsichere Muster bleibt unsicher, außer den zwei benannten Fällen", () => {
     const alphabet = ["(", ")", "+", "*", "{1,}", "a", " "];
     let stufe: string[] = [""];
     const alle: string[] = [""];
@@ -142,16 +158,35 @@ describe("Verhalten unverändert: compileSchema meldet dieselben Muster als unsi
       stufe = stufe.flatMap((v) => alphabet.map((z) => v + z));
       alle.push(...stufe);
     }
-    let unsicher = 0;
+    let frueherUnsicher = 0;
+    let neuAbgewiesen = 0;
     for (const muster of alle) {
-      const r = compileSchema(JSON.stringify({ type: "string", pattern: muster }));
-      const meldet = !r.ok && r.errorCode === "schemaUnsafePattern";
-      expect(meldet, JSON.stringify(muster)).toBe(ALT.test(muster));
-      if (meldet) unsicher++;
+      const meldet = meldetUnsicher(muster);
+      if (ALT.test(muster)) {
+        frueherUnsicher++;
+        if (meldet) continue;
+        const ausnahme = !gueltig(muster) || /\) +[+*{]/.test(muster);
+        expect(
+          ausnahme,
+          `früher unsicher, jetzt durchgelassen ohne benannten Grund: ${JSON.stringify(muster)}`,
+        ).toBe(true);
+      } else if (meldet) {
+        neuAbgewiesen++;
+        expect(assessRegexRisk(muster), JSON.stringify(muster)).toEqual({
+          ok: false,
+          rule: "adjacent-quantifiers",
+        });
+      }
     }
-    // Die Probe kann beide Ausgänge erzeugen (CORE-TEST-08): ohne unsichere Muster in der Menge sagte „gleich“ nichts.
-    expect(unsicher).toBeGreaterThan(50);
-    expect(unsicher).toBeLessThan(alle.length);
+    // Die Probe kann beide Ausgänge erzeugen (CORE-TEST-08): ohne unsichere Muster in der Menge sagte „bleibt“ nichts.
+    expect(frueherUnsicher).toBeGreaterThan(50);
+    expect(neuAbgewiesen).toBeGreaterThan(50);
+  });
+
+  it("die Ausnahme mit Leerraum ist echt: `(a+) +` ist keine verschachtelte Wiederholung und wird durchgelassen", () => {
+    expect(ALT.test("(a+) +")).toBe(true);
+    expect(meldetUnsicher("(a+) +")).toBe(false);
+    expect(meldetUnsicher("(a+)+")).toBe(true);
   });
 
   it("patternProperties wird ebenso geprüft", () => {

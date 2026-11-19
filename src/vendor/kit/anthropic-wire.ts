@@ -1,4 +1,4 @@
-// vendored from code-kit@0.75.0, src/ts/pure/anthropic-wire.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from code-kit@0.80.0, src/ts/pure/anthropic-wire.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 /** Origin: obsidian-kit `src/pure/anthropic-wire.ts` (0.71.0; the Claude transport exists since 0.62.0); moved to code-kit in Welle 28 with the
  *  logic unchanged — only these comments were translated.
  *

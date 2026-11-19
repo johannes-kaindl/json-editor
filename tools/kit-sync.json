@@ -1,10 +1,10 @@
 {
   "sources": {
     "obsidian-kit": {
-      "ref": "0.95.0"
+      "ref": "0.101.0"
     },
     "code-kit": {
-      "ref": "0.75.0"
+      "ref": "0.80.0"
     }
   },
   "targets": [
@@ -12,7 +12,13 @@
       "dir": "src/vendor/kit",
       "source": "obsidian-kit",
       "from": "src/pure",
-      "modules": ["block-writer", "endpoint-secret-hook", "endpoint-source", "override-guard"],
+      "modules": [
+        "block-writer",
+        "note-edit",
+        "endpoint-secret-hook",
+        "endpoint-source",
+        "override-guard"
+      ],
       "rewrite": [["../vendor/code-kit/pure/", "./"], ["../vendor/code-kit/web/", "./"]]
     },
     {
@@ -47,6 +53,7 @@
         "text-window",
         "think-splitter",
         "timeout",
+        "user-regex",
         "word-diff"
       ]
     },
@@ -60,7 +67,14 @@
       "dir": "src/vendor/kit-obsidian",
       "source": "obsidian-kit",
       "from": "src/obsidian",
-      "modules": ["settings_walker", "folder-suggest", "collapsible", "help-setting", "redline"]
+      "modules": [
+        "settings_walker",
+        "folder-suggest",
+        "collapsible",
+        "help-setting",
+        "redline",
+        "redline-strings"
+      ]
     },
     {
       "dir": "src/vendor/kit-obsidian",

@@ -1,4 +1,4 @@
-// vendored from obsidian-kit@0.95.0, src/obsidian/redline.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from obsidian-kit@0.101.0, src/obsidian/redline.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 /**
  * Redline (Diff-Ansicht auf Wortebene): ein Text mit durchgestrichener Löschung und unterstrichener Einfügung in EINER Spalte, damit es
  * auf dem iPhone trägt. Gebaut für Diachronic (Prüfkarten und Vergleichsansicht), containerunabhängig: der Baustein füllt einen
@@ -27,6 +27,9 @@
  *   beiden Fällen dieselbe. Ein Segment ohne `author` (oder außerhalb 0–5) behält die Farbe nach Art.
  * - **`labels`** für Screenreader: `del`/`ins` bekommen `aria-label="<Beschriftung>: <Text>"`. Ohne `labels` kein `aria-label`
  *   (`<del>`/`<ins>` tragen ihre Rolle selbst, die Beschriftung kommt vom Aufrufer, nie vom Kit — kein `t()` im Kit).
+ * - **`authorLabel`** (Welle 36, k9c): die zweite Spur neben der Farbe. Ein `del`/`ins` mit Namen trägt `title="Gelöscht von X"` bzw. `"Eingefügt von X"` (Texte aus `strings`, EN/DE) und **kein** `aria-label`:
+ *   Chromium macht den `title` zur Beschreibung des Knotens (Rolle `deletion`/`insertion`, Inhalt bleibt Inhalt), die Zugänglichkeitsprüfung sieht den Satz einmal; mit `aria-label` zusätzlich stand er zweimal im Baum (Name und Beschreibung, gemessen 1.15.1).
+ *   Das `aria-label` aus `labels` entfällt für dieses Segment, weil `title` dessen Aussage (die Art) mitbringt. Sichtbar ändert sich nichts. Ohne `authorLabel` (auch leer) bleibt alles wie bisher.
  * - **Das Modul zeichnet nicht neu:** wer die Segmente ändert, leert den Elternknoten und ruft `renderRedline` erneut.
  *
  * ## Fallen beim Übernehmen
@@ -35,11 +38,15 @@
  * 2. **Leere Segmente** (`text: ""`) werden übersprungen: ein leeres `<del>` wäre ein unsichtbares Element mit `aria-label`.
  */
 
+import { resolveRedlineStrings, type RedlineStringsOverride } from "./redline-strings";
+
 export interface RedlineSegment {
   kind: "same" | "del" | "ins";
   text: string;
   /** Autoren-Platz 0–5, nur mit `colorByAuthor` wirksam. */
   author?: number;
+  /** Name des Autors, nur für `del`/`ins` (Welle 36, k9c): die zweite Spur neben der Farbe. Das Segment bekommt `title` („Gelöscht von X“ / „Eingefügt von X“ aus `strings`): Tooltip für Sehende und Beschreibung im Zugänglichkeitsbaum; sichtbar ändert sich nichts. Leer oder nur Leerraum zählt als fehlend; ohne ihn bleibt das Segment, wie es war. Der Name kommt vom Aufrufer (Datenwert, kein UI-Text). */
+  authorLabel?: string;
 }
 
 export interface RedlineOptions {
@@ -48,6 +55,8 @@ export interface RedlineOptions {
   colorByAuthor?: boolean;
   /** Screenreader-Beschriftung je Art; ohne sie kein `aria-label`. */
   labels?: { del: string; ins: string };
+  /** Texte der zweiten Spur (`authorLabel`); Sprache `en` (Standard) oder `de`, einzelne Texte überschreibbar. */
+  strings?: RedlineStringsOverride;
 }
 
 /** Anzahl der Autoren-Plätze in `REDLINE_CSS`. */
@@ -56,6 +65,7 @@ const AUTHOR_SLOTS = 6;
 /** Baut `<div class="okit-redline">` in `parent` und gibt ihn zurück. */
 export function renderRedline(parent: HTMLElement, segments: readonly RedlineSegment[], opts: RedlineOptions = {}): HTMLElement {
   const root = parent.createDiv({ cls: opts.cls ? `okit-redline ${opts.cls}` : "okit-redline" });
+  const strings = resolveRedlineStrings(opts.strings);
   for (const seg of segments) {
     if (seg.text === "") continue;
     if (seg.kind === "same") {
@@ -67,7 +77,11 @@ export function renderRedline(parent: HTMLElement, segments: readonly RedlineSeg
     if (opts.colorByAuthor && seg.author !== undefined && Number.isInteger(seg.author) && seg.author >= 0 && seg.author < AUTHOR_SLOTS) {
       el.setAttribute("data-author", String(seg.author));
     }
-    if (opts.labels) el.setAttribute("aria-label", `${isDel ? opts.labels.del : opts.labels.ins}: ${seg.text}`);
+    const who = seg.authorLabel?.trim();
+    if (who) {
+      const said = isDel ? strings.deletedBy(who) : strings.insertedBy(who);
+      el.setAttribute("title", said);   // bewusst ohne aria-label: Name und Beschreibung mit demselben Satz läse ein Screenreader doppelt (gemessen, pilot/redline-kontrast.ts); die Rollen insertion und deletion tragen keinen eigenen Namen
+    } else if (opts.labels) el.setAttribute("aria-label", `${isDel ? opts.labels.del : opts.labels.ins}: ${seg.text}`);
   }
   return root;
 }

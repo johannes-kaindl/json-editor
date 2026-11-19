@@ -28,6 +28,9 @@ export function findFenceAt(text: string, line: number): Fence | null {
   const f = scanFenceAt(text, line, { maxIndent: 3 });
   // Ein nie geschlossener Zaun hat keine verlaesslichen Grenzen — dort wird nichts repariert.
   if (f === null || !f.closed || (f.lang !== "json" && f.lang !== "jsonc")) return null;
+  // Seit code-kit 0.78.0 findet der Scanner auch `- ```json`. Dessen Rumpf kommt ohne den Einzug des Listenpunkts und passt nie auf die Zeilen
+  // der Notiz; geschrieben wird dort nicht (wie obsidian-kit `panel-accept`), also ist die Zeile des Zauns kein Block für die Reparatur.
+  if (!/^[ \t]*[`~]/.test(text.split("\n")[f.openLine] ?? "")) return null;
   return { lang: f.lang, start: f.openLine, end: f.closeLine, content: f.body };
 }
 
