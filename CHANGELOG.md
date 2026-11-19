@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.25.0] — 2026-11-19
+
 ### Changed
 - A schema `pattern` is now checked with the shared guard of the kit (`assessRegexRisk`). It still refuses every nested repetition such as `(a+)+`, and it additionally refuses the same item twice in a row with open repetitions (`a*a*`), which is slow on long text. A group followed by a space and then `+` (`(a+) +`) is no longer taken for a nested repetition, because the `+` applies to the space.
 - Codeblocks that start inside a list item (`- ```json`) are no longer offered for repair; the repair would not find their text again.
