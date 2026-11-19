@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.24.1] — 2026-11-19
+
 ### Fixed
 - **A schema with a long `pattern` of nested brackets no longer freezes Obsidian while it is checked.** The guard against catastrophic regexes was itself slow on such a text (2 000 repetitions of `(+` took 7 s); it now reads the pattern in one pass and reports the same patterns as unsafe as before.
 - **A path text with an unclosed `[` no longer loops forever, and a long reply from the model that ends in blanks is trimmed in linear time.**
