@@ -1,4 +1,4 @@
-// vendored from obsidian-kit@0.102.0, src/testing/linear-probe.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from obsidian-kit@0.111.0, src/testing/linear-probe.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 // Linearitätsprobe für Tests (ReDoS-Konvention). Nur in Tests (vitest, Node): importiert `node:vm`.
 //
 // Warum es sie gibt: zweimal wurde eine Regex mit überlinearer Laufzeit veröffentlicht (Welle 15 und 16),
@@ -18,7 +18,60 @@
 // ab. Seit 0.72.0 wird ein überlinearer Befund am großen Lauf einmal nachgemessen (nur unter 4 s, sonst verdoppelten sich die Gegenproben); danach 0 von 15 bei Load 17 und 0 von 15 bei Load 74 bis 156. Eine
 // Voraussetzung bleibt: eine dauerhafte Last weit über der Kernzahl hebt t(50 000) in beiden Messungen. Test-Funktionen für eine QUADRATISCHE Einheit laufen auf der Wanduhr (`spin`), nicht mit CPU-Schritten:
 // deren Zeit wächst mit der Last und verschiebt das Verhältnis.
+//
+// Last als Gültigkeitsbedingung (Welle 37, CORE-TEST-22): Welle 36 maß bei Rechnerlast 95 bis 180 auf 18 Kernen Quotienten von 12 bis 20 an Funktionen, die im Direktlauf linear messen; dieselben Tests liefen
+// einzeln grün. Eine Messung unter dieser Last ist keine Messung. Die Proben lesen deshalb VOR dem Lauf (und danach) die Last der letzten Minute je Kern; über `maxLastProKern` (Vorgabe {@link LINEAR_PROBE_MAX_LAST_PRO_KERN})
+// werfen sie {@link LinearProbeNichtGemessen} statt ein Urteil zu liefern: weder „linear“ noch „überlinear“. Ein Wurf ist laut (kein stilles Grün, auch nicht bei einer Gegenprobe mit `expect(r.linear).toBe(false)`);
+// wer den Zustand „nichts gemessen“ als Übersprungen führen will, hüllt den Aufruf in {@link mitLastSchutz} (vitest: `it("…", (ctx) => { … mitLastSchutz(ctx, () => pruefeLinear(…)) })`).
+// Die Last drückt nur gegen Fehlalarme: die echten Funde (epub-exporter, Faktor 49 bis 167) liegen weit über der Grenze und kommen im Lauf bei Ruhe wieder.
+import { cpus, loadavg } from "node:os";
 import { createContext, runInContext } from "node:vm";
+
+/** Die Rechnerlast, an der die Probe ihre Gültigkeit misst: Mittel der letzten Minute und Zahl der Kerne. */
+export interface LinearProbeLast { load1: number; kerne: number }
+
+/** Ab dieser Last je Kern (Mittel der letzten Minute geteilt durch die Zahl der Kerne) ist eine Messung ungültig. Vorgabe, keine Messgröße: Welle 28 maß mit `yes`-Prozessen bei 4 bis 8,7 je Kern 0 von 15 Fehlalarmen
+ *  (nach der Nachmessung), Welle 36 sah bei 5 bis 10 je Kern wechselnde (echte Arbeitslast: vitest-Arbeiter mit Speicherdruck); 3 liegt darunter, ruhig sind Werte unter 1. Eine Probe mit eigener Schwelle übergibt `maxLastProKern`. */
+export const LINEAR_PROBE_MAX_LAST_PRO_KERN = 3;
+
+/** Die Last des Rechners; in Tests durch `last` ersetzbar. */
+export function rechnerLast(): LinearProbeLast { return { load1: loadavg()[0] ?? 0, kerne: Math.max(1, cpus().length) }; }
+
+export interface LinearProbeOptions {
+  /** Schwelle der Last je Kern, ab der die Messung ungültig ist (`>`). Vorgabe {@link LINEAR_PROBE_MAX_LAST_PRO_KERN}; `Infinity` schaltet die Prüfung ab. */
+  maxLastProKern?: number;
+  /** Quelle der Last; Vorgabe {@link rechnerLast}. Für Tests mit eingespeister Last. */
+  last?: () => LinearProbeLast;
+}
+
+/** Wird geworfen, wenn die Rechnerlast eine Messung ungültig macht: der Zustand „nichts gemessen“ (CORE-TEST-19), nicht „linear“ und nicht „überlinear“. */
+export class LinearProbeNichtGemessen extends Error {
+  constructor(readonly last: LinearProbeLast, readonly schwelle: number, readonly zeitpunkt: "vor" | "nach") {
+    super(`Messung ungültig (nichts gemessen): Rechnerlast ${last.load1.toFixed(1)} bei ${last.kerne} Kernen = ${(last.load1 / last.kerne).toFixed(2)} je Kern, Schwelle ${schwelle} (${zeitpunkt} dem Lauf)`);
+    this.name = "LinearProbeNichtGemessen";
+  }
+}
+
+/** Wirft {@link LinearProbeNichtGemessen}, wenn die Last je Kern über der Schwelle liegt. */
+export function pruefeLast(opts: LinearProbeOptions | undefined, zeitpunkt: "vor" | "nach"): void {
+  const schwelle = opts?.maxLastProKern ?? LINEAR_PROBE_MAX_LAST_PRO_KERN;
+  const last = (opts?.last ?? rechnerLast)();
+  if (last.load1 / Math.max(1, last.kerne) > schwelle) throw new LinearProbeNichtGemessen(last, schwelle, zeitpunkt);
+}
+
+/** Der Teil des vitest-Kontexts (`it("…", (ctx) => …)`), den {@link mitLastSchutz} braucht. */
+export interface LinearProbeSkipKontext { skip: (note?: string) => unknown }
+
+/** Führt `messung` aus; ist sie wegen der Last ungültig, wird der Test übersprungen (`ctx.skip`), statt rot zu werden. Jeder andere Fehler läuft durch.
+ *  `ctx.skip` wirft in vitest selbst; kehrt ein anderer Kontext zurück, wird die Ausnahme weitergereicht (nie ein stilles Weiterlaufen ohne Messwert). */
+export function mitLastSchutz<T>(ctx: LinearProbeSkipKontext, messung: () => T): T {
+  try {
+    return messung();
+  } catch (e) {
+    if (e instanceof LinearProbeNichtGemessen) { ctx.skip(e.message); }
+    throw e;
+  }
+}
 
 /** Eingabelängen der Probe. */
 export const LINEAR_PROBE_SIZES = [1_000, 10_000, 50_000] as const;
@@ -68,22 +121,37 @@ function bestOf(run: () => void): number {
 /** Ab dieser Laufzeit bei n = 50 000 wird ein überlinearer Befund nicht nachgemessen: eine echt quadratische Funktion braucht dort sechs bis vierzehn Sekunden, das Nachmessen verdoppelte die Gegenproben. */
 const RETRY_MAX_MS = 4_000;
 
-/** Das Urteil, mit einer Nachmessung des GROSSEN Laufs: `bestOf` wiederholt einen Lauf über 500 ms nicht, t(50 000) ist also eine Einzelmessung, t(10 000) dagegen der Beste von drei. Unter Last
+/** Zweite Nachmessung: bleibt der Befund nach der ersten überlinear, aber mit Quotient unter {@link ZWEITE_NACHMESSUNG_RATIO} und t(50 000) unter {@link ZWEITE_NACHMESSUNG_MS}, wird der große Lauf noch einmal wiederholt.
+ *  Welle 36 (Last 95 bis 180): Fehlalarme mit Quotient 12 bis 20 bei 60 bis 120 ms; ein echter Fund liegt weit darüber (epub-exporter: 1 233 ms bei 50 000, Faktor 49), eine quadratische Funktion erreicht den Quotienten 25. */
+const ZWEITE_NACHMESSUNG_RATIO = 25;
+const ZWEITE_NACHMESSUNG_MS = 200;
+
+/** Das Urteil, mit Nachmessung des GROSSEN Laufs: `bestOf` wiederholt einen Lauf über 500 ms nicht, t(50 000) ist also eine Einzelmessung, t(10 000) dagegen der Beste von drei. Unter Last
  *  (gemessen Welle 28, Load über 30 auf 18 Kernen) verschiebt das das Verhältnis nach oben: eine lineare Funktion (`llm-json`, 150 000 Zeichen) fiel in 2 von 10 Läufen mit 12,3 über die Grenze 12 (ruhig 4,5 bis 7,5).
- *  Ist das Urteil überlinear und der große Lauf kürzer als {@link RETRY_MAX_MS}, wird er einmal wiederholt und der bessere zählt; eine echt quadratische Funktion bleibt beim zweiten Lauf überlinear. */
-function verdictMitNachmessung(steps: LinearProbeStep[], nachmessen: () => number): LinearProbeResult {
-  const v = verdict(steps, undefined);
-  const t50 = steps.find((s) => s.n === 50_000)?.ms ?? 0;
-  if (v.linear || t50 >= RETRY_MAX_MS) return v;
-  const nochmal = nachmessen();
-  if (nochmal >= t50) return v;
-  return verdict(steps.map((s) => (s.n === 50_000 ? { n: s.n, ms: nochmal } : s)), undefined);
+ *  Ist das Urteil überlinear und der große Lauf kürzer als {@link RETRY_MAX_MS}, wird er einmal wiederholt und der bessere zählt; eine echt quadratische Funktion bleibt beim zweiten Lauf überlinear.
+ *  Seit Welle 37 ein zweites Mal, wenn der Befund knapp bleibt (Quotient unter 25 und t(50 000) unter 200 ms): drei Läufe bei 50 000, der beste zählt. Ein Quotient ab 25 oder ein langer Lauf wird nicht noch einmal gefahren.
+ *  Exportiert, damit sich das Verfahren mit Zahlen statt Uhren prüfen lässt (`nachmessen` liefert die Zeit eines weiteren Laufs bei 50 000). */
+export function verdictMitNachmessung(steps: LinearProbeStep[], nachmessen: () => number): LinearProbeResult {
+  let aktuell = steps;
+  let v = verdict(aktuell, undefined);
+  for (let versuch = 0; versuch < 2; versuch++) {
+    const t50 = aktuell.find((s) => s.n === 50_000)?.ms ?? 0;
+    if (v.linear || t50 >= RETRY_MAX_MS) return v;
+    // Der erste Wiederholungslauf gilt für jeden überlinearen Befund unter 4 s; der zweite nur für den knappen.
+    if (versuch === 1 && (v.ratio >= ZWEITE_NACHMESSUNG_RATIO || t50 >= ZWEITE_NACHMESSUNG_MS)) return v;
+    const nochmal = nachmessen();
+    if (nochmal >= t50) continue;
+    aktuell = aktuell.map((s) => (s.n === 50_000 ? { n: s.n, ms: nochmal } : s));
+    v = verdict(aktuell, undefined);
+  }
+  return v;
 }
 
 /** Misst `re.test(praefix.repeat(n) + suffix)` für n ∈ {1 000, 10 000, 50 000} in einem `node:vm`-Kontext mit
  *  Frist je Lauf (`timeoutMs`, Default 2 000): eine exponentielle Regex hängt sonst den Testlauf, und in einen
- *  Worker ließe sich die Regex nicht schicken (nicht klonbar). Ein Abbruch ist `linear: false`. */
-export function pruefeLinearRegex(re: RegExp, praefix: string, suffix = "", opts?: { timeoutMs?: number }): LinearProbeResult {
+ *  Worker ließe sich die Regex nicht schicken (nicht klonbar). Ein Abbruch ist `linear: false`. Über der Lastschwelle wirft sie {@link LinearProbeNichtGemessen}. */
+export function pruefeLinearRegex(re: RegExp, praefix: string, suffix = "", opts?: { timeoutMs?: number } & LinearProbeOptions): LinearProbeResult {
+  pruefeLast(opts, "vor");
   const timeout = opts?.timeoutMs ?? 2_000;
   const steps: LinearProbeStep[] = [];
   for (const n of LINEAR_PROBE_SIZES) {
@@ -92,17 +160,19 @@ export function pruefeLinearRegex(re: RegExp, praefix: string, suffix = "", opts
       const ms = bestOf(() => { runInContext("re.lastIndex = 0; re.test(input);", ctx, { timeout }); });
       steps.push({ n, ms });
     } catch (e) {
-      if ((e as { code?: string }).code === "ERR_SCRIPT_EXECUTION_TIMEOUT") return verdict(steps, n);
+      if ((e as { code?: string }).code === "ERR_SCRIPT_EXECUTION_TIMEOUT") { pruefeLast(opts, "nach"); return verdict(steps, n); }
       throw e;
     }
   }
+  pruefeLast(opts, "nach");
   return verdict(steps, undefined);
 }
 
 /** Misst `fn(eingabe(n))` im Thread für n ∈ {1 000, 10 000, 50 000} — für die quadratische Form in beliebigem
  *  Code. `eingabe` ist ein Text, der n-mal wiederholt wird, oder eine Funktion `n → Argument`. **Ohne Frist:**
- *  eine exponentielle Regex gehört in `pruefeLinearRegex`, sonst hängt der Lauf. */
-export function pruefeLinear<T>(fn: (eingabe: T) => unknown, eingabe: string | ((n: number) => T)): LinearProbeResult {
+ *  eine exponentielle Regex gehört in `pruefeLinearRegex`, sonst hängt der Lauf. Über der Lastschwelle wirft sie {@link LinearProbeNichtGemessen}. */
+export function pruefeLinear<T>(fn: (eingabe: T) => unknown, eingabe: string | ((n: number) => T), opts?: LinearProbeOptions): LinearProbeResult {
+  pruefeLast(opts, "vor");
   const make = typeof eingabe === "string" ? (n: number): T => eingabe.repeat(n) as T : eingabe;
   const steps: LinearProbeStep[] = [];
   let groß: T | undefined;
@@ -111,7 +181,9 @@ export function pruefeLinear<T>(fn: (eingabe: T) => unknown, eingabe: string | (
     if (n === 50_000) groß = arg;
     steps.push({ n, ms: bestOf(() => { fn(arg); }) });
   }
-  return verdictMitNachmessung(steps, () => bestOf(() => { fn(groß as T); }));
+  const v = verdictMitNachmessung(steps, () => bestOf(() => { fn(groß as T); }));
+  pruefeLast(opts, "nach");
+  return v;
 }
 
 /** Ein Befund von {@link pruefeLinearFuzz}. */
@@ -136,6 +208,10 @@ export interface LinearFuzzOptions {
   nachmessen?: boolean;
   /** Das Zeichen zwischen Öffner und Schließer. Default `"x"`. */
   mitte?: string;
+  /** Schwelle der Rechnerlast je Kern ({@link LinearProbeOptions.maxLastProKern}). Der Fuzz prüft sie vor JEDER Eingabe und am Ende: ein Lastschub mitten im Lauf macht ihn ungültig. */
+  maxLastProKern?: number;
+  /** Quelle der Last ({@link LinearProbeOptions.last}); für Tests. */
+  last?: () => LinearProbeLast;
 }
 
 export interface LinearFuzzResult {
@@ -183,7 +259,8 @@ function leiter(fn: (eingabe: string) => unknown, make: (n: number) => string, l
  *
  *  ⚠️ **Testlaufzeit.** Rund 110 ms je Eingabe (Zeichenketten bis 150 kB aufbauen, Bester von drei). Ein Alphabet von 8 Zeichen mit
  *  `maxLaenge` 3 sind 584 Einheiten plus 64 Paare und kostet je Funktion 72–90 s; 6 Zeichen etwa 30 s. Das sprengt vitests 5-s-Standard:
- *  `it(…, 180_000)` setzen und im Kit-Test ein kleines Alphabet wählen. Ein Lauf unter hoher Last wird langsamer, nicht falsch.
+ *  `it(…, 180_000)` setzen und im Kit-Test ein kleines Alphabet wählen. Ein Lauf unter hoher Last wird langsamer und, seit Welle 37, **ungültig**: über der Lastschwelle (vor jeder Eingabe und am Ende geprüft) wirft er
+ *  {@link LinearProbeNichtGemessen}, statt Fehlalarme zu melden; `mitLastSchutz(ctx, …)` macht daraus ein Übersprungen.
  *
  *  @example
  *  const r = pruefeLinearFuzz((s) => extractJson(s), { alphabet: ["[", "]", '"', "\\", "x"] }); // it(…, 180_000)
@@ -201,6 +278,7 @@ export function pruefeLinearFuzz(fn: (eingabe: string) => unknown, opts: LinearF
   const verdaechtig: LinearFuzzSuspect[] = [];
   let gemessen = 0;
   const pruefe = (einheit: string, form: LinearFuzzSuspect["form"], make: (n: number) => string): void => {
+    pruefeLast(opts, "vor");
     gemessen += 1;
     let r = leiter(fn, make, einheit);
     if (!r.linear && nachmessen) r = leiter(fn, make, einheit);
@@ -218,5 +296,20 @@ export function pruefeLinearFuzz(fn: (eingabe: string) => unknown, opts: LinearF
   if (verschachtelt) {
     for (const o of alphabet) for (const c of alphabet) pruefe(`${o}…${mitte}…${c}`, "verschachtelt", (n) => o.repeat(n) + mitte + c.repeat(n));
   }
+  pruefeLast(opts, "nach");
   return { linear: verdaechtig.length === 0, verdaechtig, gemessen };
+}
+
+/** Die drei Proben, an den vitest-Kontext gebunden: jede übersetzt „nichts gemessen“ in ein Übersprungen ({@link mitLastSchutz}). Für Tests mit mehreren Aufrufen:
+ *  `it("…", (ctx) => { const p = lastGeschuetzt(ctx); const r = p.pruefeLinear(fn, eingabe); … })`. */
+export function lastGeschuetzt(ctx: LinearProbeSkipKontext): {
+  pruefeLinear: <T>(fn: (eingabe: T) => unknown, eingabe: string | ((n: number) => T), opts?: LinearProbeOptions) => LinearProbeResult;
+  pruefeLinearRegex: (re: RegExp, praefix: string, suffix?: string, opts?: { timeoutMs?: number } & LinearProbeOptions) => LinearProbeResult;
+  pruefeLinearFuzz: (fn: (eingabe: string) => unknown, opts: LinearFuzzOptions) => LinearFuzzResult;
+} {
+  return {
+    pruefeLinear: (fn, eingabe, opts) => mitLastSchutz(ctx, () => pruefeLinear(fn, eingabe, opts)),
+    pruefeLinearRegex: (re, praefix, suffix, opts) => mitLastSchutz(ctx, () => pruefeLinearRegex(re, praefix, suffix, opts)),
+    pruefeLinearFuzz: (fn, opts) => mitLastSchutz(ctx, () => pruefeLinearFuzz(fn, opts)),
+  };
 }

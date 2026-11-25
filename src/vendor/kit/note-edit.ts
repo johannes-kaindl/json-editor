@@ -1,4 +1,4 @@
-// vendored from obsidian-kit@0.102.0, src/pure/note-edit.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from obsidian-kit@0.111.0, src/pure/note-edit.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 // Herkunft: vault-rag `src/note_edit.ts` (Welle 34, Minion rag2; Wunsch ans Kit über das Bibliothek-Gate), aufgenommen in Welle 35. Gegenüber der Vorlage geändert, jeweils mit Grund:
 // (1) Ergebnis mit `changed`, `via`, `persisted` und dem gefangenen Fehler (Z5), (2) ein Wurf von `decide` lehnt das Promise ab, auf beiden Wegen (Z6; die Vorlage meldete ihn auf dem
 // Vault-Weg als `not-found`), (3) Optionen statt einer Zahl, mit einsetzbarem Zeitgeber, (4) `swapNote` vergleicht ohne BOM und mit `\r\n` als `\n` und schreibt in den Zeilenenden der Notiz

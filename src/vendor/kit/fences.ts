@@ -1,4 +1,4 @@
-// vendored from code-kit@0.82.0, src/ts/pure/fences.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from code-kit@0.91.1, src/ts/pure/fences.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 // Origin: obsidian-plugins `3d-codeblocks/src/core/shapes/fence.ts` (`fenceFor`), `src/core/shapes/references.ts` (`shapesBlock`,
 // here `wrapInFence` with the language as a parameter) and `src/obsidian/panel-accept.ts` (`closesOpenFence`, here on the opening
 // line instead of the notes text and a fence object). The scanner (`listFences`/`findFenceAt`) has the shape of obsidian-kit
@@ -19,8 +19,17 @@
 // an opening line), `followContainers` and `readItemFence` (the lines after it) read the new forms, `createContext` keeps what the scans must know about the
 // lines they pass (the open list items, whether the line before is paragraph text), and BOTH scans use them: `scan` (flat family, `listFences`) and
 // `scanNested` (nested family, `findNestedFenceAt`, `countFences`). The old forms keep their rules byte for byte, only the new reader is added: the flat scan
-// stays independent of the nested scan (an unclosed fence indented under an item runs to the end of the text there, as before, and must not hide a flat fence
-// behind it), so the flat family cannot be one pass with the nested one. The differential `tests/fences-list-item.test.ts` holds the old file as oracle.
+// stays independent of the nested scan (an old-form fence under an item must not hide a flat fence behind it), so the flat family cannot be one pass with the
+// nested one. The differential `tests/fences-list-item.test.ts` holds the 0.77.0 file as oracle.
+//
+// Where an old form ends (Welle 37, the one change of an old form since 0.78.0). A fence that opens INSIDE a list item (flat, indent up to `maxIndent`, or nested,
+// indented over it; at least the item's content column in, at most three columns beyond it, else it is indented code) ends where the item ends: at the first
+// non-blank line with less indent than the content column (`endAtItem`; the blank lines in front of it belong to the fence), `closed: false`, whether that line is
+// a closing line or not. Before, such a fence ran to the end of the text, or to a closing line OUTSIDE the item, and that line was no longer read as the opening of
+// the fence it is in CommonMark. The item comes from the context of the flat scan (`ctx.enclosing`), which hands its answer to the nested scan (`flatScan`), so both
+// cut at the same line. Not cut, as before: a fence behind a quote sign whose item stands in front of the quote (`- a`, then `  > ```js`, then `> y`), and a fence
+// inside an old-form fence under an item (`blockedUntil`: the context has not read those lines). `tests/fences-item-end.test.ts` holds the differential against
+// the 0.87.0 file and both reference parsers.
 //
 // Where a fence on a marker line is NOT seen, as CommonMark has it: an empty item (`-` alone), content of five blanks and more after the marker (indented code),
 // four columns of indent that no open item holds (code), an ordered item that does not start with 1 right after paragraph text, an empty item right after
@@ -39,7 +48,12 @@ export function fenceFor(body: string): string {
  *  (a BOM would sit in the first line of the body and break its parsing). Known, accepted normalisation: the way back (block → file)
  *  writes a file without BOM. The fence is measured on the normalised body. */
 export function wrapInFence(lang: string, body: string): string {
-  const clean = body.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").replace(/\n+$/, "");
+  const lf = body.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
+  // the trailing breaks by a walk back from the end and one slice: `replace(/\n+$/, "")` tried the end check from every start of a long run of breaks in the MIDDLE of the text (quadratic:
+  // 98 ms at 10 000, 2.4 s at 50 000, measured by the breadth over 3d-codeblocks, 2026-11-19)
+  let end = lf.length;
+  while (end > 0 && lf.charCodeAt(end - 1) === 10) end--;
+  const clean = lf.slice(0, end);
   const fence = fenceFor(clean);
   return `${fence}${lang}\n${clean}\n${fence}`;
 }
@@ -318,6 +332,7 @@ function createContext(): {
   afterText: () => boolean;
   plain: (rest: string, depth: number, raw: string) => void;
   fenced: (depth: number, rest: string, raw: string, ends?: readonly number[]) => void;
+  dedent: (indent: number) => void;
 } {
   const stacks: number[][] = [[]];
   let atDepth = 0;
@@ -391,6 +406,11 @@ function createContext(): {
       text = !p.bare && !lazy;
       textItems = items.length;
     },
+    // lines the scan skipped inside an old-form fence (it did not feed them): the least indent among them ends every item of the top level that holds more
+    dedent(indent) {
+      const outer = stacks[0] ?? [];
+      while (outer.length > 0 && (outer[outer.length - 1] ?? 0) > indent) outer.pop();
+    },
     // a fence is no paragraph text; the items its opening line started (`- ```js`) stay open for the lines after it
     fenced(depth, rest, raw, ends) {
       sync(depth);
@@ -403,10 +423,20 @@ function createContext(): {
   };
 }
 
+/** The least indent among the non-blank lines `from` to `to` (a quote sign counts as the column it stands at); `Infinity` when there is none. */
+function leastIndent(lines: readonly string[], from: number, to: number): number {
+  let least = Infinity;
+  for (let j = from; j <= to && j < lines.length; j++) {
+    const l = lines[j] ?? "";
+    if (l.trim() !== "") least = Math.min(least, leadingColumns(l));
+  }
+  return least;
+}
+
 /** The scan for the FLAT fences; `visit` returns `true` to stop. Linear: a fence swallows the lines up to its closing line (or to the end), so every line is
  *  read once, as an opening line or as a closing candidate. Besides the fences that start a line (indent up to `maxIndent`) it reads the ones that open on
  *  the line of a list marker with no quote in front (`- ```js`, `1. ~~~`, `- - ```js`): they are "flat" too, the list is the document's own structure. */
-function scan(text: string, maxIndent: number, visit: (f: Fence) => boolean): void {
+function scan(text: string, maxIndent: number, visit: (f: Fence) => boolean, cols?: Map<number, number>): void {
   const lines = text.split(/\r?\n/);
   const ctx = createContext();
   const rowAt = createRowReader(lines);
@@ -419,21 +449,34 @@ function scan(text: string, maxIndent: number, visit: (f: Fence) => boolean): vo
     // CommonMark: the info string of a backtick fence holds no backtick (a line like "```svg``` text" is inline code, no fence).
     if (run !== null && !(run.ch === "`" && line.slice(run.end).includes("`"))) {
       const info = line.slice(run.end);
+      // the context has not seen the lines inside an old-form fence indented under an item (`blockedUntil`): no item is claimed there
+      const w = i > blockedUntil ? ctx.enclosing(0, line, line) : 0;
+      cols?.set(i, w);
+      const chain = itemChain(run.indent, w, 0);
       let j = i + 1;
-      while (j < lines.length && !closes(lines[j] ?? "", run.ch, run.len, maxIndent)) j += 1;
-      const closed = j < lines.length;
-      const closeLine = closed ? j : lines.length - 1;
-      if (visit({ lang: langOf(info), openLine: i, closeLine, closed, body: lines.slice(i + 1, closed ? j : lines.length).join("\n") })) return;
+      let ended = false;
+      while (j < lines.length) {
+        const l = lines[j] ?? "";
+        if (chain !== null && followContainers(l, chain) === null) { ended = true; break; }
+        if (closes(l, run.ch, run.len, maxIndent)) break;
+        j += 1;
+      }
+      const closed = j < lines.length && !ended;
+      const f: Fence = { lang: langOf(info), openLine: i, closeLine: closed ? j : j - 1, closed, body: lines.slice(i + 1, j).join("\n") };
+      if (visit(f)) return;
       ctx.fenced(0, line, line);
-      i = closeLine + 1;
+      ctx.dedent(leastIndent(lines, i + 1, f.closeLine));
+      i = f.closeLine + 1;
       continue;
     }
     const row = rowAt(i);
     if (row.depth === 0 && i > blockedUntil) {
       const own = fenceRun(row.rest, Infinity);
       if (own !== null && own.indent > maxIndent) {
-        const n = nested(i, row, own);
-        if (n !== null) { blockedUntil = n.closeLine; ctx.fenced(0, row.rest, line); }
+        const w = ctx.enclosing(0, row.rest, line);
+        cols?.set(i, w);
+        const n = nested(i, row, own, w);
+        if (n !== null) { blockedUntil = n.closeLine; ctx.fenced(0, row.rest, line); ctx.dedent(leastIndent(lines, i + 1, n.closeLine)); }
       }
     }
     if (i > blockedUntil) {
@@ -452,10 +495,13 @@ function scan(text: string, maxIndent: number, visit: (f: Fence) => boolean): vo
         continue;
       }
       const qrun = row.depth > 0 ? fenceRun(row.rest, Infinity) : null;
-      const q = qrun === null ? null : nested(i, row, qrun);
+      const qw = qrun === null ? 0 : ctx.enclosing(row.depth, row.rest, line);
+      if (qrun !== null) cols?.set(i, qw);
+      const q = qrun === null ? null : nested(i, row, qrun, qw);
       if (q !== null) {
         // a fence in a quote (the old nested form): skipped, its lines are no paragraph text of the quote
         ctx.fenced(row.depth, row.rest, line);
+        ctx.dedent(leastIndent(lines, i + 1, q.closeLine));
         i = q.closeLine + 1;
         continue;
       }
@@ -469,9 +515,16 @@ function scan(text: string, maxIndent: number, visit: (f: Fence) => boolean): vo
  *  list marker with no quote in front (`- ```js`, `1. ~~~`; their body is without the indent of the item, see the header). A fence that never closes is
  *  returned with `closed: false` and runs to the end (a fence on a marker line: to the end of its item). Linear in the length of the text. */
 export function listFences(text: string, opts?: FenceOptions): Fence[] {
-  const out: Fence[] = [];
-  scan(text, resolveMaxIndent(opts), (f) => { out.push(f); return false; });
-  return out;
+  return flatScan(text, resolveMaxIndent(opts)).flat;
+}
+
+/** The flat fences and, for the nested reader that runs after them, the content column of the list item that each candidate line sits in (the scan's context
+ *  knows it; the nested reader must cut an old-form fence at the same place, so it is handed the answer, not asked to find it again). */
+function flatScan(text: string, maxIndent: number): { flat: Fence[]; cols: Map<number, number> } {
+  const flat: Fence[] = [];
+  const cols = new Map<number, number>();
+  scan(text, maxIndent, (f) => { flat.push(f); return false; }, cols);
+  return { flat, cols };
 }
 
 /** The flat fence that holds the 0-based `line`, its opening and closing line included (the fences of {@link listFences}); `null` when no fence does. Stops
@@ -547,10 +600,26 @@ function leadingColumns(s: string): number {
   return col;
 }
 
-/** The reader of the OLD nested forms: `(i, row, run)` gives the fence that opens on line `i` when `run` (the fence run in `row.rest`) is under a quote, or
- *  indented over `maxIndent` under a list item, else `null`. Called with growing `i` only (the list item above a line is looked up on a stack of the lines before
- *  it, not by walking back, so the cost stays linear). */
-function nestedReader(lines: readonly string[], rowAt: (i: number) => QuoteRow, maxIndent: number): (i: number, row: QuoteRow, run: FenceRun) => Fence | null {
+/** The containers that a fence opened with `indent` columns in front, inside the list item with content column `w`, stays in (`depth` quote signs, then the item),
+ *  or `null` when there is no item to end it (`w` is 0), or when the fence is not read as in it: indented four columns beyond the item it is indented code in
+ *  CommonMark, and a fence indented less than the content column is no part of the item. The old forms ran past the end of the item: to the end of the text, or to a
+ *  closing line OUTSIDE the item. Now the search for the closing line stops at the first line that leaves these containers (a non-blank line with less indent than
+ *  the item, or without the quote signs), whether that line is a closing line or not: the fence is then `closed: false` and ends in front of that line (the
+ *  blank lines in front of it belong to the fence, as in markdown-it). `w` is the content column of the item the opening line sits in, as the context of the scan
+ *  reads it. */
+function itemChain(indent: number, w: number, depth: number): Container[] | null {
+  if (w <= 0 || indent < w || indent - w > 3) return null;
+  const chain: Container[] = [];
+  for (let d = 0; d < depth; d++) chain.push({ quote: true, w: 0 });
+  chain.push({ quote: false, w });
+  return chain;
+}
+
+/** The reader of the OLD nested forms: `(i, row, run, w)` gives the fence that opens on line `i` when `run` (the fence run in `row.rest`) is under a quote, or
+ *  indented over `maxIndent` under a list item, else `null`; `w` is the content column of the list item the line sits in (see {@link endAtItem}), 0 for none or
+ *  under a quote. Called with growing `i` only (the list item above a line is looked up on a stack of the lines before it, not by walking back, so the cost
+ *  stays linear). */
+function nestedReader(lines: readonly string[], rowAt: (i: number) => QuoteRow, maxIndent: number): (i: number, row: QuoteRow, run: FenceRun, w: number) => Fence | null {
   // The nearest line above with less indent than a fence line: the stack holds, bottom to top, strictly growing indents of the lines read so far.
   const stackIndent: number[] = [];
   const stackItem: boolean[] = [];
@@ -573,16 +642,18 @@ function nestedReader(lines: readonly string[], rowAt: (i: number) => QuoteRow, 
     }
     return lo > 0 && stackItem[lo - 1] === true;
   };
-  return (i, row, run) => {
+  return (i, row, run, w) => {
     // Under a quote any indent counts; otherwise only an indent the flat scanner did not take, and only under a list item.
     const isNested = row.depth > 0 || (run.indent > maxIndent && underListItem(i, run.indent));
     const info = row.rest.slice(run.end);
     if (!isNested || (run.ch === "`" && info.includes("`"))) return null;
+    const chain = itemChain(run.indent, w, row.depth);
     let j = i + 1;
     let closed = false;
     while (j < lines.length) {
       const r = rowAt(j);
       if (r.depth < row.depth) break; // the quote is over
+      if (chain !== null && followContainers(lines[j] ?? "", chain) === null) break; // the item is over
       if (closes(r.rest, run.ch, run.len, Infinity)) { closed = true; break; }
       j += 1;
     }
@@ -596,7 +667,7 @@ function nestedReader(lines: readonly string[], rowAt: (i: number) => QuoteRow, 
 /** The nested fences (see {@link findNestedFenceAt}) whose opening line is at or before `limit`, in order, each handed to `visit` (which returns `true` to
  *  stop): the old forms (`nestedReader`) and the ones behind a list marker AND a quote (`parseContainers`). One reader for both questions, "which fence holds
  *  this line" and "how many are there", so they cannot drift apart. Linear in the length of the text up to `limit`. */
-function scanNested(lines: string[], flat: readonly Fence[], maxIndent: number, limit: number, visit: (f: Fence) => boolean): void {
+function scanNested(lines: string[], flat: readonly Fence[], cols: ReadonlyMap<number, number>, maxIndent: number, limit: number, visit: (f: Fence) => boolean): void {
   const rowAt = createRowReader(lines);
   const nested = nestedReader(lines, rowAt, maxIndent);
   const ctx = createContext();
@@ -611,7 +682,7 @@ function scanNested(lines: string[], flat: readonly Fence[], maxIndent: number, 
     let found: Fence | null = null;
     let ends: readonly number[] = [];
     if (run !== null) {
-      found = nested(i, row, run);
+      found = nested(i, row, run, cols.get(i) ?? 0);
     } else {
       const open = parseContainers(row.rest, row.depth, ctx.enclosing(row.depth, row.rest, lines[i] ?? ""), ctx.afterText());
       const mrun = open.items > 0 && !open.stopped && open.quoted ? fenceRun(open.rest, 3) : null;
@@ -634,7 +705,8 @@ function scanNested(lines: string[], flat: readonly Fence[], maxIndent: number, 
 export function findNestedFenceAt(text: string, line: number, opts?: FenceOptions): Fence | null {
   const maxIndent = resolveMaxIndent(opts);
   let found: Fence | null = null;
-  scanNested(text.split(/\r?\n/), listFences(text, opts), maxIndent, line, (f) => {
+  const { flat, cols } = flatScan(text, maxIndent);
+  scanNested(text.split(/\r?\n/), flat, cols, maxIndent, line, (f) => {
     if (line >= f.openLine && line <= f.closeLine) { found = f; return true; }
     return false;
   });
@@ -652,11 +724,45 @@ export function findNestedFenceAt(text: string, line: number, opts?: FenceOption
 export function countFences(markdown: string, lang: string, opts?: FenceOptions): number {
   const maxIndent = resolveMaxIndent(opts);
   const want = lang.toLowerCase();
-  const flat = listFences(markdown, opts);
+  const { flat, cols } = flatScan(markdown, maxIndent);
   let n = 0;
   for (const f of flat) if (f.lang === want) n += 1;
-  scanNested(markdown.split(/\r?\n/), flat, maxIndent, Infinity, (f) => { if (f.lang === want) n += 1; return false; });
+  scanNested(markdown.split(/\r?\n/), flat, cols, maxIndent, Infinity, (f) => { if (f.lang === want) n += 1; return false; });
   return n;
+}
+
+/** A fence of {@link listAllFences}: the {@link Fence} plus where it was read. */
+export interface ListedFence extends Fence {
+  /** `false`: the fence of {@link listFences} (starts a line, or opens on the line of a list marker with no quote in front). `true`: one of the nested forms of
+   *  {@link findNestedFenceAt} (behind a quote or callout sign, or indented over `maxIndent` under a list item), whose `body` is without the quote signs.
+   *  It is on this type and not on {@link Fence} so that `listFences`, `findFenceAt` and `findNestedFenceAt` answer word for word as before (a test that compares
+   *  their result with `toEqual` would turn red on one more property). The quote and indent prefix is not reported: the caller who needs it reads the line
+   *  `openLine` of its own text; `nested` tells whether there is one to look for. */
+  nested: boolean;
+}
+
+/** EVERY fenced block of `text`, flat and nested, in document order (by `openLine`), each once: the fences of {@link listFences} and the ones of
+ *  {@link findNestedFenceAt}, which never overlap (the nested reader skips the lines of a flat fence), so the list is their merge, not a union that needs
+ *  a de-duplication. The same two readers as {@link countFences} (`listFences` and `scanNested`, no third one): `listAllFences(md).filter(f => f.lang === l)`
+ *  has the length of `countFences(md, l)` by construction, and a test holds it against markdown-it. An unclosed fence is in the list with `closed: false`.
+ *  A fence inside another fence (an example in a Markdown fence) is part of that fence and not in the list. One pass over the text for each reader: linear,
+ *  where asking `findNestedFenceAt` for each line would be quadratic. `opts` are those of `listFences`. */
+export function listAllFences(text: string, opts?: FenceOptions): ListedFence[] {
+  const maxIndent = resolveMaxIndent(opts);
+  const { flat, cols } = flatScan(text, maxIndent);
+  const nested: Fence[] = [];
+  scanNested(text.split(/\r?\n/), flat, cols, maxIndent, Infinity, (f) => { nested.push(f); return false; });
+  const out: ListedFence[] = [];
+  let a = 0;
+  let b = 0;
+  while (a < flat.length || b < nested.length) {
+    const x = flat[a];
+    const y = nested[b];
+    if (x !== undefined && (y === undefined || x.openLine < y.openLine)) { out.push({ ...x, nested: false }); a += 1; }
+    else if (y !== undefined) { out.push({ ...y, nested: true }); b += 1; }
+    else break; // not reachable: the loop runs while one of the two lists has an entry left
+  }
+  return out;
 }
 
 /** The rule for COMPARING a block body with a text that should hold the same (the other half of `wrapInFence`, which WRITES): a leading

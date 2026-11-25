@@ -1,11 +1,11 @@
 {
   "source": "obsidian-kit",
-  "version": "0.102.0",
-  "sha": "c8312d9",
-  "code_kit_version": "0.82.0",
+  "version": "0.111.0",
+  "sha": "3ba6442",
+  "code_kit_version": "0.91.1",
   "vendored": "block-writer.ts, note-edit.ts, endpoint-secret-hook.ts, endpoint-source.ts, override-guard.ts",
   "note": "Verbatim snapshot aus ZWEI Quellen (obsidian-kit + code-kit); welche Datei woher stammt, sagt ihr eigener Kopf. Never hand-edit. Re-vendor via tools/sync-kit.sh. version/sha gelten AUSSCHLIESSLICH fuer die unter \"vendored\" gelisteten Dateien. kit-obsidian/ siehe dortige VENDOR.json.",
-  "code_kit_sha": "4e12a8e",
+  "code_kit_sha": "512aa5c",
   "code_kit_vendored": "anthropic-wire.ts, backend-probe.ts, capabilities.ts, coded-error.ts, embeddings-client.ts, endpoint.ts, endpoint_config.ts, endpoint_diagnostics.ts, error-message.ts, error_body.ts, fences.ts, i18n.ts, json-error-position.ts, llm-answer.ts, model-choice.ts, model-context.ts, model-list-cache.ts, reasoning.ts, redact.ts, replace-span.ts, sampling-profiles.ts, secrets.ts, settings.ts, sse.ts, text-window.ts, think-splitter.ts, timeout.ts, user-regex.ts, word-diff.ts, clipboard.ts",
   "license": "AGPL-3.0-or-later"
 }

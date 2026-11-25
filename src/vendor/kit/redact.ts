@@ -1,4 +1,4 @@
-// vendored from code-kit@0.82.0, src/ts/pure/redact.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from code-kit@0.91.1, src/ts/pure/redact.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 // uebernommen aus ghostline/src/core/context.ts (redactText) und settings-assistant/src/core/secrets.ts (redactFields), 2026-10-09; vault-crews/src/core/redact.ts und llm-lab/src/core/redact_secrets.ts + redact_pii.ts (redactKeys, redactKeysInValue, createPiiRedactor), 2026-10-10
 /** Redaction of secrets, in two entry points (plus a reversible session for text): over free
  *  text and over parsed JSON.
@@ -324,7 +324,10 @@ export type PiiLabel = "EMAIL" | "IBAN" | "PHONE" | "URLCRED" | "CUSTOM";
 // capital or a digit in front stays unread: the sixteen to thirty characters are then the tail of a longer capital/digit token (an ID, a serial number,
 // a base32 or hex string, `ORDER2024DE89…`, `X1DE89…`); reading the tail would blank the middle of a token that is not an IBAN. The closing `\b` stays.
 // No lookbehind (iOS Safari before 16.4). Linear: every attempt reads a lead character, two capitals, two digits and at most ~40 more characters.
-const PII_PATTERNS: readonly (readonly [Exclude<PiiLabel, "CUSTOM">, RegExp])[] = [
+/** The four patterns of {@link createPiiRedactor}, shared (additive export, Welle 36, kp2d) with `pii-detect`, which reads the same shapes and adds the checks (IBAN check
+ *  digits, phone normalisation). The regular expressions are GLOBAL and so carry `lastIndex`: copy one (`new RegExp(re.source, re.flags)`) before you run it. EMAIL and IBAN
+ *  have a lead group (the character in front, group 1) and the hit as group 2. */
+export const PII_PATTERNS: readonly (readonly [Exclude<PiiLabel, "CUSTOM">, RegExp])[] = [
   ["EMAIL", /(^|[^A-Za-z0-9._%+-])([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g],
   ["IBAN", /(^|[^A-Z0-9])([A-Z]{2}\d{2}(?:[ ]?[A-Za-z0-9]{4}){2,7}(?:[ ]?[A-Za-z0-9]{1,4})?\b)/g],
   ["PHONE", /(?:\+\d{1,3}[ /-]?)?(?:\(?\d{2,5}\)?[ /-]?)\d{3,}(?:[ -]?\d{2,})+/g],

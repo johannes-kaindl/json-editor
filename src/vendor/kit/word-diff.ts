@@ -1,4 +1,4 @@
-// vendored from code-kit@0.82.0, src/ts/pure/word-diff.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from code-kit@0.91.1, src/ts/pure/word-diff.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 /** Word-level diff with offsets — the question `diff.ts` cannot answer, because a paragraph is one line there.
  *
  *  Origin: born here for Diachronic (a Markdown review plugin), no ancestor in any repo. Measured 2026-10-18 and again

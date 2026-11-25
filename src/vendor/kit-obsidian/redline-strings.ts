@@ -1,4 +1,4 @@
-// vendored from obsidian-kit@0.102.0, src/obsidian/redline-strings.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from obsidian-kit@0.111.0, src/obsidian/redline-strings.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 /** Default-Texte (EN/DE) für die zweite Spur der Redline (`RedlineSegment.authorLabel`) — nach dem Muster von `model-bar-strings.ts`: das Kit formuliert nichts fest, aber „Gelöscht von …“ und „Eingefügt von …“ soll
  *  kein Plugin selbst erfinden. Eigene Formulierung, in keiner Fassung belegt (Welle 36, k9c Teil B; Befund: im Field Report sind die Autorenplätze 0, 2 und 3 farblich nicht sicher zu trennen).
  *

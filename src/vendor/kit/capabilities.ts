@@ -1,4 +1,4 @@
-// vendored from code-kit@0.82.0, src/ts/pure/capabilities.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
+// vendored from code-kit@0.91.1, src/ts/pure/capabilities.ts — do not hand-edit; re-vendor via tools/sync-kit.sh
 import { ThinkingSupport } from "./reasoning";
 import { familyFromName, type BackendId } from "./sampling-profiles";
 

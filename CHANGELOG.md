@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Security
+- **A secret glued to a word is now redacted before a repair request is sent** (shared library code-kit 0.87.0): `key_sk-proj-…`, `my_AKIA…` and `x_Bearer …` stayed in clear text before, and an IBAN behind `_` was not read as an IBAN.
+
+### Fixed
+- **An unclosed code fence inside a list item ends with its list item, as in Obsidian** (code-kit 0.88.0): before, it ran on to the end of the note, so a JSON block further down could be read as part of it.
+
 ## [1.25.0] — 2026-11-19
 
 ### Changed
