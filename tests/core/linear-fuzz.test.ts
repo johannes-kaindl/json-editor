@@ -18,15 +18,20 @@ import { extractDocument, validateRepair } from "../../src/core/repair/prompt";
 import { compileSchema } from "../../src/core/schema";
 import { findMatches } from "../../src/core/search";
 import { assessRegexRisk } from "../../src/vendor/kit/user-regex";
-import { pruefeLinear, pruefeLinearFuzz } from "../vendor/kit/linear-probe";
+import { type LinearProbeSkipKontext, lastGeschuetzt } from "../vendor/kit/linear-probe";
 
 const FUZZ_MS = 180_000;
 
 /** Befund als lesbarer Text, damit eine rote Zeile ohne Nachlesen verständlich ist (CORE-TEST-14). */
 const befund = (r: { verdaechtig: ReadonlyArray<{ message: string }> }): string =>
   r.verdaechtig.map((v) => v.message).join("\n");
-const fuzz = (fn: (s: string) => unknown, alphabet: readonly string[], maxLaenge = 3): void => {
-  const f = pruefeLinearFuzz(fn, { alphabet, maxLaenge });
+const fuzz = (
+  ctx: LinearProbeSkipKontext,
+  fn: (s: string) => unknown,
+  alphabet: readonly string[],
+  maxLaenge = 3,
+): void => {
+  const f = lastGeschuetzt(ctx).pruefeLinearFuzz(fn, { alphabet, maxLaenge });
   expect(f.linear, befund(f)).toBe(true);
   // Eine Bilanz ohne Messung ist kein Erfolg (CORE-TEST-19).
   expect(f.gemessen, "der Fuzz hat Eingaben gemessen").toBeGreaterThan(20);
@@ -35,17 +40,22 @@ const fuzz = (fn: (s: string) => unknown, alphabet: readonly string[], maxLaenge
 describe("Schema des Nutzers", () => {
   it(
     "compileSchema: Fuzz über Gruppen und Quantoren im `pattern` (die Wache gegen ReDoS darf nicht selbst eine sein)",
-    () => {
+    (ctx) => {
       // Das Muster steht in einem gültigen Schema, damit die Prüfung der Muster erreicht wird (Schritt 1 der Konvention).
-      fuzz(
-        (s) => compileSchema(`{"type":"string","pattern":"${s}"}`),
-        ["(", ")", "+", "*", "{1,}", "a", " "],
-      );
+      fuzz(ctx, (s) => compileSchema(`{"type":"string","pattern":"${s}"}`), [
+        "(",
+        ")",
+        "+",
+        "*",
+        "{1,}",
+        "a",
+        " ",
+      ]);
     },
     FUZZ_MS,
   );
 
-  it("compileSchema: lange Folgen offener Gruppen und Quantoren bleiben linear (feste Formen)", () => {
+  it("compileSchema: lange Folgen offener Gruppen und Quantoren bleiben linear (feste Formen)", (ctx) => {
     const formen: Array<(n: number) => string> = [
       (n) => "(".repeat(n),
       (n) => "(+".repeat(n),
@@ -54,7 +64,7 @@ describe("Schema des Nutzers", () => {
       (n) => "(a)".repeat(n),
     ];
     for (const [i, form] of formen.entries()) {
-      const r = pruefeLinear(
+      const r = lastGeschuetzt(ctx).pruefeLinear(
         (s: string) => compileSchema(`{"type":"string","pattern":"${s}"}`),
         form,
       );
@@ -66,21 +76,21 @@ describe("Schema des Nutzers", () => {
 describe("Antwort des Modells bei der Reparatur", () => {
   it(
     "extractDocument und validateRepair: Fuzz über Denkblöcke, Zäune, Klammern",
-    () => {
+    (ctx) => {
       const alphabet = ["<think>", "</think>", "```json\n", "```\n", "\n", " ", "{", "}", '"'];
-      fuzz(extractDocument, alphabet, 2);
-      fuzz((s) => validateRepair(s, "json"), alphabet, 2);
-      fuzz((s) => validateRepair(s, "jsonc"), alphabet, 2);
+      fuzz(ctx, extractDocument, alphabet, 2);
+      fuzz(ctx, (s) => validateRepair(s, "json"), alphabet, 2);
+      fuzz(ctx, (s) => validateRepair(s, "jsonc"), alphabet, 2);
     },
     FUZZ_MS,
   );
 
   it(
     "spliceFence: Fuzz über Leerraum in der Ersetzung (Text vom Modell)",
-    () => {
+    (ctx) => {
       const notiz = "```json\nx\n```";
       // `x` am Anfang und Ende: sonst schneidet das Abschneiden am Ende den Lauf ab, bevor die Zerlegung ihn sieht.
-      fuzz((s) => spliceFence(notiz, 0, 2, "x", `x${s}x`), [" ", "\t", "\n", "x"]);
+      fuzz(ctx, (s) => spliceFence(notiz, 0, 2, "x", `x${s}x`), [" ", "\t", "\n", "x"]);
     },
     FUZZ_MS,
   );
@@ -89,39 +99,47 @@ describe("Antwort des Modells bei der Reparatur", () => {
 describe("Notiz und Dokument", () => {
   it(
     "findFenceAt: Fuzz über Zäune, Einzug, Zeilenumbruch",
-    () => {
-      fuzz((s) => findFenceAt(s, 1), ["```json\n", "```jsonc\n", "```\n", "~~~\n", "\n", " ", "x"]);
+    (ctx) => {
+      fuzz(ctx, (s) => findFenceAt(s, 1), [
+        "```json\n",
+        "```jsonc\n",
+        "```\n",
+        "~~~\n",
+        "\n",
+        " ",
+        "x",
+      ]);
     },
     FUZZ_MS,
   );
 
   it(
     "parse, jsoncParse und detectIndent: Fuzz über JSON-Zeichen, Leerraum, Kommentare",
-    () => {
+    (ctx) => {
       const alphabet = ["{", "}", "[", "]", '"', ":", ",", " ", "\n", "\t", "/*", "*/", "//"];
-      fuzz(parse, alphabet, 2);
-      fuzz(jsoncParse, alphabet, 2);
-      fuzz(detectIndent, [" ", "\t", "\n", "x"]);
+      fuzz(ctx, parse, alphabet, 2);
+      fuzz(ctx, jsoncParse, alphabet, 2);
+      fuzz(ctx, detectIndent, [" ", "\t", "\n", "x"]);
     },
     FUZZ_MS,
   );
 
   it(
     "parsePathStr: Fuzz über Klammern, Anführungszeichen, Escape, Punkt",
-    () => {
-      fuzz(parsePathStr, ["[", "]", '"', "\\", ".", "a", "0"]);
+    (ctx) => {
+      fuzz(ctx, parsePathStr, ["[", "]", '"', "\\", ".", "a", "0"]);
     },
     FUZZ_MS,
   );
 
-  it("findMatches: breite Werte bleiben linear (viele Schlüssel, lange Zeichenketten)", () => {
-    const breit = pruefeLinear(
+  it("findMatches: breite Werte bleiben linear (viele Schlüssel, lange Zeichenketten)", (ctx) => {
+    const breit = lastGeschuetzt(ctx).pruefeLinear(
       (o: Record<string, string>) => findMatches(o, "k"),
       (n) =>
         Object.fromEntries(Array.from({ length: Math.ceil(n / 4) }, (_v, i) => [`k${i}`, "v"])),
     );
     expect(breit.linear, breit.message).toBe(true);
-    const lang = pruefeLinear(
+    const lang = lastGeschuetzt(ctx).pruefeLinear(
       (s: string) => findMatches({ a: s }, "zz"),
       (n) => "a".repeat(n),
     );
@@ -201,8 +219,8 @@ describe("Gegenprobe: der Fuzz kann rot werden (CORE-TEST-01)", () => {
 
   it(
     "pruefeLinearFuzz meldet die quadratische Form als Verdacht",
-    () => {
-      const f = pruefeLinearFuzz((s) => quadratisch(`x${s}x`), {
+    (ctx) => {
+      const f = lastGeschuetzt(ctx).pruefeLinearFuzz((s) => quadratisch(`x${s}x`), {
         alphabet: [" ", "x"],
         maxLaenge: 1,
         verschachtelt: false,

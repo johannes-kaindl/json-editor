@@ -7,7 +7,7 @@ import {
 } from "../../../src/core/repair/prompt";
 import { unwrapAnswer } from "../../../src/vendor/kit/llm-answer";
 import type { TextWindow } from "../../../src/vendor/kit/text-window";
-import { pruefeLinear } from "../../vendor/kit/linear-probe";
+import { lastGeschuetzt } from "../../vendor/kit/linear-probe";
 
 describe("buildRepairMessages", () => {
   it("traegt Code und Parser-Fehler und verlangt nur das Dokument", () => {
@@ -24,13 +24,16 @@ describe("buildRepairMessages", () => {
 });
 
 describe("extractDocument", () => {
-  it("bleibt linear bei vielen nie geschlossenen <think>", () => {
-    const r = pruefeLinear(extractDocument, (n) => `${"<think>".repeat(n)}{"a":1}`);
+  it("bleibt linear bei vielen nie geschlossenen <think>", (ctx) => {
+    const r = lastGeschuetzt(ctx).pruefeLinear(
+      extractDocument,
+      (n) => `${"<think>".repeat(n)}{"a":1}`,
+    );
     expect(r.linear, r.message).toBe(true);
   });
-  it("bleibt linear bei einem Zaun mit vielen Leerzeilen, der nie schliesst", () => {
+  it("bleibt linear bei einem Zaun mit vielen Leerzeilen, der nie schliesst", (ctx) => {
     // Praefix, das FENCED anlaufen laesst, ohne dass es passt: Zaun, dann Leerzeilen, dann kein Schluss.
-    const r = pruefeLinear(extractDocument, (n) => `\`\`\`${" \n".repeat(n)}x`);
+    const r = lastGeschuetzt(ctx).pruefeLinear(extractDocument, (n) => `\`\`\`${" \n".repeat(n)}x`);
     expect(r.linear, r.message).toBe(true);
   });
   it("entfernt Denkbloecke und einen umschliessenden Zaun", () => {
@@ -112,14 +115,20 @@ describe("Ausschnitt entzäunen (unwrapAnswer mit keepIndent)", () => {
       '  "a": 1,\n  "b": 2',
     );
   });
-  it("bleibt linear bei vielen nie geschlossenen <think>", () => {
-    const r = pruefeLinear(extractExcerpt, (n) => `${"<think>".repeat(n)}{"a":1}`);
+  it("bleibt linear bei vielen nie geschlossenen <think>", (ctx) => {
+    const r = lastGeschuetzt(ctx).pruefeLinear(
+      extractExcerpt,
+      (n) => `${"<think>".repeat(n)}{"a":1}`,
+    );
     expect(r.linear, r.message).toBe(true);
   });
-  it("bleibt linear bei Leerzeilen vor dem Inhalt und bei einem Zaun, der nie schließt", () => {
-    const leer = pruefeLinear(extractExcerpt, (n) => `${" \n".repeat(n)}x`);
+  it("bleibt linear bei Leerzeilen vor dem Inhalt und bei einem Zaun, der nie schließt", (ctx) => {
+    const leer = lastGeschuetzt(ctx).pruefeLinear(extractExcerpt, (n) => `${" \n".repeat(n)}x`);
     expect(leer.linear, leer.message).toBe(true);
-    const zaun = pruefeLinear(extractExcerpt, (n) => `\`\`\`${" \n".repeat(n)}x`);
+    const zaun = lastGeschuetzt(ctx).pruefeLinear(
+      extractExcerpt,
+      (n) => `\`\`\`${" \n".repeat(n)}x`,
+    );
     expect(zaun.linear, zaun.message).toBe(true);
   });
 });
