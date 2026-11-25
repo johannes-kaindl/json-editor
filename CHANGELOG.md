@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.25.1] — 2026-11-25
+
 ### Security
 - **A secret glued to a word is now redacted before a repair request is sent** (shared library code-kit 0.87.0): `key_sk-proj-…`, `my_AKIA…` and `x_Bearer …` stayed in clear text before, and an IBAN behind `_` was not read as an IBAN.
 
