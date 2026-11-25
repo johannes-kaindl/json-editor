@@ -166,7 +166,7 @@ Mechanisch nicht entscheidbar — dafür bleibt die Runde von Hand:
 
 | Datum | Obsidian | Plugin | Ergebnis | Gegenprobe |
 |---|---|---|---|---|
-| 2026-08-22 | 1.13.7 | 1.11.2 + Fix | 18/18 (Vault `10_Pallas`) — **unbelegt**, s. u. | bestanden: Fix ausgebaut → genau D3 rot, kein anderer Punkt fällt mit |
+| 2026-08-22 | 1.13.7 | 1.11.2 + Fix | 18/18 (regulärer Arbeits-Vault) — **unbelegt**, s. u. | bestanden: Fix ausgebaut → genau D3 rot, kein anderer Punkt fällt mit |
 | 2026-09-02 | 1.13.7 | 1.11.3 | **18/18** (Staging-Vault `json_viewer`, Herkunft `deployt`) | **bestanden**: `--klick-gegenprobe` → 12/18, exakt die sechs klickabhängigen Punkte fallen (C2, D1–D4, E3), kein anderer fällt mit |
 | 2026-09-03 | 1.13.7 | 1.12.0 + A11y | **20/20** (Staging-Vault `json_viewer`) — neu: D5 (Reorder-Kommentar) und B5 (Ansage-Region) | **bestanden**: `display:none` ins Stylesheet → genau B5 rot (`0x0px, display: none`), kein anderer Punkt fällt mit |
 | 2026-09-25 | 1.14.2 | 1.12.0 + LLM-Reparatur | **27/27** (Zweitinstanz Port 9303, Staging-Vault `json-editor`) — neu: Abschnitt F (F1–F6: Knopf, Modal mit Diff, Request-Inhalt, Anwenden byte-genau, Schließen, ungültige Antwort). Baseline vorher 21/21 (der Aufwärmlauf zählt nicht: 20/21, C2 Kaltstart) | **bestanden**: `--klick-gegenprobe` → 15/27, zwölf Punkte fallen (C2, D1–D5, E3, F2–F6). F5 war zuerst ohne Klick grün (Vorbedingung fehlte) und wurde korrigiert |
@@ -179,7 +179,7 @@ Mechanisch nicht entscheidbar — dafür bleibt die Runde von Hand:
 | 2026-11-10 | 1.22.1 | Brotkrumen-Segmente und ⤢ 44 px, Brotkrumen bleibt gefaltet in einer Zeile | **50/50** grün · 0 rot · 0 übersprungen · 0 nichts gemessen (Zweitinstanz Port 9398, Staging-Vault `json-editor`, frischer Prozess, Obsidian 1.15.1) — neu: B7 (gefalteter Brotkrumen bei 354 px in einer Zeile, breite Schrift, lange Schlüssel) | **bestanden**: B7 lief vorher gegen den Stand 1.22.1 rot und reproduzierte den Gerätebefund (Brotkrumen 354 × 92 px, zwei Zeilen), mit dem Fix 354 × 44 px; die Gegenprobe im selben Lauf (Umbruch erlaubt, kein Schrumpfen) bricht in zwei Zeilen |
 | 2026-09-02 (2) | 1.13.7 | 1.11.3 | **18/18** (Staging-Vault `json_viewer`) — Bestätigung nach dem `styles.css`-Guard | `buildHerkunft` für `styles.css` in allen drei Ausgängen einzeln hergestellt: `deployt` · `fremd` (30.239 statt 30.213 Bytes) · `fehlt` |
 
-Der Lauf vom **2026-08-22 ist rückwirkend als unbelegt zu lesen**: er lief gegen `10_Pallas`,
+Der Lauf vom **2026-08-22 ist rückwirkend als unbelegt zu lesen**: er lief gegen den regulären Arbeits-Vault,
 und dort lag die Store-Installation, nicht der Repo-Stand. Aufgefallen ist das erst am
 2026-08-30 bei einer dachweiten Zählung (69 von 150 grünen Prüfpunkten standen auf
 ungeprüftem Code) — der Treiber selbst konnte es nicht sehen, weil er sich an
